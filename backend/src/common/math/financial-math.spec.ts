@@ -289,7 +289,7 @@ describe('simulateInvestment', () => {
     expect(result.withholding).toBe('8.00');
   });
 
-  it('pago mensual: último pago cubre días remanentes y cuadra centavos', () => {
+  it('pago mensual: paga en cada frontera de 30 días y liquida el remanente', () => {
     const result = simulateInvestment({
       amount: 10000,
       teaPct: '9.5',
@@ -300,7 +300,8 @@ describe('simulateInvestment', () => {
     expect(result.payoutSchedule.map((r) => [r.day, r.grossInterest])).toEqual([
       [30, '79.17'],
       [60, '79.17'],
-      [95, '92.35'],
+      [90, '79.17'],
+      [95, '13.18'],
     ]);
     expect(result.monthlyPayment).toBe('77.59');
     expect(money(sum(result.payoutSchedule.map((r) => r.grossInterest)))).toBe(
@@ -312,6 +313,21 @@ describe('simulateInvestment', () => {
     const received = sum(result.payoutSchedule.map((r) => r.totalPayment));
     expect(money(received)).toBe(result.totalToReceive);
     expect(result.payoutSchedule.at(-1)!.capitalReturned).toBe('10000.00');
+  });
+
+  it.each([
+    [31, [[30, '79.17'], [31, '2.64']]],
+    [60, [[30, '79.17'], [60, '79.16']]],
+  ])('pago mensual a %i días', (termDays, expected) => {
+    const result = simulateInvestment({
+      amount: 10000,
+      teaPct: '9.5',
+      termDays,
+      payoutMethod: 'MONTHLY',
+    });
+    expect(result.payoutSchedule.map((r) => [r.day, r.grossInterest])).toEqual(
+      expected,
+    );
   });
 
   it('nunca genera pagos negativos con montos mínimos', () => {

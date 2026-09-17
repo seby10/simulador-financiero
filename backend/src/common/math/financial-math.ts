@@ -291,10 +291,9 @@ export function simulateInvestment(input: InvestmentInput): InvestmentResult {
   );
   const grossInterest = round2(simpleInterest(amount, tea, days));
 
+  // Un pago en cada frontera de 30 días y la liquidación final al vencimiento.
   const payouts =
-    input.payoutMethod === 'MONTHLY'
-      ? Math.floor(days / PAYOUT_PERIOD_DAYS)
-      : 1;
+    input.payoutMethod === 'MONTHLY' ? Math.ceil(days / PAYOUT_PERIOD_DAYS) : 1;
   const periodGross = round2(simpleInterest(amount, tea, PAYOUT_PERIOD_DAYS));
 
   const payoutSchedule: PayoutRow[] = [];
@@ -302,7 +301,7 @@ export function simulateInvestment(input: InvestmentInput): InvestmentResult {
   let pendingGross = grossInterest;
   for (let period = 1; period <= payouts; period++) {
     const isLast = period === payouts;
-    // El último pago cubre los días remanentes y absorbe los centavos residuales.
+    // El último pago cubre los días desde la última frontera y absorbe los centavos residuales.
     const gross = isLast
       ? pendingGross
       : Decimal.min(periodGross, pendingGross);
