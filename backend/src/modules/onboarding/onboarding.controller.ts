@@ -20,6 +20,7 @@ import {
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiParam,
   ApiPayloadTooLargeResponse,
   ApiProduces,
@@ -27,11 +28,14 @@ import {
 } from '@nestjs/swagger';
 import { AdminOnly } from '../../common/auth.js';
 import { MAX_UPLOAD_BYTES } from '../../common/http.js';
+import {
+  BiometricsDto,
+  BiometricsResponse,
+} from '../biometrics/biometrics.dto.js';
+import { BiometricsService } from '../biometrics/biometrics.service.js';
 import { DOCUMENT_KINDS } from '../investment/investment.dto.js';
 import {
   ApplyDto,
-  BiometricsDto,
-  BiometricsResponse,
   InvestmentApplicationResponse,
   InvestmentApplicationWithPlanResponse,
   ListApplicationsQuery,
@@ -44,7 +48,10 @@ const uuid = new ParseUUIDPipe({ version: '4' });
 @ApiTags('Onboarding')
 @Controller('onboarding')
 export class OnboardingController {
-  constructor(private readonly onboarding: OnboardingService) {}
+  constructor(
+    private readonly onboarding: OnboardingService,
+    private readonly biometrics: BiometricsService,
+  ) {}
 
   /** Registra una solicitud de inversión (estado PENDING_REVIEW). */
   @Post('apply')
@@ -80,16 +87,20 @@ export class OnboardingController {
     return this.onboarding.uploadDocuments(id, files);
   }
 
-  /** Verificación biométrica simulada (liveness + face match); aprueba la solicitud. */
+  /**
+   * @deprecated Usar `POST /api/biometrics/applications/{id}/verify`, que además
+   * devuelve los puntajes por separado y los intentos restantes.
+   */
   @Post(':id/biometrics')
   @HttpCode(200)
+  @ApiOperation({ deprecated: true })
   @ApiOkResponse({ type: BiometricsResponse })
   @ApiBadRequestResponse({
     description: 'Faltan documentos o la captura no es JPEG/PNG',
   })
   @ApiConflictResponse({ description: 'La solicitud ya fue resuelta' })
-  biometrics(@Param('id', uuid) id: string, @Body() dto: BiometricsDto) {
-    return this.onboarding.verifyBiometrics(id, dto);
+  verifyBiometrics(@Param('id', uuid) id: string, @Body() dto: BiometricsDto) {
+    return this.biometrics.verify(id, dto);
   }
 
   /** Lista solicitudes, opcionalmente filtradas por estado. */

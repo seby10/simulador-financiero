@@ -136,6 +136,186 @@ describe('API (e2e)', () => {
     }
   });
 
+  // ───────────────────────── Biometría ─────────────────────────
+
+  describe('verificación biométrica', () => {
+    const png = Buffer.from('89504e470d0a1a0a', 'hex');
+    /**
+     * El proveedor simulado deriva los puntajes del SHA-256 de las imágenes, así
+     * que estas dos capturas dan siempre el mismo veredicto contra `png`:
+     * s0 → 76.63 / 89.44 (pasa), s2 → 73.02 / 93.36 (vivacidad insuficiente).
+     */
+    const selfie = (suffix: string) =>
+      `data:image/png;base64,${Buffer.concat([png, Buffer.from(suffix)]).toString('base64')}`;
+
+    /** Solicitud nueva con los tres documentos ya cargados. */
+    const applicationWithDocuments = async () => {
+      const server = app.getHttpServer();
+      const { body: plans } = await request(server)
+        .get('/api/investment/plans')
+        .expect(200);
+      const plan = plans[0];
+      const { body: application } = await request(server)
+        .post('/api/onboarding/apply')
+        .send({
+          applicantFullName: 'Prueba Biometría',
+          applicantIdNumber: '1710034065',
+          email: 'biometria@example.com',
+          phone: '0991234567',
+          sourceOfFunds: 'e2e',
+          investmentPlanId: plan.id,
+          amount: plan.minAmount,
+          termDays: plan.termMinDays,
+          payoutMethod: 'AT_MATURITY',
+        })
+        .expect(201);
+      for (const field of ['idFront', 'idBack', 'utilityBill']) {
+        await request(server)
+          .post(`/api/onboarding/${application.id}/documents`)
+          .attach(field, png, 'doc.png')
+          .expect(201);
+      }
+      return application.id as string;
+    };
+
+    const cleanUp = async (id: string) => {
+      await app
+        .get(PrismaService)
+        .investmentApplication.delete({ where: { id } });
+      await rm(join(PRIVATE_UPLOADS, 'onboarding', id), {
+        recursive: true,
+        force: true,
+      });
+    };
+
+    it('aprueba la solicitud cuando ambos puntajes pasan el umbral', async () => {
+      const id = await applicationWithDocuments();
+      try {
+        const { body } = await request(app.getHttpServer())
+          .post(`/api/biometrics/applications/${id}/verify`)
+          .send({ selfieBase64: selfie('s0') })
+          .expect(200);
+        expect(body).toMatchObject({
+          applicationId: id,
+          attempt: 1,
+          passed: true,
+          status: 'APPROVED',
+          remainingAttempts: 2,
+          failureReason: null,
+          checks: { liveness: 'PASSED', faceMatch: 'MATCH' },
+        });
+
+        const { body: application } = await request(app.getHttpServer())
+          .get(`/api/onboarding/applications/${id}`)
+          .set('x-admin-key', process.env.ADMIN_API_KEY!)
+          .expect(200);
+        expect(application.status).toBe('APPROVED');
+        expect(application.biometricScore).toBe(body.matchScore);
+      } finally {
+        await cleanUp(id);
+      }
+    });
+
+    it('rechaza sin aprobar y deja registrado el intento', async () => {
+      const id = await applicationWithDocuments();
+      try {
+        const { body } = await request(app.getHttpServer())
+          .post(`/api/biometrics/applications/${id}/verify`)
+          .send({ selfieBase64: selfie('s2') })
+          .expect(200);
+        expect(body).toMatchObject({
+          passed: false,
+          status: 'PENDING_REVIEW',
+          checks: { liveness: 'FAILED', faceMatch: 'MATCH' },
+        });
+        expect(body.failureReason).toContain('Prueba de vida insuficiente');
+
+        const { body: history } = await request(app.getHttpServer())
+          .get(`/api/biometrics/applications/${id}`)
+          .set('x-admin-key', process.env.ADMIN_API_KEY!)
+          .expect(200);
+        expect(history).toHaveLength(1);
+        expect(history[0]).toMatchObject({ attempt: 1, passed: false });
+      } finally {
+        await cleanUp(id);
+      }
+    });
+
+    it('agota los intentos y pide revisión manual', async () => {
+      const id = await applicationWithDocuments();
+      try {
+        const server = app.getHttpServer();
+        // Tres capturas distintas que fallan, hasta consumir el límite.
+        for (const suffix of ['s2', 's6', 's10']) {
+          await request(server)
+            .post(`/api/biometrics/applications/${id}/verify`)
+            .send({ selfieBase64: selfie(suffix) })
+            .expect(200);
+        }
+        await request(server)
+          .post(`/api/biometrics/applications/${id}/verify`)
+          .send({ selfieBase64: selfie('s0') })
+          .expect(429);
+      } finally {
+        await cleanUp(id);
+      }
+    });
+
+    it('exige los documentos antes de verificar', async () => {
+      const server = app.getHttpServer();
+      const { body: plans } = await request(server)
+        .get('/api/investment/plans')
+        .expect(200);
+      const { body: application } = await request(server)
+        .post('/api/onboarding/apply')
+        .send({
+          applicantFullName: 'Sin Documentos',
+          applicantIdNumber: '1710034065',
+          email: 'sin-docs@example.com',
+          phone: '0991234567',
+          sourceOfFunds: 'e2e',
+          investmentPlanId: plans[0].id,
+          amount: plans[0].minAmount,
+          termDays: plans[0].termMinDays,
+          payoutMethod: 'AT_MATURITY',
+        })
+        .expect(201);
+      try {
+        await request(server)
+          .post(`/api/biometrics/applications/${application.id}/verify`)
+          .send({ selfieBase64: selfie('s0') })
+          .expect(400);
+      } finally {
+        await cleanUp(application.id);
+      }
+    });
+
+    it('rechaza una captura que no es una imagen', async () => {
+      const id = await applicationWithDocuments();
+      try {
+        await request(app.getHttpServer())
+          .post(`/api/biometrics/applications/${id}/verify`)
+          .send({
+            selfieBase64: Buffer.from('esto no es un png').toString('base64'),
+          })
+          .expect(400);
+      } finally {
+        await cleanUp(id);
+      }
+    });
+
+    it('el historial es solo para administradores', async () => {
+      const id = await applicationWithDocuments();
+      try {
+        await request(app.getHttpServer())
+          .get(`/api/biometrics/applications/${id}`)
+          .expect(401);
+      } finally {
+        await cleanUp(id);
+      }
+    });
+  });
+
   describe('rutas administrativas', () => {
     it('rechazan peticiones sin clave o con clave incorrecta', async () => {
       const server = app.getHttpServer();

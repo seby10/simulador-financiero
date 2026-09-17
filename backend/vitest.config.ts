@@ -13,6 +13,7 @@ export default defineConfig({
         'src/common/auth.ts',
         'src/common/tokens.ts',
         'src/modules/auth/password.ts',
+        'src/modules/biometrics/biometrics.provider.ts',
       ],
       exclude: ['**/*.spec.ts'],
       thresholds: { 100: true },

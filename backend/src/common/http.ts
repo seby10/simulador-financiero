@@ -156,6 +156,13 @@ export function assertFileKind(
   return kind;
 }
 
+/**
+ * Ruta en disco de un documento de onboarding. `id` llega validado como UUID en
+ * los controladores, así que no hay path traversal posible.
+ */
+export const onboardingDocumentPath = (id: string, kind: string) =>
+  join(PRIVATE_UPLOADS, 'onboarding', id, kind);
+
 export async function saveFile(path: string, buffer: Buffer) {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, buffer);

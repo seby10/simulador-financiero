@@ -1136,6 +1136,113 @@
         ]
       }
     },
+    "/api/biometrics/applications/{id}/verify": {
+      "post": {
+        "operationId": "BiometricsController_verify",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiometricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Faltan documentos o la captura no es JPEG/PNG"
+          },
+          "404": {
+            "description": "Solicitud inexistente"
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta"
+          },
+          "429": {
+            "description": "Se agotaron los intentos"
+          }
+        },
+        "summary": "Verifica prueba de vida y coincidencia facial contra la cédula cargada.\nAprueba la solicitud solo si ambos puntajes superan su umbral.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/applications/{id}": {
+      "get": {
+        "operationId": "BiometricsController_history",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BiometricAttemptResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": "Solicitud inexistente"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Historial de intentos, con sus puntajes y motivos de rechazo.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
     "/api/onboarding/apply": {
       "post": {
         "operationId": "OnboardingController_apply",
@@ -1226,7 +1333,8 @@
     },
     "/api/onboarding/{id}/biometrics": {
       "post": {
-        "operationId": "OnboardingController_biometrics",
+        "deprecated": true,
+        "operationId": "OnboardingController_verifyBiometrics",
         "parameters": [
           {
             "name": "id",
@@ -1265,7 +1373,7 @@
             "description": "La solicitud ya fue resuelta"
           }
         },
-        "summary": "Verificación biométrica simulada (liveness + face match); aprueba la solicitud.",
+        "summary": "",
         "tags": [
           "Onboarding"
         ]
@@ -2562,6 +2670,148 @@
           "payoutSchedule"
         ]
       },
+      "BiometricsDto": {
+        "type": "object",
+        "properties": {
+          "selfieBase64": {
+            "type": "string",
+            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
+            "example": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+            "maxLength": 7000000
+          }
+        },
+        "required": [
+          "selfieBase64"
+        ]
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING_REVIEW",
+          "APPROVED",
+          "REJECTED"
+        ],
+        "description": "Estado de la solicitud tras el intento."
+      },
+      "BiometricChecksDto": {
+        "type": "object",
+        "properties": {
+          "liveness": {
+            "type": "string",
+            "description": "PASSED o FAILED según el umbral de vivacidad.",
+            "example": "PASSED"
+          },
+          "faceMatch": {
+            "type": "string",
+            "description": "MATCH o NO_MATCH según el umbral de coincidencia.",
+            "example": "MATCH"
+          }
+        },
+        "required": [
+          "liveness",
+          "faceMatch"
+        ]
+      },
+      "BiometricsResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Estado de la solicitud tras el intento.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "applicationId": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "number",
+            "description": "Número de intento, empezando en 1.",
+            "example": 1
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "livenessScore": {
+            "type": "string",
+            "example": "92.41"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "95.07"
+          },
+          "remainingAttempts": {
+            "type": "number",
+            "description": "Intentos que aún quedan disponibles.",
+            "example": 2
+          },
+          "checks": {
+            "$ref": "#/components/schemas/BiometricChecksDto"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Umbral que no se alcanzó, o null si la verificación pasó."
+          }
+        },
+        "required": [
+          "status",
+          "applicationId",
+          "attempt",
+          "passed",
+          "livenessScore",
+          "matchScore",
+          "remainingAttempts",
+          "checks",
+          "failureReason"
+        ]
+      },
+      "BiometricAttemptResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "number"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "livenessScore": {
+            "type": "string",
+            "example": "92.41"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "95.07"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string",
+            "example": "simulated"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "attempt",
+          "passed",
+          "livenessScore",
+          "matchScore",
+          "failureReason",
+          "provider",
+          "createdAt"
+        ]
+      },
       "ApplyDto": {
         "type": "object",
         "properties": {
@@ -2622,14 +2872,6 @@
           "sourceOfFunds",
           "investmentPlanId",
           "termDays"
-        ]
-      },
-      "ApplicationStatus": {
-        "type": "string",
-        "enum": [
-          "PENDING_REVIEW",
-          "APPROVED",
-          "REJECTED"
         ]
       },
       "ApplicationPlanRefDto": {
@@ -2847,66 +3089,6 @@
           "biometricScore",
           "createdAt",
           "updatedAt"
-        ]
-      },
-      "BiometricsDto": {
-        "type": "object",
-        "properties": {
-          "selfieBase64": {
-            "type": "string",
-            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
-            "example": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
-            "maxLength": 7000000
-          }
-        },
-        "required": [
-          "selfieBase64"
-        ]
-      },
-      "BiometricChecksDto": {
-        "type": "object",
-        "properties": {
-          "liveness": {
-            "type": "string",
-            "example": "PASSED"
-          },
-          "faceMatch": {
-            "type": "string",
-            "example": "MATCH"
-          }
-        },
-        "required": [
-          "liveness",
-          "faceMatch"
-        ]
-      },
-      "BiometricsResponse": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApplicationStatus"
-              }
-            ]
-          },
-          "applicationId": {
-            "type": "string"
-          },
-          "biometricScore": {
-            "type": "string",
-            "nullable": true,
-            "example": "95.07"
-          },
-          "checks": {
-            "$ref": "#/components/schemas/BiometricChecksDto"
-          }
-        },
-        "required": [
-          "status",
-          "applicationId",
-          "biometricScore",
-          "checks"
         ]
       }
     }

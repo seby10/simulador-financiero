@@ -125,6 +125,28 @@ enum ApplicationStatus {
   REJECTED
 }
 
+/// Cada intento de verificación biométrica, pase o no. Sirve de rastro de
+/// auditoría: quién lo intentó, cuántas veces y con qué puntajes.
+model BiometricVerification {
+  id            String                @id @default(uuid())
+  application   InvestmentApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
+  /// 1-based; junto con applicationId no se repite.
+  attempt       Int
+  /// Porcentajes 0–100.
+  livenessScore Decimal               @db.Decimal(5, 2)
+  matchScore    Decimal               @db.Decimal(5, 2)
+  passed        Boolean
+  /// Qué umbral no se alcanzó; null si pasó.
+  failureReason String?
+  /// Identificador del proveedor que emitió los puntajes.
+  provider      String
+  createdAt     DateTime              @default(now())
+
+  @@unique([applicationId, attempt])
+  @@index([applicationId])
+}
+
 model InvestmentApplication {
   id                String            @id @default(uuid())
   applicantFullName String
@@ -138,7 +160,9 @@ model InvestmentApplication {
   termDays          Int
   payoutMethod      PayoutMethod
   status            ApplicationStatus @default(PENDING_REVIEW)
+  /// Puntaje de coincidencia facial del intento que aprobó la solicitud.
   biometricScore    Decimal?          @db.Decimal(5, 2)
+  biometrics        BiometricVerification[]
   documentUrls      Json              @default("{}")
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt

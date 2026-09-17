@@ -4,14 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { randomInt } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import {
   assertFileKind,
   detectFileKind,
   MIME_TYPES,
-  PRIVATE_UPLOADS,
+  onboardingDocumentPath,
   saveFile,
 } from '../../common/http.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -21,7 +19,7 @@ import {
   type DocumentKind,
 } from '../investment/investment.dto.js';
 import { InvestmentService } from '../investment/investment.service.js';
-import { ApplyDto, BiometricsDto } from './onboarding.dto.js';
+import { ApplyDto } from './onboarding.dto.js';
 
 export type DocumentFiles = Partial<
   Record<DocumentKind, Express.Multer.File[]>
@@ -85,7 +83,7 @@ export class OnboardingService {
     );
     await Promise.all(
       uploads.map(({ kind, file }) =>
-        saveFile(this.documentPath(id, kind), file.buffer),
+        saveFile(onboardingDocumentPath(id, kind), file.buffer),
       ),
     );
 
@@ -115,7 +113,7 @@ export class OnboardingService {
       throw new NotFoundException('Documento no válido');
     await this.get(id);
     const buffer = await readFile(
-      this.documentPath(id, kind as DocumentKind),
+      onboardingDocumentPath(id, kind as DocumentKind),
     ).catch(() => {
       throw new NotFoundException('Documento no cargado');
     });
@@ -127,45 +125,6 @@ export class OnboardingService {
     };
   }
 
-  /**
-   * Verificación biométrica simulada: valida que la captura sea una imagen real,
-   * simula liveness + face match contra la cédula y asigna un puntaje de 90–99.99 %.
-   */
-  async verifyBiometrics(id: string, dto: BiometricsDto) {
-    const application = await this.getPending(id);
-    const uploaded = application.documentUrls as Record<string, string>;
-    const missing = (
-      application.investmentPlan.requiredDocuments as string[]
-    ).filter((k) => !uploaded[k]);
-    if (missing.length) {
-      throw new BadRequestException(`Faltan documentos: ${missing.join(', ')}`);
-    }
-
-    const base64 = dto.selfieBase64.replace(/^data:image\/[a-z]+;base64,/i, '');
-    assertFileKind(
-      Buffer.from(base64, 'base64'),
-      ['png', 'jpg'],
-      'selfieBase64',
-    );
-
-    // ponytail: mock sin proveedor biométrico; reemplazar por SDK real (liveness + matching).
-    const biometricScore = `${90 + randomInt(10)}.${randomInt(100).toString().padStart(2, '0')}`;
-    // Condicionado al estado: dos verificaciones concurrentes no aprueban dos veces.
-    const { count } = await this.prisma.investmentApplication.updateMany({
-      where: { id, status: ApplicationStatus.PENDING_REVIEW },
-      data: { biometricScore, status: ApplicationStatus.APPROVED },
-    });
-    if (count === 0) {
-      throw new ConflictException('La solicitud ya fue resuelta');
-    }
-    return {
-      applicationId: id,
-      status: ApplicationStatus.APPROVED,
-      biometricScore,
-      checks: { liveness: 'PASSED', faceMatch: 'MATCH' },
-    };
-  }
-
   private async getPending(id: string) {
     const application = await this.get(id);
     if (application.status !== ApplicationStatus.PENDING_REVIEW) {
@@ -174,10 +133,5 @@ export class OnboardingService {
       );
     }
     return application;
-  }
-
-  private documentPath(id: string, kind: DocumentKind) {
-    // id validado como UUID en el controlador → sin path traversal.
-    return join(PRIVATE_UPLOADS, 'onboarding', id, kind);
   }
 }
