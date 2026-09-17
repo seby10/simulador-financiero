@@ -1,0 +1,2438 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/institution": {
+      "get": {
+        "operationId": "InstitutionController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Seed no ejecutado"
+          }
+        },
+        "summary": "Configuración institucional y marca (público).",
+        "tags": [
+          "Institución"
+        ]
+      },
+      "put": {
+        "operationId": "InstitutionController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInstitutionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Reemplaza los datos institucionales.",
+        "tags": [
+          "Institución"
+        ]
+      }
+    },
+    "/api/institution/logo": {
+      "post": {
+        "operationId": "InstitutionController_uploadLogo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadLogoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Archivo ausente o no es PNG/JPEG"
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Sube el logo institucional (PNG/JPEG).",
+        "tags": [
+          "Institución"
+        ]
+      }
+    },
+    "/api/credit/types": {
+      "get": {
+        "operationId": "CreditController_listTypes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditTypeResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lista los tipos de crédito (público).",
+        "tags": [
+          "Crédito"
+        ]
+      },
+      "post": {
+        "operationId": "CreditController_createType",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCreditTypeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "409": {
+            "description": "Nombre duplicado"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Crea un tipo de crédito.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/credit/types/{id}": {
+      "get": {
+        "operationId": "CreditController_getType",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "summary": "Obtiene un tipo de crédito (público).",
+        "tags": [
+          "Crédito"
+        ]
+      },
+      "patch": {
+        "operationId": "CreditController_updateType",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCreditTypeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Actualiza parcialmente un tipo de crédito.",
+        "tags": [
+          "Crédito"
+        ]
+      },
+      "delete": {
+        "operationId": "CreditController_deleteType",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Elimina un tipo de crédito.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/credit/fees": {
+      "get": {
+        "operationId": "CreditController_listFees",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IndirectFeeResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lista los cargos indirectos (público, para elegir opcionales).",
+        "tags": [
+          "Crédito"
+        ]
+      },
+      "post": {
+        "operationId": "CreditController_createFee",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIndirectFeeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndirectFeeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "409": {
+            "description": "Nombre duplicado"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Crea un cargo indirecto.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/credit/fees/{id}": {
+      "get": {
+        "operationId": "CreditController_getFee",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndirectFeeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "summary": "Obtiene un cargo indirecto (público).",
+        "tags": [
+          "Crédito"
+        ]
+      },
+      "patch": {
+        "operationId": "CreditController_updateFee",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIndirectFeeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndirectFeeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Actualiza parcialmente un cargo indirecto.",
+        "tags": [
+          "Crédito"
+        ]
+      },
+      "delete": {
+        "operationId": "CreditController_deleteFee",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndirectFeeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Elimina un cargo indirecto.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/credit/simulate": {
+      "post": {
+        "operationId": "CreditController_simulate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateCreditDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditSimulationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Monto/plazo fuera de rango o cargos inexistentes"
+          },
+          "404": {
+            "description": "Tipo de crédito inexistente"
+          }
+        },
+        "summary": "Genera la tabla de amortización (Francés o Alemán) con cargos y resumen.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/credit/simulate/pdf": {
+      "post": {
+        "operationId": "CreditController_simulatePdf",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateCreditDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros fuera de rango del producto"
+          }
+        },
+        "summary": "Tabla de amortización en PDF con membrete institucional y firmas.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/investment/plans": {
+      "get": {
+        "operationId": "InvestmentController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvestmentPlanResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lista las pólizas a plazo fijo (público).",
+        "tags": [
+          "Inversión"
+        ]
+      },
+      "post": {
+        "operationId": "InvestmentController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvestmentPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "409": {
+            "description": "Nombre duplicado"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Crea una póliza.",
+        "tags": [
+          "Inversión"
+        ]
+      }
+    },
+    "/api/investment/plans/{id}": {
+      "get": {
+        "operationId": "InvestmentController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentPlanResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "summary": "Obtiene una póliza (público).",
+        "tags": [
+          "Inversión"
+        ]
+      },
+      "patch": {
+        "operationId": "InvestmentController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInvestmentPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Actualiza parcialmente una póliza.",
+        "tags": [
+          "Inversión"
+        ]
+      },
+      "delete": {
+        "operationId": "InvestmentController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "La póliza tiene solicitudes"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Elimina una póliza sin solicitudes asociadas.",
+        "tags": [
+          "Inversión"
+        ]
+      }
+    },
+    "/api/investment/simulate": {
+      "post": {
+        "operationId": "InvestmentController_simulate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateInvestmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentSimulationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Monto/plazo fuera de rango o modalidad no permitida"
+          },
+          "404": {
+            "description": "Póliza inexistente"
+          }
+        },
+        "summary": "Proyecta interés bruto, retención, pagos mensuales y total a recibir (base 360).",
+        "tags": [
+          "Inversión"
+        ]
+      }
+    },
+    "/api/investment/simulate/pdf": {
+      "post": {
+        "operationId": "InvestmentController_simulatePdf",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateInvestmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros fuera de rango del producto"
+          }
+        },
+        "summary": "Certificado de simulación en PDF.",
+        "tags": [
+          "Inversión"
+        ]
+      }
+    },
+    "/api/onboarding/apply": {
+      "post": {
+        "operationId": "OnboardingController_apply",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o fuera de rango de la póliza"
+          },
+          "404": {
+            "description": "Póliza inexistente"
+          }
+        },
+        "summary": "Registra una solicitud de inversión (estado PENDING_REVIEW).",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/{id}/documents": {
+      "post": {
+        "operationId": "OnboardingController_uploadDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadDocumentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sin archivos, campo desconocido o tipo no permitido"
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta"
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          }
+        },
+        "summary": "Carga cédula (frontal/reverso) y planilla de servicio. Se puede repetir mientras esté pendiente.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/{id}/biometrics": {
+      "post": {
+        "operationId": "OnboardingController_biometrics",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiometricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Faltan documentos o la captura no es JPEG/PNG"
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta"
+          }
+        },
+        "summary": "Verificación biométrica simulada (liveness + face match); aprueba la solicitud.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/applications": {
+      "get": {
+        "operationId": "OnboardingController_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Lista solicitudes, opcionalmente filtradas por estado.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/applications/{id}": {
+      "get": {
+        "operationId": "OnboardingController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Detalle de una solicitud.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/applications/{id}/documents/{kind}": {
+      "get": {
+        "operationId": "OnboardingController_document",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "idFront",
+                "idBack",
+                "utilityBill"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key ausente o inválida"
+          },
+          "404": {
+            "description": "Solicitud o documento inexistente"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "summary": "Descarga un documento cargado (datos personales: solo administradores).",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Simulador Financiero API",
+    "description": "Simulación de créditos (Francés/Alemán), pólizas a plazo fijo y onboarding digital. Montos y tasas viajan como string decimal; las tasas están en porcentaje. Las rutas administrativas requieren la cabecera `x-admin-key`.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "admin": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-admin-key"
+      }
+    },
+    "schemas": {
+      "InstitutionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Siempre 1 (configuración única)."
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Ruta pública del logo.",
+            "example": "/uploads/institution/logo-3f1c.png"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "institutionName": {
+            "type": "string",
+            "example": "Cooperativa de Ahorro y Crédito Andina",
+            "maxLength": 200
+          },
+          "ruc": {
+            "type": "string",
+            "example": "1790000000001",
+            "pattern": "^\\d{13}$"
+          },
+          "legalRepresentative": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "phone": {
+            "type": "string",
+            "example": "+593 2 250 0000",
+            "pattern": "^\\+?[\\d\\s-]{7,20}$"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "disclaimerText": {
+            "type": "string",
+            "description": "Texto legal impreso en los PDF.",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "id",
+          "logoUrl",
+          "updatedAt",
+          "institutionName",
+          "ruc",
+          "legalRepresentative",
+          "address",
+          "phone",
+          "email",
+          "disclaimerText"
+        ]
+      },
+      "UpdateInstitutionDto": {
+        "type": "object",
+        "properties": {
+          "institutionName": {
+            "type": "string",
+            "example": "Cooperativa de Ahorro y Crédito Andina",
+            "maxLength": 200
+          },
+          "ruc": {
+            "type": "string",
+            "example": "1790000000001",
+            "pattern": "^\\d{13}$"
+          },
+          "legalRepresentative": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "phone": {
+            "type": "string",
+            "example": "+593 2 250 0000",
+            "pattern": "^\\+?[\\d\\s-]{7,20}$"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "disclaimerText": {
+            "type": "string",
+            "description": "Texto legal impreso en los PDF.",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "institutionName",
+          "ruc",
+          "legalRepresentative",
+          "address",
+          "phone",
+          "email",
+          "disclaimerText"
+        ]
+      },
+      "UploadLogoDto": {
+        "type": "object",
+        "properties": {
+          "logo": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "logo"
+        ]
+      },
+      "CreditTypeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "minAmount": {
+            "type": "string",
+            "example": "500"
+          },
+          "maxAmount": {
+            "type": "string",
+            "example": "30000"
+          },
+          "minTermMonths": {
+            "type": "number"
+          },
+          "maxTermMonths": {
+            "type": "number"
+          },
+          "annualInterestRate": {
+            "type": "string",
+            "description": "Tasa nominal anual en %.",
+            "example": "16"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "minAmount",
+          "maxAmount",
+          "minTermMonths",
+          "maxTermMonths",
+          "annualInterestRate",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateCreditTypeDto": {
+        "type": "object",
+        "properties": {
+          "minAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "maxAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "annualInterestRate": {
+            "type": "string",
+            "description": "Decimal positivo con hasta 4 decimales (se acepta también number JSON).",
+            "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+            "example": "16.0000"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "minTermMonths": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "maxTermMonths": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 600
+          }
+        },
+        "required": [
+          "minAmount",
+          "maxAmount",
+          "annualInterestRate",
+          "name",
+          "minTermMonths",
+          "maxTermMonths"
+        ]
+      },
+      "UpdateCreditTypeDto": {
+        "type": "object",
+        "properties": {
+          "minAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "maxAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "annualInterestRate": {
+            "type": "string",
+            "description": "Decimal positivo con hasta 4 decimales (se acepta también number JSON).",
+            "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+            "example": "16.0000"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "minTermMonths": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "maxTermMonths": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 600
+          }
+        }
+      },
+      "FeeType": {
+        "type": "string",
+        "enum": [
+          "FIXED_PER_INSTALLMENT",
+          "PERCENTAGE_REMAINING_BALANCE",
+          "PERCENTAGE_INITIAL_AMOUNT"
+        ]
+      },
+      "IndirectFeeResponse": {
+        "type": "object",
+        "properties": {
+          "feeType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FeeType"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "description": "USD si FIXED_PER_INSTALLMENT; % en los demás tipos.",
+            "example": "0.06"
+          },
+          "isMandatory": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feeType",
+          "id",
+          "name",
+          "value",
+          "isMandatory",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateIndirectFeeDto": {
+        "type": "object",
+        "properties": {
+          "feeType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FeeType"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "Decimal positivo con hasta 4 decimales (se acepta también number JSON).",
+            "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+            "example": "0.0600"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "isMandatory": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "feeType",
+          "value",
+          "name",
+          "isMandatory"
+        ]
+      },
+      "UpdateIndirectFeeDto": {
+        "type": "object",
+        "properties": {
+          "feeType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FeeType"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "Decimal positivo con hasta 4 decimales (se acepta también number JSON).",
+            "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+            "example": "0.0600"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "isMandatory": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SimulateCreditDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "creditTypeId": {
+            "type": "number"
+          },
+          "termMonths": {
+            "type": "number",
+            "minimum": 1
+          },
+          "method": {
+            "enum": [
+              "FRENCH",
+              "GERMAN"
+            ],
+            "type": "string"
+          },
+          "optionalFeeIds": {
+            "description": "Cargos opcionales elegidos por el cliente; los obligatorios se aplican siempre.",
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "amount",
+          "creditTypeId",
+          "termMonths",
+          "method"
+        ]
+      },
+      "CreditTypeRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string",
+            "example": "Consumo"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "FeeAmountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Seguro de Desgravamen"
+          },
+          "amount": {
+            "type": "string",
+            "example": "6.00"
+          }
+        },
+        "required": [
+          "name",
+          "amount"
+        ]
+      },
+      "AmortizationSummaryDto": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "FRENCH",
+              "GERMAN"
+            ]
+          },
+          "principal": {
+            "type": "string"
+          },
+          "termMonths": {
+            "type": "number"
+          },
+          "nominalAnnualRatePct": {
+            "type": "string",
+            "example": "16.0000"
+          },
+          "effectiveAnnualRatePct": {
+            "type": "string",
+            "example": "17.2271"
+          },
+          "firstPayment": {
+            "type": "string"
+          },
+          "lastPayment": {
+            "type": "string"
+          },
+          "totalPrincipal": {
+            "type": "string"
+          },
+          "totalInterest": {
+            "type": "string"
+          },
+          "totalPeriodicFees": {
+            "type": "string"
+          },
+          "upfrontFees": {
+            "description": "Cargos de cobro único descontados del desembolso.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeAmountDto"
+            }
+          },
+          "totalUpfrontFees": {
+            "type": "string"
+          },
+          "netDisbursement": {
+            "type": "string",
+            "description": "Monto líquido recibido."
+          },
+          "totalCreditCost": {
+            "type": "string",
+            "description": "Intereses + todos los cargos."
+          },
+          "totalPaid": {
+            "type": "string",
+            "description": "Capital + intereses + todos los cargos."
+          }
+        },
+        "required": [
+          "method",
+          "principal",
+          "termMonths",
+          "nominalAnnualRatePct",
+          "effectiveAnnualRatePct",
+          "firstPayment",
+          "lastPayment",
+          "totalPrincipal",
+          "totalInterest",
+          "totalPeriodicFees",
+          "upfrontFees",
+          "totalUpfrontFees",
+          "netDisbursement",
+          "totalCreditCost",
+          "totalPaid"
+        ]
+      },
+      "AmortizationRowDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "number"
+          },
+          "openingBalance": {
+            "type": "string",
+            "example": "10000.00"
+          },
+          "principal": {
+            "type": "string",
+            "example": "773.98"
+          },
+          "interest": {
+            "type": "string",
+            "example": "133.33"
+          },
+          "installment": {
+            "type": "string",
+            "description": "Capital + interés.",
+            "example": "907.31"
+          },
+          "fees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeAmountDto"
+            }
+          },
+          "feesTotal": {
+            "type": "string",
+            "example": "7.50"
+          },
+          "totalPayment": {
+            "type": "string",
+            "description": "Cuota + cargos del período.",
+            "example": "914.81"
+          },
+          "closingBalance": {
+            "type": "string",
+            "example": "9226.02"
+          }
+        },
+        "required": [
+          "period",
+          "openingBalance",
+          "principal",
+          "interest",
+          "installment",
+          "fees",
+          "feesTotal",
+          "totalPayment",
+          "closingBalance"
+        ]
+      },
+      "CreditSimulationResponse": {
+        "type": "object",
+        "properties": {
+          "creditType": {
+            "$ref": "#/components/schemas/CreditTypeRefDto"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AmortizationSummaryDto"
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AmortizationRowDto"
+            }
+          }
+        },
+        "required": [
+          "creditType",
+          "summary",
+          "schedule"
+        ]
+      },
+      "InvestmentPlanResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string",
+            "example": "Póliza Rendimiento"
+          },
+          "minAmount": {
+            "type": "string",
+            "example": "1000"
+          },
+          "maxAmount": {
+            "type": "string",
+            "example": "1000000"
+          },
+          "termMinDays": {
+            "type": "number"
+          },
+          "termMaxDays": {
+            "type": "number"
+          },
+          "tea": {
+            "type": "string",
+            "description": "Tasa Efectiva Anual en %.",
+            "example": "8.5"
+          },
+          "allowsMonthlyPayout": {
+            "type": "boolean"
+          },
+          "requiredDocuments": {
+            "example": [
+              "idFront",
+              "idBack",
+              "utilityBill"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "minAmount",
+          "maxAmount",
+          "termMinDays",
+          "termMaxDays",
+          "tea",
+          "allowsMonthlyPayout",
+          "requiredDocuments",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateInvestmentPlanDto": {
+        "type": "object",
+        "properties": {
+          "minAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "maxAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "tea": {
+            "type": "string",
+            "description": "Decimal positivo con hasta 4 decimales (se acepta también number JSON).",
+            "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+            "example": "8.5000"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "termMinDays": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "termMaxDays": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "allowsMonthlyPayout": {
+            "type": "boolean"
+          },
+          "requiredDocuments": {
+            "description": "Documentos exigidos antes de la biometría (campos de carga multipart).",
+            "example": [
+              "idFront",
+              "idBack",
+              "utilityBill"
+            ],
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "minAmount",
+          "maxAmount",
+          "tea",
+          "name",
+          "termMinDays",
+          "termMaxDays",
+          "allowsMonthlyPayout"
+        ]
+      },
+      "UpdateInvestmentPlanDto": {
+        "type": "object",
+        "properties": {
+          "minAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "maxAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "tea": {
+            "type": "string",
+            "description": "Decimal positivo con hasta 4 decimales (se acepta también number JSON).",
+            "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+            "example": "8.5000"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "termMinDays": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "termMaxDays": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "allowsMonthlyPayout": {
+            "type": "boolean"
+          },
+          "requiredDocuments": {
+            "description": "Documentos exigidos antes de la biometría (campos de carga multipart).",
+            "example": [
+              "idFront",
+              "idBack",
+              "utilityBill"
+            ],
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PayoutMethod": {
+        "type": "string",
+        "enum": [
+          "AT_MATURITY",
+          "MONTHLY"
+        ]
+      },
+      "SimulateInvestmentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "payoutMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutMethod"
+              }
+            ]
+          },
+          "planId": {
+            "type": "number"
+          },
+          "termDays": {
+            "type": "number",
+            "example": 270,
+            "minimum": 1
+          }
+        },
+        "required": [
+          "amount",
+          "payoutMethod",
+          "planId",
+          "termDays"
+        ]
+      },
+      "InvestmentPlanRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "PayoutRowDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "number"
+          },
+          "day": {
+            "type": "number",
+            "description": "Día del plazo en que se realiza el pago."
+          },
+          "grossInterest": {
+            "type": "string",
+            "example": "177.08"
+          },
+          "withholding": {
+            "type": "string",
+            "example": "3.54"
+          },
+          "netInterest": {
+            "type": "string",
+            "example": "173.54"
+          },
+          "capitalReturned": {
+            "type": "string",
+            "example": "0.00"
+          },
+          "totalPayment": {
+            "type": "string",
+            "example": "173.54"
+          }
+        },
+        "required": [
+          "period",
+          "day",
+          "grossInterest",
+          "withholding",
+          "netInterest",
+          "capitalReturned",
+          "totalPayment"
+        ]
+      },
+      "InvestmentSimulationResponse": {
+        "type": "object",
+        "properties": {
+          "payoutMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutMethod"
+              }
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/InvestmentPlanRefDto"
+          },
+          "amount": {
+            "type": "string",
+            "example": "25000.00"
+          },
+          "teaPct": {
+            "type": "string",
+            "example": "8.5000"
+          },
+          "termDays": {
+            "type": "number"
+          },
+          "grossInterest": {
+            "type": "string",
+            "description": "Capital × TEA/360 × días.",
+            "example": "1593.75"
+          },
+          "withholdingRatePct": {
+            "type": "string",
+            "example": "2.00"
+          },
+          "withholding": {
+            "type": "string",
+            "example": "31.86"
+          },
+          "netInterest": {
+            "type": "string",
+            "example": "1561.89"
+          },
+          "monthlyPayment": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pago neto mensual (solo modalidad MONTHLY).",
+            "example": "173.54"
+          },
+          "totalToReceive": {
+            "type": "string",
+            "example": "26561.89"
+          },
+          "payoutSchedule": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayoutRowDto"
+            }
+          }
+        },
+        "required": [
+          "payoutMethod",
+          "plan",
+          "amount",
+          "teaPct",
+          "termDays",
+          "grossInterest",
+          "withholdingRatePct",
+          "withholding",
+          "netInterest",
+          "monthlyPayment",
+          "totalToReceive",
+          "payoutSchedule"
+        ]
+      },
+      "ApplyDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$",
+            "example": "10000.00",
+            "description": "Decimal positivo con hasta 2 decimales (se acepta también number JSON)."
+          },
+          "payoutMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutMethod"
+              }
+            ]
+          },
+          "applicantFullName": {
+            "type": "string",
+            "example": "María José Andrade",
+            "maxLength": 200
+          },
+          "applicantIdNumber": {
+            "type": "string",
+            "description": "Cédula ecuatoriana (10 dígitos, verificador módulo 10).",
+            "example": "1710034065"
+          },
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string",
+            "example": "0991234567",
+            "pattern": "^\\+?\\d{7,15}$"
+          },
+          "sourceOfFunds": {
+            "type": "string",
+            "example": "Ahorros de relación de dependencia",
+            "maxLength": 500
+          },
+          "investmentPlanId": {
+            "type": "number"
+          },
+          "termDays": {
+            "type": "number",
+            "example": 270,
+            "minimum": 1
+          }
+        },
+        "required": [
+          "amount",
+          "payoutMethod",
+          "applicantFullName",
+          "applicantIdNumber",
+          "email",
+          "phone",
+          "sourceOfFunds",
+          "investmentPlanId",
+          "termDays"
+        ]
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING_REVIEW",
+          "APPROVED",
+          "REJECTED"
+        ]
+      },
+      "ApplicationPlanRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tea": {
+            "type": "string",
+            "example": "8.5"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tea"
+        ]
+      },
+      "InvestmentApplicationWithPlanResponse": {
+        "type": "object",
+        "properties": {
+          "payoutMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutMethod"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "documentUrls": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Tipo de documento → URL de descarga (requiere credencial de administrador).",
+            "example": {
+              "idFront": "/api/onboarding/applications/ce64e373-f776-4b61-8bf0-78a19bb86da4/documents/idFront"
+            }
+          },
+          "investmentPlan": {
+            "$ref": "#/components/schemas/ApplicationPlanRefDto"
+          },
+          "id": {
+            "type": "string",
+            "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
+          },
+          "applicantFullName": {
+            "type": "string"
+          },
+          "applicantIdNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sourceOfFunds": {
+            "type": "string"
+          },
+          "investmentPlanId": {
+            "type": "number"
+          },
+          "amount": {
+            "type": "string",
+            "example": "15000"
+          },
+          "termDays": {
+            "type": "number"
+          },
+          "biometricScore": {
+            "type": "string",
+            "nullable": true,
+            "example": "95.07"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payoutMethod",
+          "status",
+          "documentUrls",
+          "investmentPlan",
+          "id",
+          "applicantFullName",
+          "applicantIdNumber",
+          "email",
+          "phone",
+          "sourceOfFunds",
+          "investmentPlanId",
+          "amount",
+          "termDays",
+          "biometricScore",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UploadDocumentsDto": {
+        "type": "object",
+        "properties": {
+          "idFront": {
+            "type": "string",
+            "format": "binary"
+          },
+          "idBack": {
+            "type": "string",
+            "format": "binary"
+          },
+          "utilityBill": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      },
+      "InvestmentApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "payoutMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutMethod"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "documentUrls": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Tipo de documento → URL de descarga (requiere credencial de administrador).",
+            "example": {
+              "idFront": "/api/onboarding/applications/ce64e373-f776-4b61-8bf0-78a19bb86da4/documents/idFront"
+            }
+          },
+          "id": {
+            "type": "string",
+            "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
+          },
+          "applicantFullName": {
+            "type": "string"
+          },
+          "applicantIdNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sourceOfFunds": {
+            "type": "string"
+          },
+          "investmentPlanId": {
+            "type": "number"
+          },
+          "amount": {
+            "type": "string",
+            "example": "15000"
+          },
+          "termDays": {
+            "type": "number"
+          },
+          "biometricScore": {
+            "type": "string",
+            "nullable": true,
+            "example": "95.07"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payoutMethod",
+          "status",
+          "documentUrls",
+          "id",
+          "applicantFullName",
+          "applicantIdNumber",
+          "email",
+          "phone",
+          "sourceOfFunds",
+          "investmentPlanId",
+          "amount",
+          "termDays",
+          "biometricScore",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "BiometricsDto": {
+        "type": "object",
+        "properties": {
+          "selfieBase64": {
+            "type": "string",
+            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
+            "example": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+            "maxLength": 7000000
+          }
+        },
+        "required": [
+          "selfieBase64"
+        ]
+      },
+      "BiometricChecksDto": {
+        "type": "object",
+        "properties": {
+          "liveness": {
+            "type": "string",
+            "example": "PASSED"
+          },
+          "faceMatch": {
+            "type": "string",
+            "example": "MATCH"
+          }
+        },
+        "required": [
+          "liveness",
+          "faceMatch"
+        ]
+      },
+      "BiometricsResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "applicationId": {
+            "type": "string"
+          },
+          "biometricScore": {
+            "type": "string",
+            "nullable": true,
+            "example": "95.07"
+          },
+          "checks": {
+            "$ref": "#/components/schemas/BiometricChecksDto"
+          }
+        },
+        "required": [
+          "status",
+          "applicationId",
+          "biometricScore",
+          "checks"
+        ]
+      }
+    }
+  }
+}
