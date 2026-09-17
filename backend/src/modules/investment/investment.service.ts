@@ -1,6 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { assertMinMax, assertRange } from '../../common/http.js';
-import { simulateInvestment } from '../../common/math/financial-math.js';
+import {
+  PAYOUT_PERIOD_DAYS,
+  simulateInvestment,
+} from '../../common/math/financial-math.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { InvestmentPlan } from '../../generated/prisma/client.js';
 import {
@@ -43,6 +46,12 @@ export class InvestmentService {
     if (dto.payoutMethod === 'MONTHLY' && !plan.allowsMonthlyPayout) {
       throw new BadRequestException(
         'El plan no permite pago mensual de intereses',
+      );
+    }
+    // Misma regla que el motor: onboarding no ejecuta la simulación.
+    if (dto.payoutMethod === 'MONTHLY' && dto.termDays < PAYOUT_PERIOD_DAYS) {
+      throw new BadRequestException(
+        `El pago mensual requiere un plazo >= ${PAYOUT_PERIOD_DAYS} días`,
       );
     }
     return plan;
