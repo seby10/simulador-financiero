@@ -26,7 +26,8 @@ export class CreateInvestmentPlanDto {
   @IsInt() @Min(1) @Max(3650) termMinDays: number;
   @IsInt() @Min(1) @Max(3650) termMaxDays: number;
   /** Tasa Efectiva Anual en %. */
-  @IsDecimalString(4, '8.5000') tea: string;
+  @IsDecimalString({ decimals: 4, integerDigits: 3, example: '8.5000' })
+  tea: string;
   @IsBoolean() allowsMonthlyPayout: boolean;
   /**
    * Documentos exigidos antes de la biometría (campos de carga multipart).

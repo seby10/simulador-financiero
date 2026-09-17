@@ -27,22 +27,26 @@ import { D, DecimalInput } from './math/decimal.util.js';
 /**
  * Monto/tasa positiva como string decimal. Acepta number JSON y lo convierte a string
  * antes de validar, para que nunca viaje como float hacia el motor financiero.
+ * `integerDigits` + `decimals` deben coincidir con la columna Decimal(p, s) de Prisma.
  */
-export const IsDecimalString = (maxDecimals = 2, example = '10000.00') => {
-  const pattern = `^\\d{1,12}(\\.\\d{1,${maxDecimals}})?$`;
+export const IsDecimalString = ({
+  decimals = 2,
+  integerDigits = 12,
+  example = '10000.00',
+} = {}) => {
+  const pattern = `^\\d{1,${integerDigits}}(\\.\\d{1,${decimals}})?$`;
+  const rule = `número positivo con hasta ${integerDigits} enteros y ${decimals} decimales`;
   return applyDecorators(
     ApiProperty({
       type: String,
       pattern,
       example,
-      description: `Decimal positivo con hasta ${maxDecimals} decimales (se acepta también number JSON).`,
+      description: `Decimal: ${rule} (se acepta también number JSON).`,
     }),
     Transform(({ value }) =>
       typeof value === 'number' ? value.toString() : value,
     ),
-    Matches(new RegExp(pattern), {
-      message: `$property debe ser un número positivo con hasta ${maxDecimals} decimales`,
-    }),
+    Matches(new RegExp(pattern), { message: `$property debe ser un ${rule}` }),
   );
 };
 
@@ -64,6 +68,9 @@ export function assertMinMax(
   min: DecimalInput,
   max: DecimalInput,
 ) {
+  if (D(min).lte(0)) {
+    throw new BadRequestException(`${label}: el mínimo debe ser mayor a 0`);
+  }
   if (D(min).gt(D(max))) {
     throw new BadRequestException(
       `${label}: el mínimo no puede superar al máximo`,

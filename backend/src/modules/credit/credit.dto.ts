@@ -30,7 +30,8 @@ export class CreateCreditTypeDto {
   @IsInt() @Min(1) @Max(600) minTermMonths: number;
   @IsInt() @Min(1) @Max(600) maxTermMonths: number;
   /** Tasa nominal anual en %. */
-  @IsDecimalString(4, '16.0000') annualInterestRate: string;
+  @IsDecimalString({ decimals: 4, integerDigits: 3, example: '16.0000' })
+  annualInterestRate: string;
 }
 
 export class UpdateCreditTypeDto extends PartialType(CreateCreditTypeDto) {}
@@ -41,7 +42,8 @@ export class CreateIndirectFeeDto {
   @IsEnum(FeeType)
   feeType: FeeType;
   /** USD si FIXED_PER_INSTALLMENT; % en los demás tipos. */
-  @IsDecimalString(4, '0.0600') value: string;
+  @IsDecimalString({ decimals: 4, integerDigits: 8, example: '0.0600' })
+  value: string;
   @IsBoolean() isMandatory: boolean;
 }
 
