@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -19,6 +20,10 @@ import type {
 } from '../../common/math/financial-math.js';
 import { PayoutMethod } from '../../generated/prisma/enums.js';
 
+/** Documentos que el onboarding sabe recibir (campos multipart). */
+export const DOCUMENT_KINDS = ['idFront', 'idBack', 'utilityBill'] as const;
+export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
+
 export class CreateInvestmentPlanDto {
   @IsString() @IsNotEmpty() @MaxLength(100) name: string;
   @IsDecimalString() minAmount: string;
@@ -31,13 +36,18 @@ export class CreateInvestmentPlanDto {
   @IsBoolean() allowsMonthlyPayout: boolean;
   /**
    * Documentos exigidos antes de la biometría (campos de carga multipart).
-   * @example ["idFront", "idBack", "utilityBill"]
    */
+  @ApiProperty({
+    required: false,
+    isArray: true,
+    enum: DOCUMENT_KINDS,
+    example: DOCUMENT_KINDS,
+  })
   @IsOptional()
   @IsArray()
   @ArrayUnique()
-  @IsString({ each: true })
-  requiredDocuments?: string[];
+  @IsIn(DOCUMENT_KINDS, { each: true })
+  requiredDocuments?: DocumentKind[];
 }
 
 export class UpdateInvestmentPlanDto extends PartialType(
@@ -69,8 +79,8 @@ export class InvestmentPlanResponse {
   /** Tasa Efectiva Anual en %. @example "8.5" */
   tea: string;
   allowsMonthlyPayout: boolean;
-  /** @example ["idFront", "idBack", "utilityBill"] */
-  requiredDocuments: string[];
+  @ApiProperty({ isArray: true, enum: DOCUMENT_KINDS })
+  requiredDocuments: DocumentKind[];
   createdAt: Date;
   updatedAt: Date;
 }

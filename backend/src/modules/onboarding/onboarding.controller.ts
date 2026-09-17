@@ -27,6 +27,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminOnly } from '../../common/auth.js';
 import { MAX_UPLOAD_BYTES } from '../../common/http.js';
+import { DOCUMENT_KINDS } from '../investment/investment.dto.js';
 import {
   ApplyDto,
   BiometricsDto,
@@ -36,11 +37,7 @@ import {
   ListApplicationsQuery,
   UploadDocumentsDto,
 } from './onboarding.dto.js';
-import {
-  DOCUMENT_KINDS,
-  OnboardingService,
-  type DocumentFiles,
-} from './onboarding.service.js';
+import { OnboardingService, type DocumentFiles } from './onboarding.service.js';
 
 const uuid = new ParseUUIDPipe({ version: '4' });
 

@@ -16,11 +16,13 @@ import {
 } from '../../common/http.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { ApplicationStatus } from '../../generated/prisma/enums.js';
+import {
+  DOCUMENT_KINDS,
+  type DocumentKind,
+} from '../investment/investment.dto.js';
 import { InvestmentService } from '../investment/investment.service.js';
 import { ApplyDto, BiometricsDto } from './onboarding.dto.js';
 
-export const DOCUMENT_KINDS = ['idFront', 'idBack', 'utilityBill'] as const;
-export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
 export type DocumentFiles = Partial<
   Record<DocumentKind, Express.Multer.File[]>
 >;
