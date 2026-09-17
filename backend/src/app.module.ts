@@ -1,21 +1,20 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
-
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+import { APP_FILTER } from '@nestjs/core';
+import { DomainExceptionFilter } from './common/http.js';
+import { PrismaModule } from './database/prisma.service.js';
+import { CreditModule } from './modules/credit/credit.module.js';
+import { InstitutionModule } from './modules/institution/institution.module.js';
+import { InvestmentModule } from './modules/investment/investment.module.js';
+import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
 
 @Module({
   imports: [
-    // Distributed tracing, auto-correlated logs, request/job metrics, error
-    // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
-    ObserveModule.forRoot({
-      appKey: 'YOUR_APP_KEY',
-      appSecret: 'YOUR_APP_SECRET',
-      serviceId: 'backend',
-    }),
+    PrismaModule,
+    InstitutionModule,
+    CreditModule,
+    InvestmentModule,
+    OnboardingModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  providers: [{ provide: APP_FILTER, useClass: DomainExceptionFilter }],
 })
 export class AppModule {}

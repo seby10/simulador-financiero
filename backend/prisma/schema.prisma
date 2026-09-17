@@ -1,0 +1,104 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Todas las tasas se almacenan en porcentaje (16.0000 = 16 %).
+
+model InstitutionConfig {
+  id                  Int      @id @default(1)
+  institutionName     String
+  ruc                 String   @db.VarChar(13)
+  legalRepresentative String
+  address             String
+  phone               String
+  email               String
+  logoUrl             String?
+  disclaimerText      String
+  updatedAt           DateTime @updatedAt
+}
+
+model CreditType {
+  id                 Int      @id @default(autoincrement())
+  name               String   @unique
+  description        String?
+  minAmount          Decimal  @db.Decimal(14, 2)
+  maxAmount          Decimal  @db.Decimal(14, 2)
+  minTermMonths      Int
+  maxTermMonths      Int
+  /// Tasa nominal anual (%). La efectiva se deriva: (1 + r/12)^12 - 1
+  annualInterestRate Decimal  @db.Decimal(7, 4)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+enum FeeType {
+  FIXED_PER_INSTALLMENT
+  PERCENTAGE_REMAINING_BALANCE
+  PERCENTAGE_INITIAL_AMOUNT
+}
+
+model IndirectFee {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  feeType     FeeType
+  /// USD si FIXED_PER_INSTALLMENT, porcentaje en los demás casos
+  value       Decimal  @db.Decimal(12, 4)
+  isMandatory Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model InvestmentPlan {
+  id                  Int                     @id @default(autoincrement())
+  name                String                  @unique
+  minAmount           Decimal                 @db.Decimal(14, 2)
+  maxAmount           Decimal                 @db.Decimal(14, 2)
+  termMinDays         Int
+  termMaxDays         Int
+  /// Tasa Efectiva Anual (%)
+  tea                 Decimal                 @db.Decimal(7, 4)
+  allowsMonthlyPayout Boolean                 @default(false)
+  requiredDocuments   Json                    @default("[]")
+  applications        InvestmentApplication[]
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+}
+
+enum PayoutMethod {
+  AT_MATURITY
+  MONTHLY
+}
+
+enum ApplicationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model InvestmentApplication {
+  id                String            @id @default(uuid())
+  applicantFullName String
+  applicantIdNumber String            @db.VarChar(10)
+  email             String
+  phone             String
+  sourceOfFunds     String
+  investmentPlan    InvestmentPlan    @relation(fields: [investmentPlanId], references: [id], onDelete: Restrict)
+  investmentPlanId  Int
+  amount            Decimal           @db.Decimal(14, 2)
+  termDays          Int
+  payoutMethod      PayoutMethod
+  status            ApplicationStatus @default(PENDING_REVIEW)
+  biometricScore    Decimal?          @db.Decimal(5, 2)
+  documentUrls      Json              @default("{}")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([status])
+}
