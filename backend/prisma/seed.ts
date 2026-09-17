@@ -1,4 +1,5 @@
 import { createPrismaClient } from '../src/database/prisma.service.js';
+import { hashPassword } from '../src/modules/auth/password.js';
 
 try {
   process.loadEnvFile();
@@ -121,6 +122,33 @@ const institution = {
     'Simulación referencial sin valor contractual. Los valores definitivos se establecen al momento de la aprobación y están sujetos a las políticas de la institución y a la normativa de la Superintendencia de Economía Popular y Solidaria.',
 };
 
+/**
+ * Administrador inicial. La contraseña nunca se codifica en el repositorio: si
+ * ADMIN_SEED_PASSWORD no está definida, el seed simplemente no crea la cuenta.
+ */
+async function seedAdmin() {
+  const email = process.env.ADMIN_SEED_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_SEED_PASSWORD;
+  if (!email || !password) {
+    console.log(
+      'Sin ADMIN_SEED_EMAIL/ADMIN_SEED_PASSWORD: no se creó usuario administrador',
+    );
+    return;
+  }
+  // update vacío: re-ejecutar el seed no pisa la contraseña de un admin existente.
+  await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: {
+      email,
+      fullName: process.env.ADMIN_SEED_NAME ?? 'Administrador',
+      passwordHash: await hashPassword(password),
+      role: 'ADMIN',
+    },
+  });
+  console.log(`Administrador listo: ${email}`);
+}
+
 async function main() {
   await prisma.institutionConfig.upsert({
     where: { id: 1 },
@@ -149,6 +177,7 @@ async function main() {
       create: data,
     });
   }
+  await seedAdmin();
   console.log('Seed completado');
 }
 

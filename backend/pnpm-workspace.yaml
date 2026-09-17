@@ -1,0 +1,19 @@
+# node_modules plano, como el de npm.
+nodeLinker: hoisted
+
+# @angular-devkit/schematics fija ora 9.4.1 (ESM puro) y la carga con require()
+# desde CJS. En Node 22 eso revienta con ERR_REQUIRE_CYCLE_MODULE y tumba el CLI
+# de Nest entero (`nest build`, `nest start`, hasta `nest --version`). ora 5 es
+# la última CJS y solo dibuja spinners, así que bajarla no cambia nada más.
+overrides:
+  ora: 5.4.1
+
+# pnpm 10+ bloquea los scripts de instalación salvo los que se aprueben aquí.
+# Prisma genera su cliente en postinstall y esbuild descarga su binario: sin
+# estos, `prisma generate` y vitest no funcionan.
+# Telemetría de Scarf: se deja sin ejecutar a propósito.
+allowBuilds:
+  '@prisma/engines': true
+  '@scarf/scarf': false
+  esbuild: true
+  prisma: true

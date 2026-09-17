@@ -1,6 +1,212 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El correo ya está registrado"
+          }
+        },
+        "summary": "Crea la cuenta (rol CUSTOMER) y deja la sesión abierta.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Correo o contraseña incorrectos"
+          },
+          "403": {
+            "description": "La cuenta está desactivada"
+          }
+        },
+        "summary": "Inicia sesión y emite las cookies httpOnly.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie, token inválido, expirado o ya usado"
+          }
+        },
+        "summary": "Canjea el refresh token por uno nuevo (rotación). No lleva cuerpo: el token\nviaja en la cookie httpOnly.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Sesión cerrada (idempotente)"
+          }
+        },
+        "summary": "Revoca la familia de tokens de este dispositivo y borra las cookies.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout-all": {
+      "post": {
+        "operationId": "AuthController_logoutAll",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Todas las sesiones revocadas"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Cierra la sesión en todos los dispositivos.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Datos de la sesión actual.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/change-password": {
+      "post": {
+        "operationId": "AuthController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "La contraseña actual no coincide\n\nSesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Cambia la contraseña, revoca las demás sesiones y renueva la de aquí.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/institution": {
       "get": {
         "operationId": "InstitutionController_get",
@@ -50,15 +256,21 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Reemplaza los datos institucionales.",
@@ -96,18 +308,24 @@
             "description": "Archivo ausente o no es PNG/JPEG"
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "413": {
             "description": "Archivo mayor a 5 MB"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Sube el logo institucional (PNG/JPEG).",
@@ -165,18 +383,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "409": {
             "description": "Nombre duplicado"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Crea un tipo de crédito.",
@@ -252,18 +476,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Actualiza parcialmente un tipo de crédito.",
@@ -295,18 +525,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Elimina un tipo de crédito.",
@@ -364,18 +600,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "409": {
             "description": "Nombre duplicado"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Crea un cargo indirecto.",
@@ -451,18 +693,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Actualiza parcialmente un cargo indirecto.",
@@ -494,18 +742,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Elimina un cargo indirecto.",
@@ -637,18 +891,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "409": {
             "description": "Nombre duplicado"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Crea una póliza.",
@@ -724,18 +984,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Actualiza parcialmente una póliza.",
@@ -767,7 +1033,10 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
@@ -776,12 +1045,15 @@
             "description": "La póliza tiene solicitudes"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Elimina una póliza sin solicitudes asociadas.",
@@ -1027,15 +1299,21 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Lista solicitudes, opcionalmente filtradas por estado.",
@@ -1069,18 +1347,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Detalle de una solicitud.",
@@ -1140,18 +1424,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": "Solicitud o documento inexistente"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Descarga un documento cargado (datos personales: solo administradores).",
@@ -1163,8 +1453,8 @@
   },
   "info": {
     "title": "Simulador Financiero API",
-    "description": "Simulación de créditos (Francés/Alemán), pólizas a plazo fijo y onboarding digital. Montos y tasas viajan como string decimal; las tasas están en porcentaje. Las rutas administrativas requieren la cabecera `x-admin-key`.",
-    "version": "1.0.0",
+    "description": "Simulación de créditos (Francés/Alemán), pólizas a plazo fijo y onboarding digital. Montos y tasas viajan como string decimal; las tasas están en porcentaje. La sesión se gestiona con cookies httpOnly emitidas por `/api/auth`. Las rutas administrativas aceptan una sesión con rol ADMIN o la cabecera `x-admin-key`.",
+    "version": "1.1.0",
     "contact": {}
   },
   "tags": [],
@@ -1175,9 +1465,143 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-admin-key"
+      },
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
       }
     },
     "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "María José Andrade",
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "description": "Mínimo 12 caracteres.",
+            "example": "cafe-con-pan-1892",
+            "minLength": 12,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "fullName",
+          "email",
+          "password"
+        ]
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "CUSTOMER",
+          "ADMIN"
+        ]
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "example": "9f1c0b6e-4f7a-4f5e-9a1d-8d4a2f6b3c11"
+          },
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "id",
+          "email",
+          "fullName",
+          "isActive",
+          "createdAt"
+        ]
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          },
+          "accessTokenExpiresIn": {
+            "type": "number",
+            "description": "Segundos de vida del access token recién emitido.",
+            "example": 900
+          }
+        },
+        "required": [
+          "user",
+          "accessTokenExpiresIn"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "example": "cafe-con-pan-1892",
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Mínimo 12 caracteres; cierra todas las sesiones abiertas.",
+            "minLength": 12,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
       "InstitutionResponse": {
         "type": "object",
         "properties": {

@@ -11,6 +11,49 @@ datasource db {
 
 // Todas las tasas se almacenan en porcentaje (16.0000 = 16 %).
 
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id           String        @id @default(uuid())
+  /// Normalizado a minúsculas antes de guardar.
+  email        String        @unique
+  /// scrypt$N$r$p$salt$hash — nunca la contraseña en claro.
+  passwordHash String
+  fullName     String
+  role         UserRole      @default(CUSTOMER)
+  isActive     Boolean       @default(true)
+  sessions     AuthSession[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+/// Un refresh token vigente por fila. La rotación crea una fila nueva en la misma
+/// familia y marca la anterior como rotada; reusar una rotada revoca la familia entera.
+model AuthSession {
+  id        String    @id @default(uuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  /// SHA-256 en hex del refresh token; el token en claro solo existe en la cookie.
+  tokenHash String    @unique
+  /// Cadena de rotación: todas las rotaciones de un login comparten familyId.
+  familyId  String
+  expiresAt DateTime
+  /// Instante en que este token fue canjeado por uno nuevo.
+  rotatedAt DateTime?
+  /// Instante en que se invalidó (logout, cambio de contraseña o reúso detectado).
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
 model InstitutionConfig {
   id                  Int      @id @default(1)
   institutionName     String

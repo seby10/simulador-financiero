@@ -1,5 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import cookieParser from 'cookie-parser';
+import { randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import request from 'supertest';
@@ -22,6 +24,8 @@ describe('API (e2e)', () => {
     }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
+    // Igual que en main.ts: sin esto los guards no ven las cookies de sesión.
+    app.use(cookieParser());
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -149,5 +153,130 @@ describe('API (e2e)', () => {
         .get('/api/onboarding/applications')
         .set('x-admin-key', process.env.ADMIN_API_KEY!)
         .expect(200));
+
+    it('rechazan una sesión de cliente sin rol ADMIN', async () => {
+      const { cookies } = await registerUser();
+      try {
+        await request(app.getHttpServer())
+          .get('/api/onboarding/applications')
+          .set('Cookie', cookies)
+          .expect(403);
+      } finally {
+        await deleteUser();
+      }
+    });
+  });
+
+  // ───────────────────────── Sesiones ─────────────────────────
+
+  let lastEmail = '';
+
+  /** Crea un usuario nuevo en cada llamada y devuelve sus cookies de sesión. */
+  const registerUser = async () => {
+    lastEmail = `e2e-${randomUUID()}@example.com`;
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        fullName: 'Prueba Sesiones',
+        email: lastEmail,
+        password: 'contrasena-larga-de-prueba',
+      })
+      .expect(201);
+    return { cookies: response.get('Set-Cookie')!, body: response.body };
+  };
+
+  const deleteUser = () =>
+    app.get(PrismaService).user.deleteMany({ where: { email: lastEmail } });
+
+  describe('autenticación', () => {
+    afterEach(() => deleteUser());
+
+    it('registra, identifica y cierra la sesión', async () => {
+      const server = app.getHttpServer();
+      const { cookies, body } = await registerUser();
+      expect(body.user).toMatchObject({ email: lastEmail, role: 'CUSTOMER' });
+      expect(body.user.passwordHash).toBeUndefined();
+
+      const { body: me } = await request(server)
+        .get('/api/auth/me')
+        .set('Cookie', cookies)
+        .expect(200);
+      expect(me.email).toBe(lastEmail);
+
+      await request(server)
+        .post('/api/auth/logout')
+        .set('Cookie', cookies)
+        .expect(204);
+      // El refresh token quedó revocado aunque el navegador conserve la cookie.
+      await request(server)
+        .post('/api/auth/refresh')
+        .set('Cookie', cookies)
+        .expect(401);
+    });
+
+    it('rechaza /me sin cookies', () =>
+      request(app.getHttpServer()).get('/api/auth/me').expect(401));
+
+    it('rechaza el registro con un correo repetido', async () => {
+      await registerUser();
+      await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send({
+          fullName: 'Duplicada',
+          email: lastEmail,
+          password: 'otra-contrasena-larga',
+        })
+        .expect(409);
+    });
+
+    it('rechaza contraseñas de menos de 12 caracteres', async () => {
+      await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send({
+          fullName: 'Corta',
+          email: `e2e-${randomUUID()}@example.com`,
+          password: 'corta123',
+        })
+        .expect(400);
+    });
+
+    it('rechaza credenciales incorrectas con el mismo error', async () => {
+      await registerUser();
+      const server = app.getHttpServer();
+      await request(server)
+        .post('/api/auth/login')
+        .send({ email: lastEmail, password: 'contrasena-equivocada' })
+        .expect(401);
+      await request(server)
+        .post('/api/auth/login')
+        .send({
+          email: `nadie-${randomUUID()}@example.com`,
+          password: 'contrasena-equivocada',
+        })
+        .expect(401);
+    });
+
+    it('rota el refresh token y revoca la familia si se reusa', async () => {
+      const server = app.getHttpServer();
+      const { cookies } = await registerUser();
+
+      const rotated = await request(server)
+        .post('/api/auth/refresh')
+        .set('Cookie', cookies)
+        .expect(200);
+      const nuevas = rotated.get('Set-Cookie')!;
+      expect(nuevas).not.toEqual(cookies);
+
+      // Reusar el token viejo delata un robo: se revoca toda la cadena.
+      await request(server)
+        .post('/api/auth/refresh')
+        .set('Cookie', cookies)
+        .expect(401);
+      // Y por eso el token nuevo, legítimo, también deja de servir.
+      await request(server)
+        .post('/api/auth/refresh')
+        .set('Cookie', nuevas)
+        .expect(401);
+    });
   });
 });
