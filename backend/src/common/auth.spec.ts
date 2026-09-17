@@ -42,8 +42,10 @@ describe('@AdminOnly', () => {
       @AdminOnly()
       handler() {}
     }
-    expect(
-      Reflect.getMetadata('__guards__', Controller.prototype.handler),
-    ).toEqual([AdminGuard]);
+    const { value: handler } = Object.getOwnPropertyDescriptor(
+      Controller.prototype,
+      'handler',
+    )!;
+    expect(Reflect.getMetadata('__guards__', handler)).toEqual([AdminGuard]);
   });
 });

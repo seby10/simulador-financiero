@@ -12,7 +12,11 @@ describe('API (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    process.loadEnvFile();
+    try {
+      process.loadEnvFile();
+    } catch {
+      // CI: variables provistas por el entorno
+    }
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
