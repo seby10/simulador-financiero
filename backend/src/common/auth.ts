@@ -7,7 +7,11 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiSecurity, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiSecurity,
+  ApiServiceUnavailableResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 import { createHash, timingSafeEqual } from 'node:crypto';
 
@@ -46,5 +50,8 @@ export const AdminOnly = () =>
     ApiSecurity(ADMIN_SECURITY),
     ApiUnauthorizedResponse({
       description: `Cabecera ${ADMIN_KEY_HEADER} ausente o inválida`,
+    }),
+    ApiServiceUnavailableResponse({
+      description: 'ADMIN_API_KEY no configurada en el servidor',
     }),
   );
