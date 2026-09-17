@@ -69,7 +69,7 @@ export class OnboardingService {
   }
 
   async uploadDocuments(id: string, files: DocumentFiles = {}) {
-    const application = await this.getPending(id);
+    await this.getPending(id);
     const uploads = DOCUMENT_KINDS.flatMap((kind) => {
       const file = files[kind]?.[0];
       return file ? [{ kind, file }] : [];
@@ -89,18 +89,24 @@ export class OnboardingService {
       ),
     );
 
-    const documentUrls = {
-      ...(application.documentUrls as Record<string, string>),
-      ...Object.fromEntries(
-        uploads.map(({ kind }) => [
-          kind,
-          `/api/onboarding/applications/${id}/documents/${kind}`,
-        ]),
-      ),
-    };
-    return this.prisma.investmentApplication.update({
+    const patch = Object.fromEntries(
+      uploads.map(({ kind }) => [
+        kind,
+        `/api/onboarding/applications/${id}/documents/${kind}`,
+      ]),
+    );
+    // Merge atómico en Postgres (jsonb ||): cargas concurrentes no se pisan entre sí,
+    // y el estado se verifica en la misma sentencia.
+    const updated = await this.prisma.$executeRaw`
+      UPDATE "InvestmentApplication"
+      SET "documentUrls" = "documentUrls" || ${JSON.stringify(patch)}::jsonb,
+          "updatedAt" = now()
+      WHERE id = ${id} AND status = 'PENDING_REVIEW'`;
+    if (updated === 0) {
+      throw new ConflictException('La solicitud ya fue resuelta');
+    }
+    return this.prisma.investmentApplication.findUniqueOrThrow({
       where: { id },
-      data: { documentUrls },
     });
   }
 
@@ -144,14 +150,18 @@ export class OnboardingService {
 
     // ponytail: mock sin proveedor biométrico; reemplazar por SDK real (liveness + matching).
     const biometricScore = `${90 + randomInt(10)}.${randomInt(100).toString().padStart(2, '0')}`;
-    const updated = await this.prisma.investmentApplication.update({
-      where: { id },
+    // Condicionado al estado: dos verificaciones concurrentes no aprueban dos veces.
+    const { count } = await this.prisma.investmentApplication.updateMany({
+      where: { id, status: ApplicationStatus.PENDING_REVIEW },
       data: { biometricScore, status: ApplicationStatus.APPROVED },
     });
+    if (count === 0) {
+      throw new ConflictException('La solicitud ya fue resuelta');
+    }
     return {
-      applicationId: updated.id,
-      status: updated.status,
-      biometricScore: updated.biometricScore,
+      applicationId: id,
+      status: ApplicationStatus.APPROVED,
+      biometricScore,
       checks: { liveness: 'PASSED', faceMatch: 'MATCH' },
     };
   }

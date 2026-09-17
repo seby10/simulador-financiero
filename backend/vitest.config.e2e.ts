@@ -6,5 +6,8 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    // BD remota (Neon): latencia por consulta y posible arranque en frío.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });
