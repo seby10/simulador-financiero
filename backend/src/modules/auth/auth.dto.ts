@@ -61,6 +61,23 @@ export class ChangePasswordDto {
   newPassword: string;
 }
 
+export class BiometricResetStartDto {
+  @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
+}
+
+export class BiometricResetVerifyDto {
+  @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
+  @IsString() @IsNotEmpty() selfieBase64: string;
+}
+
+export class BiometricResetConfirmDto {
+  @IsString() @IsNotEmpty() resetToken: string;
+  @IsString()
+  @MinLength(PASSWORD_MIN)
+  @MaxLength(PASSWORD_MAX)
+  newPassword: string;
+}
+
 // ───────────── Respuestas (solo documentación OpenAPI) ─────────────
 
 export class UserResponse {

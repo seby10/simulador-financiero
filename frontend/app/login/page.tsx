@@ -185,6 +185,9 @@ function LoginContent() {
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label className="text-xs font-bold uppercase text-slate-600">Contraseña</label>
+                    <Link href="/forgot-password" className="text-xs font-bold text-brand-secondary hover:underline">
+                      ¿Olvidaste tu clave?
+                    </Link>
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />

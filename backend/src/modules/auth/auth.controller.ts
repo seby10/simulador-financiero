@@ -24,6 +24,9 @@ import {
   REFRESH_COOKIE,
 } from '../../common/auth.js';
 import {
+  BiometricResetConfirmDto,
+  BiometricResetStartDto,
+  BiometricResetVerifyDto,
   ChangePasswordDto,
   LoginDto,
   RegisterDto,
@@ -42,6 +45,30 @@ const contextOf = (request: Request): SessionContext => ({
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  /** Inicia el proceso de recuperación biométrica comprobando el correo. */
+  @Post('biometric-reset/start')
+  @HttpCode(200)
+  @ApiOkResponse({ description: 'Usuario existente' })
+  biometricResetStart(@Body() dto: BiometricResetStartDto) {
+    return this.auth.biometricResetStart(dto.email);
+  }
+
+  /** Procesa la captura facial en vivo para recuperación de clave. */
+  @Post('biometric-reset/verify')
+  @HttpCode(200)
+  @ApiOkResponse({ description: 'Biometría verificada' })
+  biometricResetVerify(@Body() dto: BiometricResetVerifyDto) {
+    return this.auth.biometricResetVerify(dto.email, dto.selfieBase64);
+  }
+
+  /** Aplica la nueva contraseña si la biometría previa fue aprobada. */
+  @Post('biometric-reset/confirm')
+  @HttpCode(200)
+  @ApiOkResponse({ description: 'Contraseña actualizada' })
+  biometricResetConfirm(@Body() dto: BiometricResetConfirmDto) {
+    return this.auth.biometricResetConfirm(dto.resetToken, dto.newPassword);
+  }
 
   /** Crea la cuenta (rol CUSTOMER) y deja la sesión abierta. */
   @Post('register')
