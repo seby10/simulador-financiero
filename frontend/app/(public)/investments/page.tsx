@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Calculator, ChevronRight, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import Navbar from "@/components/navbar";
+import { API_URL } from "@/lib/api";
 
 type InvestmentPlan = {
   id: number;
@@ -48,7 +49,7 @@ export default function InvestmentsSimulatorPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/investment/plans`)
+    fetch(`${API_URL}/investment/plans`)
       .then(r => r.json())
       .then((data: InvestmentPlan[]) => {
         setPlans(data);
@@ -66,7 +67,7 @@ export default function InvestmentsSimulatorPage() {
     setResult(null);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/investment/simulate`, {
+      const res = await fetch(`${API_URL}/investment/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,7 +95,7 @@ export default function InvestmentsSimulatorPage() {
   const currentImage = activePlan?.imageUrl || "https://images.unsplash.com/photo-1579621970588-a3f5ce761694?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
+    <div className="min-h-screen font-sans text-slate-800 flex flex-col transition-colors" style={{ backgroundColor: 'var(--brand-page-bg, #f8fafc)' }}>
       <Navbar />
 
       <main className="flex-1 pb-20">
@@ -106,11 +107,14 @@ export default function InvestmentsSimulatorPage() {
         </div>
 
         <div className="max-w-6xl mx-auto px-4 -mt-12">
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col lg:flex-row">
+          <div 
+            className="rounded-3xl shadow-xl overflow-hidden flex flex-col lg:flex-row border border-slate-200/60"
+            style={{ backgroundColor: 'var(--brand-card-bg, #ffffff)' }}
+          >
             
             {/* Left Image Section */}
             <div className="lg:w-5/12 relative min-h-[300px] lg:min-h-full">
-              <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#003b70]/80 via-transparent to-transparent"></div>
+              <div className="absolute inset-0 z-10 bg-gradient-to-t from-brand-primary/80 via-transparent to-transparent"></div>
               <Image 
                 src={currentImage} 
                 alt="Inversión" 

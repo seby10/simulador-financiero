@@ -1,4 +1,12 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
+export const API_URL = typeof window === 'undefined'
+  ? (process.env.INTERNAL_API_URL || 'http://127.0.0.1:3001/api')
+  : '/api';
+
+export const UPLOADS_URL = typeof window === 'undefined'
+  ? (process.env.INTERNAL_API_URL ? process.env.INTERNAL_API_URL.replace('/api', '/uploads') : 'http://127.0.0.1:3001/uploads')
+  : '/uploads';
+
+const API_BASE_URL = API_URL;
 
 export async function fetchCreditTypes() {
   const res = await fetch(`${API_BASE_URL}/credit/types`, { cache: "no-store" });

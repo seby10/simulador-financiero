@@ -23,6 +23,13 @@ export class UpdateInstitutionDto {
   @IsString() @IsNotEmpty() @MaxLength(2000) disclaimerText: string;
   @IsString() @IsNotEmpty() @MaxLength(7) primaryColor: string;
   @IsString() @IsNotEmpty() @MaxLength(7) secondaryColor: string;
+  @IsOptional() @IsString() @MaxLength(7) accentColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) navbarBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) navbarTextColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) pageBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) cardBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) footerBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) footerTextColor?: string;
   @IsOptional() @IsString() heroImageUrl?: string;
   @IsString() @IsNotEmpty() @MaxLength(100) heroTitle: string;
   @IsString() @IsNotEmpty() @MaxLength(300) heroSubtitle: string;

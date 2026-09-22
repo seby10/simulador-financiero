@@ -65,6 +65,13 @@ model InstitutionConfig {
   logoUrl             String?
   primaryColor        String   @default("#003b70")
   secondaryColor      String   @default("#35b8db")
+  accentColor         String   @default("#10b981")
+  navbarBgColor       String   @default("#ffffff")
+  navbarTextColor     String   @default("#1e293b")
+  pageBgColor         String   @default("#f8fafc")
+  cardBgColor         String   @default("#ffffff")
+  footerBgColor       String   @default("#003b70")
+  footerTextColor     String   @default("#e2e8f0")
   heroImageUrl        String?
   heroTitle           String   @default("El respaldo financiero que necesitas.")
   heroSubtitle        String   @default("Crecemos junto a ti. Solicita tu crédito hoy mismo y simula tus pagos de forma transparente.")

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Building2, LayoutDashboard, CreditCard, PieChart, Building, Users, LogOut } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 async function verifySession() {
   const cookieStore = await cookies();
@@ -19,7 +20,7 @@ async function verifySession() {
   ].filter(Boolean).join('; ');
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+    const res = await fetch(`${API_URL}/auth/me`, {
       headers: {
         Cookie: cookieHeader,
       },

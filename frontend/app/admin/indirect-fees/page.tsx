@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, X, Save } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 type FeeTypeEnum = 'FIXED_PER_INSTALLMENT' | 'PERCENTAGE_REMAINING_BALANCE' | 'PERCENTAGE_INITIAL_AMOUNT';
 
@@ -29,7 +30,7 @@ export default function IndirectFeesAdminPage() {
 
   const fetchFees = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/credit/fees`);
+      const res = await fetch(`${API_URL}/credit/fees`);
       const data = await res.json();
       setFees(data);
     } catch (err) {
@@ -68,7 +69,7 @@ export default function IndirectFeesAdminPage() {
 
     try {
       const isEditing = !!editingFee.id;
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/credit/fees${isEditing ? `/${editingFee.id}` : ''}`;
+      const url = `${API_URL}/credit/fees${isEditing ? `/${editingFee.id}` : ''}`;
       
       const res = await fetch(url, {
         method: isEditing ? "PATCH" : "POST",
@@ -92,7 +93,7 @@ export default function IndirectFeesAdminPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("¿Seguro que deseas eliminar este cargo?")) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/credit/fees/${id}`, {
+      const res = await fetch(`${API_URL}/credit/fees/${id}`, {
         method: "DELETE",
         credentials: "include",
       });

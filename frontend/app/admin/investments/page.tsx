@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 type InvestmentPlan = {
   id: number;
@@ -26,7 +27,7 @@ export default function InvestmentsAdminPage() {
 
   const fetchPlans = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/investment/plans`);
+      const res = await fetch(`${API_URL}/investment/plans`);
       const data = await res.json();
       setPlans(data);
     } catch (err) {
@@ -70,7 +71,7 @@ export default function InvestmentsAdminPage() {
 
     try {
       const isEditing = !!editingPlan.id;
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/investment/plans${isEditing ? `/${editingPlan.id}` : ''}`;
+      const url = `${API_URL}/investment/plans${isEditing ? `/${editingPlan.id}` : ''}`;
       
       const payload = {
         ...editingPlan,
@@ -100,7 +101,7 @@ export default function InvestmentsAdminPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("¿Seguro que deseas eliminar este plan de inversión?")) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/investment/plans/${id}`, {
+      const res = await fetch(`${API_URL}/investment/plans/${id}`, {
         method: "DELETE",
         credentials: "include",
       });

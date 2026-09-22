@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, X, Save } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 type CreditType = {
   id: number;
@@ -25,7 +26,7 @@ export default function CreditsAdminPage() {
 
   const fetchCredits = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/credit/types`);
+      const res = await fetch(`${API_URL}/credit/types`);
       const data = await res.json();
       setCredits(data);
     } catch (err) {
@@ -68,7 +69,7 @@ export default function CreditsAdminPage() {
 
     try {
       const isEditing = !!editingCredit.id;
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/credit/types${isEditing ? `/${editingCredit.id}` : ''}`;
+      const url = `${API_URL}/credit/types${isEditing ? `/${editingCredit.id}` : ''}`;
       
       const res = await fetch(url, {
         method: isEditing ? "PATCH" : "POST",

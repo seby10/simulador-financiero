@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Building2, Upload, Image as ImageIcon } from "lucide-react";
+import { Save, Building2, Palette, Image as ImageIcon, Layout, Navigation, CreditCard, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/modal";
+import { API_URL } from "@/lib/api";
 
 type InstitutionConfig = {
   institutionName: string;
@@ -16,6 +17,13 @@ type InstitutionConfig = {
   disclaimerText: string;
   primaryColor: string;
   secondaryColor: string;
+  accentColor?: string;
+  navbarBgColor?: string;
+  navbarTextColor?: string;
+  pageBgColor?: string;
+  cardBgColor?: string;
+  footerBgColor?: string;
+  footerTextColor?: string;
   heroImageUrl?: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -39,7 +47,7 @@ export default function InstitutionAdminPage() {
 
   const fetchConfig = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/institution`);
+      const res = await fetch(`${API_URL}/institution`);
       if (res.ok) {
         const data = await res.json();
         setConfig(data);
@@ -61,7 +69,7 @@ export default function InstitutionAdminPage() {
     if (config.logoUrl.startsWith("http://") || config.logoUrl.startsWith("https://")) {
       return config.logoUrl;
     }
-    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${config.logoUrl}`;
+    return `${API_URL?.replace('/api', '')}${config.logoUrl}`;
   };
 
   const getHeroImageSrc = () => {
@@ -70,7 +78,7 @@ export default function InstitutionAdminPage() {
     if (config.heroImageUrl.startsWith("http://") || config.heroImageUrl.startsWith("https://")) {
       return config.heroImageUrl;
     }
-    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${config.heroImageUrl}`;
+    return `${API_URL?.replace('/api', '')}${config.heroImageUrl}`;
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -79,8 +87,8 @@ export default function InstitutionAdminPage() {
     setSaving(true);
 
     try {
-      // 1. Guardar datos de texto
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/institution`, {
+      // 1. Guardar datos de texto y colores completísimos
+      const res = await fetch(`${API_URL}/institution`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -94,6 +102,13 @@ export default function InstitutionAdminPage() {
           disclaimerText: config.disclaimerText,
           primaryColor: config.primaryColor || '#003b70',
           secondaryColor: config.secondaryColor || '#35b8db',
+          accentColor: config.accentColor || '#10b981',
+          navbarBgColor: config.navbarBgColor || '#ffffff',
+          navbarTextColor: config.navbarTextColor || '#1e293b',
+          pageBgColor: config.pageBgColor || '#f8fafc',
+          cardBgColor: config.cardBgColor || '#ffffff',
+          footerBgColor: config.footerBgColor || '#003b70',
+          footerTextColor: config.footerTextColor || '#e2e8f0',
           heroTitle: config.heroTitle || 'El respaldo financiero que necesitas.',
           heroSubtitle: config.heroSubtitle || 'Crecemos junto a ti.',
           heroImageUrl: config.heroImageUrl || '',
@@ -113,7 +128,7 @@ export default function InstitutionAdminPage() {
         const formData = new FormData();
         formData.append("logo", logoFile);
         
-        const logoRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/institution/logo`, {
+        const logoRes = await fetch(`${API_URL}/institution/logo`, {
           method: "POST",
           credentials: "include",
           body: formData,
@@ -127,7 +142,7 @@ export default function InstitutionAdminPage() {
         const formData = new FormData();
         formData.append("hero", heroFile);
 
-        const heroRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/institution/hero`, {
+        const heroRes = await fetch(`${API_URL}/institution/hero`, {
           method: "POST",
           credentials: "include",
           body: formData,
@@ -138,18 +153,20 @@ export default function InstitutionAdminPage() {
 
       setModal({ 
         isOpen: true, 
-        title: "¡Éxito!", 
-        message: "Configuración guardada correctamente. La página se actualizará automáticamente.", 
+        title: "¡Configuración Guardada!", 
+        message: "Los cambios de color, imágenes y datos institucionales se han aplicado correctamente.", 
         type: "success" 
       });
 
       await fetchConfig();
       setLogoFile(null);
       setHeroFile(null);
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      
+      // Update Next.js Server Components dynamically in this tab
+      router.refresh();
+      
+      // Trigger update in other tabs (Landing Page)
+      localStorage.setItem('institutionUpdated', Date.now().toString());
 
     } catch (err: any) {
       console.error(err);
@@ -168,17 +185,14 @@ export default function InstitutionAdminPage() {
         isOpen={modal.isOpen} 
         onClose={() => {
           setModal({...modal, isOpen: false});
-          if (modal.type === "success") {
-            window.location.reload();
-          }
         }} 
         title={modal.title} 
         message={modal.message} 
         type={modal.type} 
       />
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Configuración Institucional</h1>
-        <p className="text-slate-500 mt-1">Modifica los datos globales, logos y colores de tu Cooperativa.</p>
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Configuración & Personalización Institucional</h1>
+        <p className="text-slate-500 mt-1">Personaliza totalmente los colores, imágenes, logotipos e información global de la institución.</p>
       </div>
 
       <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -188,7 +202,7 @@ export default function InstitutionAdminPage() {
           {/* Logo Section */}
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-brand-secondary" /> Identidad Visual (Logotipo)
+              <Building2 className="w-5 h-5 text-brand-secondary" /> Logotipo Institucional
             </h3>
             <div className="flex items-center gap-8 bg-slate-50 p-6 rounded-xl border border-slate-100">
               <div className="w-32 h-32 bg-white rounded-xl shadow-inner flex items-center justify-center overflow-hidden border border-slate-200">
@@ -213,44 +227,205 @@ export default function InstitutionAdminPage() {
 
           <hr className="border-slate-100" />
 
-          {/* Colores Section */}
+          {/* Custom Palette Sections */}
           <div>
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              Colores Corporativos
+            <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+              <Palette className="w-5 h-5 text-brand-secondary" /> Personalización Completa de Colores
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Color Principal (Botones, Cabeceras)</label>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="color" 
-                    value={config.primaryColor}
-                    onChange={e => setConfig({...config, primaryColor: e.target.value})}
-                    className="w-12 h-12 rounded cursor-pointer border-0"
-                  />
-                  <input 
-                    type="text" 
-                    value={config.primaryColor}
-                    onChange={e => setConfig({...config, primaryColor: e.target.value})}
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none uppercase font-mono text-sm"
-                  />
+            <p className="text-xs text-slate-500 mb-6">Ajusta cada color del sitio web para que coincida perfectamente con tu manual de marca.</p>
+
+            <div className="space-y-6">
+              {/* 1. Colores de Marca */}
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-brand-secondary" /> 1. Paleta de Marca Principal
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Color Principal (Títulos, Botones)</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.primaryColor || '#003b70'}
+                        onChange={e => setConfig({...config, primaryColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.primaryColor || '#003b70'}
+                        onChange={e => setConfig({...config, primaryColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Color Secundario (CTA, Badges)</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.secondaryColor || '#35b8db'}
+                        onChange={e => setConfig({...config, secondaryColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.secondaryColor || '#35b8db'}
+                        onChange={e => setConfig({...config, secondaryColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Color de Acento / Éxito</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.accentColor || '#10b981'}
+                        onChange={e => setConfig({...config, accentColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.accentColor || '#10b981'}
+                        onChange={e => setConfig({...config, accentColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Color Secundario (Detalles, Acentos)</label>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="color" 
-                    value={config.secondaryColor}
-                    onChange={e => setConfig({...config, secondaryColor: e.target.value})}
-                    className="w-12 h-12 rounded cursor-pointer border-0"
-                  />
-                  <input 
-                    type="text" 
-                    value={config.secondaryColor}
-                    onChange={e => setConfig({...config, secondaryColor: e.target.value})}
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none uppercase font-mono text-sm"
-                  />
+
+              {/* 2. Encabezado & Navegación (Navbar) */}
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-brand-secondary" /> 2. Cabecera (Navbar)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo del Navbar</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.navbarBgColor || '#ffffff'}
+                        onChange={e => setConfig({...config, navbarBgColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.navbarBgColor || '#ffffff'}
+                        onChange={e => setConfig({...config, navbarBgColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Texto del Menú Navbar</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.navbarTextColor || '#1e293b'}
+                        onChange={e => setConfig({...config, navbarTextColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.navbarTextColor || '#1e293b'}
+                        onChange={e => setConfig({...config, navbarTextColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Fondo General & Tarjetas */}
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-brand-secondary" /> 3. Estructura de Páginas & Tarjetas
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo General de la Página</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.pageBgColor || '#f8fafc'}
+                        onChange={e => setConfig({...config, pageBgColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.pageBgColor || '#f8fafc'}
+                        onChange={e => setConfig({...config, pageBgColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo de las Tarjetas</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.cardBgColor || '#ffffff'}
+                        onChange={e => setConfig({...config, cardBgColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.cardBgColor || '#ffffff'}
+                        onChange={e => setConfig({...config, cardBgColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Pie de Página (Footer) */}
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+                  <Layout className="w-4 h-4 text-brand-secondary" /> 4. Pie de Página (Footer)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo del Footer</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.footerBgColor || '#003b70'}
+                        onChange={e => setConfig({...config, footerBgColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.footerBgColor || '#003b70'}
+                        onChange={e => setConfig({...config, footerBgColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Texto del Footer</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={config.footerTextColor || '#e2e8f0'}
+                        onChange={e => setConfig({...config, footerTextColor: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                      />
+                      <input 
+                        type="text" 
+                        value={config.footerTextColor || '#e2e8f0'}
+                        onChange={e => setConfig({...config, footerTextColor: e.target.value})}
+                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -271,7 +446,7 @@ export default function InstitutionAdminPage() {
                   required 
                   value={config.heroTitle} 
                   onChange={e => setConfig({...config, heroTitle: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none font-bold" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none font-bold text-sm" 
                   placeholder="El respaldo financiero que necesitas"
                 />
               </div>
@@ -282,12 +457,12 @@ export default function InstitutionAdminPage() {
                   rows={2}
                   value={config.heroSubtitle} 
                   onChange={e => setConfig({...config, heroSubtitle: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none resize-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none resize-none text-sm" 
                   placeholder="Crecemos junto a ti."
                 />
               </div>
 
-              {/* Hero Image Section with upload and URL options */}
+              {/* Hero Image Section */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Imagen de Fondo (Hero Banner)</label>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 bg-slate-50 p-6 rounded-xl border border-slate-100">
@@ -339,7 +514,7 @@ export default function InstitutionAdminPage() {
                   required 
                   value={config.institutionName} 
                   onChange={e => setConfig({...config, institutionName: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none text-sm" 
                 />
               </div>
 
@@ -351,7 +526,7 @@ export default function InstitutionAdminPage() {
                   maxLength={13}
                   value={config.ruc} 
                   onChange={e => setConfig({...config, ruc: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none text-sm" 
                 />
               </div>
 
@@ -362,7 +537,7 @@ export default function InstitutionAdminPage() {
                   required 
                   value={config.legalRepresentative} 
                   onChange={e => setConfig({...config, legalRepresentative: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none text-sm" 
                 />
               </div>
 
@@ -373,7 +548,7 @@ export default function InstitutionAdminPage() {
                   required 
                   value={config.phone} 
                   onChange={e => setConfig({...config, phone: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none text-sm" 
                 />
               </div>
 
@@ -384,7 +559,7 @@ export default function InstitutionAdminPage() {
                   required 
                   value={config.email} 
                   onChange={e => setConfig({...config, email: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none text-sm" 
                 />
               </div>
 
@@ -395,7 +570,7 @@ export default function InstitutionAdminPage() {
                   required 
                   value={config.address} 
                   onChange={e => setConfig({...config, address: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none text-sm" 
                 />
               </div>
 
@@ -406,7 +581,7 @@ export default function InstitutionAdminPage() {
                   rows={3}
                   value={config.disclaimerText} 
                   onChange={e => setConfig({...config, disclaimerText: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none resize-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none resize-none text-sm" 
                 />
               </div>
 
@@ -428,4 +603,3 @@ export default function InstitutionAdminPage() {
     </div>
   );
 }
-
