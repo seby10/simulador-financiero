@@ -26,7 +26,7 @@ import {
   ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
-import { AdminOnly } from '../../common/auth.js';
+import { AdminOnly, Authenticated, CurrentUser } from '../../common/auth.js';
 import { MAX_UPLOAD_BYTES } from '../../common/http.js';
 import {
   BiometricsDto,
@@ -52,6 +52,14 @@ export class OnboardingController {
     private readonly onboarding: OnboardingService,
     private readonly biometrics: BiometricsService,
   ) {}
+
+  /** Lista las solicitudes del cliente autenticado. */
+  @Get('my-applications')
+  @Authenticated()
+  @ApiOkResponse({ type: [InvestmentApplicationWithPlanResponse] })
+  myApplications(@CurrentUser('sub') userId: string) {
+    return this.onboarding.listMyApplications(userId);
+  }
 
   /** Consulta pública del estado de la solicitud por cédula. */
   @Get('status-check/:idNumber')

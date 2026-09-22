@@ -13,6 +13,7 @@ import {
   saveFile,
 } from '../../common/http.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { ApplicationStatus } from '../../generated/prisma/enums.js';
 import {
   DOCUMENT_KINDS,
@@ -50,6 +51,18 @@ export class OnboardingService {
   list(status?: ApplicationStatus) {
     return this.prisma.investmentApplication.findMany({
       where: { status },
+      include: { investmentPlan: planSummary },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async listMyApplications(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return [];
+    const conditions: Prisma.InvestmentApplicationWhereInput[] = [{ email: user.email }];
+    if (user.idNumber) conditions.push({ applicantIdNumber: user.idNumber });
+    return this.prisma.investmentApplication.findMany({
+      where: { OR: conditions },
       include: { investmentPlan: planSummary },
       orderBy: { createdAt: 'desc' },
     });
