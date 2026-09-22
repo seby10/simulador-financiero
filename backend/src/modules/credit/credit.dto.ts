@@ -32,6 +32,7 @@ export class CreateCreditTypeDto {
   /** Tasa nominal anual en %. */
   @IsDecimalString({ decimals: 4, integerDigits: 3, example: '16.0000' })
   annualInterestRate: string;
+  @IsOptional() @IsString() @MaxLength(2000) imageUrl?: string;
 }
 
 export class UpdateCreditTypeDto extends PartialType(CreateCreditTypeDto) {}
@@ -77,6 +78,7 @@ export class CreditTypeResponse {
   maxTermMonths: number;
   /** Tasa nominal anual en %. @example "16" */
   annualInterestRate: string;
+  imageUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

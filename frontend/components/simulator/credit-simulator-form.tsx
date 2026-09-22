@@ -86,6 +86,30 @@ export default function CreditSimulatorForm() {
     );
   }
 
+  // Dynamic images mapping based on credit type name
+  const getCreditImage = () => {
+    if (activeCreditType?.imageUrl) {
+      return activeCreditType.imageUrl;
+    }
+    
+    const name = activeCreditType?.name;
+    if (!name) return "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+    
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('consumo')) {
+      return "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // retail / shopping
+    } else if (lowerName.includes('micro') || lowerName.includes('negocio')) {
+      return "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // small business
+    } else if (lowerName.includes('hipotecario') || lowerName.includes('casa') || lowerName.includes('vivienda')) {
+      return "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // house / real estate
+    } else if (lowerName.includes('educa')) {
+      return "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // graduation / university
+    }
+    return "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // generic office fallback
+  };
+
+  const currentImage = getCreditImage();
+
   return (
     <div className="w-full flex flex-col">
       {/* 1. Tabs Menu - Aligned Right first */}
@@ -127,16 +151,14 @@ export default function CreditSimulatorForm() {
             <div className="absolute inset-0 bg-[#e6e2df] rounded-[40px] transform rotate-3 scale-105 -z-10"></div>
             
             <img 
-              src="https://images.unsplash.com/photo-1556761175-4b46a572b786?q=80&w=1974&auto=format&fit=crop" 
-              alt="Asesoramiento" 
-              className="w-full h-[450px] object-cover rounded-[30px] shadow-lg"
+              src={currentImage} 
+              alt={activeCreditType?.name || "Asesoramiento"} 
+              className="w-full h-[450px] object-cover rounded-[30px] shadow-lg transition-opacity duration-500"
             />
             
             {/* Blue Label over image */}
-            <div className="absolute -right-6 bottom-16 bg-[#003b70] text-white px-8 py-3 rounded-l-none rounded-r-lg font-bold text-2xl tracking-wider shadow-md transform -skew-x-12">
-              <span className="inline-block transform skew-x-12 uppercase">
-                {activeCreditType?.name}
-              </span>
+            <div className="absolute bottom-6 right-[-20px] bg-[#003b70] text-white py-3 px-8 rounded-l-xl shadow-xl z-10 font-bold tracking-wider text-sm uppercase">
+              {activeCreditType?.name || "CRÉDITO"}
             </div>
           </div>
 

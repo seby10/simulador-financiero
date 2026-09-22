@@ -77,6 +77,7 @@ model CreditType {
   maxTermMonths      Int
   /// Tasa nominal anual (%). La efectiva se deriva: (1 + r/12)^12 - 1
   annualInterestRate Decimal  @db.Decimal(7, 4)
+  imageUrl           String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
