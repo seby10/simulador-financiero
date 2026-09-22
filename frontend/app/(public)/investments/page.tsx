@@ -262,7 +262,7 @@ export default function InvestmentsSimulatorPage() {
                       </div>
 
                       <button 
-                        onClick={() => {
+                        onClick={async () => {
                           if (!result || !activePlanId) return;
                           const params = new URLSearchParams({
                             planId: String(activePlanId),
@@ -270,7 +270,18 @@ export default function InvestmentsSimulatorPage() {
                             termDays: String(result.termDays),
                             payoutMethod: result.payoutMethod,
                           });
-                          router.push(`/investments/request?${params.toString()}`);
+                          const requestPath = `/investments/request?${params.toString()}`;
+
+                          try {
+                            const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+                            if (res.ok) {
+                              router.push(requestPath);
+                            } else {
+                              router.push(`/login?redirect=${encodeURIComponent(requestPath)}`);
+                            }
+                          } catch {
+                            router.push(`/login?redirect=${encodeURIComponent(requestPath)}`);
+                          }
                         }}
                         className="w-full mt-4 border-2 border-brand-primary text-brand-primary hover:bg-blue-50 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
                         Abrir esta Poliza <ChevronRight className="w-5 h-5" />

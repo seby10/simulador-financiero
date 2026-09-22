@@ -32,6 +32,11 @@ const PUBLIC_FIELDS = [
   'id',
   'email',
   'fullName',
+  'idNumber',
+  'firstName',
+  'lastName',
+  'phone',
+  'address',
   'role',
   'isActive',
   'createdAt',
@@ -49,9 +54,23 @@ export class AuthService {
 
   async register(dto: RegisterDto, context: SessionContext) {
     const passwordHash = await hashPassword(dto.password);
+    const fullName =
+      dto.fullName ||
+      `${dto.firstName || ''} ${dto.lastName || ''}`.trim() ||
+      dto.email;
+
     const user = await this.prisma.user
       .create({
-        data: { email: dto.email, fullName: dto.fullName, passwordHash },
+        data: {
+          email: dto.email,
+          fullName,
+          idNumber: dto.idNumber || null,
+          firstName: dto.firstName || null,
+          lastName: dto.lastName || null,
+          phone: dto.phone || null,
+          address: dto.address || null,
+          passwordHash,
+        },
       })
       .catch((error: unknown) => {
         // P2002 = violación de índice único; el único que hay aquí es el correo.

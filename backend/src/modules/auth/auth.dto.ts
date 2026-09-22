@@ -19,15 +19,25 @@ const NormalizedEmail = () =>
  * Longitud mínima 12 y máxima 128, sin reglas de composición: NIST SP 800-63B
  * desaconseja exigir mayúsculas/símbolos y recomienda premiar la longitud.
  */
-const PASSWORD_MIN = 12;
+const PASSWORD_MIN = 6;
 const PASSWORD_MAX = 128;
 
 export class RegisterDto {
+  /** @example "1710034065" */
+  @IsOptional() @IsString() @MaxLength(10) idNumber?: string;
+  /** @example "María" */
+  @IsOptional() @IsString() @MaxLength(100) firstName?: string;
+  /** @example "Andrade" */
+  @IsOptional() @IsString() @MaxLength(100) lastName?: string;
   /** @example "María José Andrade" */
-  @IsString() @IsNotEmpty() @MaxLength(200) fullName: string;
+  @IsOptional() @IsString() @MaxLength(200) fullName?: string;
+  /** @example "0991234567" */
+  @IsOptional() @IsString() @MaxLength(20) phone?: string;
+  /** @example "Av. Amazonas y Colón" */
+  @IsOptional() @IsString() @MaxLength(300) address?: string;
   /** @example "maria.andrade@example.com" */
   @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
-  /** Mínimo 12 caracteres. @example "cafe-con-pan-1892" */
+  /** Mínimo 6 caracteres. @example "clave123456" */
   @IsString()
   @MinLength(PASSWORD_MIN)
   @MaxLength(PASSWORD_MAX)
@@ -43,7 +53,7 @@ export class LoginDto {
 
 export class ChangePasswordDto {
   @IsString() @IsNotEmpty() @MaxLength(PASSWORD_MAX) currentPassword: string;
-  /** Mínimo 12 caracteres; cierra todas las sesiones abiertas. */
+  /** Mínimo 6 caracteres; cierra todas las sesiones abiertas. */
   @IsString()
   @MinLength(PASSWORD_MIN)
   @MaxLength(PASSWORD_MAX)
@@ -58,6 +68,11 @@ export class UserResponse {
   /** @example "maria.andrade@example.com" */
   email: string;
   fullName: string;
+  idNumber?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  address?: string | null;
   @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
   role: UserRole;
   isActive: boolean;

@@ -23,6 +23,11 @@ model User {
   /// scrypt$N$r$p$salt$hash — nunca la contraseña en claro.
   passwordHash String
   fullName     String
+  idNumber     String?       @db.VarChar(10)
+  firstName    String?
+  lastName     String?
+  phone        String?
+  address      String?
   role         UserRole      @default(CUSTOMER)
   isActive     Boolean       @default(true)
   sessions     AuthSession[]

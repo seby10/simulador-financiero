@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/navbar";
 import { API_URL } from "@/lib/api";
 import Modal from "@/components/ui/modal";
@@ -31,6 +31,7 @@ const STEPS = [
 ];
 
 function InvestmentRequestContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>(1);
   const [applicationId, setApplicationId] = useState<string | null>(null);
@@ -51,6 +52,30 @@ function InvestmentRequestContent() {
     termDays: termDays ? Number(termDays) : 0,
     payoutMethod: payoutMethod,
   });
+
+  useEffect(() => {
+    fetch(`${API_URL}/auth/me`, { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) {
+          const currentUrl = window.location.pathname + window.location.search;
+          router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+          return null;
+        }
+        return res.json();
+      })
+      .then((user) => {
+        if (user) {
+          setForm((f) => ({
+            ...f,
+            applicantFullName: user.fullName || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : f.applicantFullName),
+            applicantIdNumber: user.idNumber || f.applicantIdNumber,
+            email: user.email || f.email,
+            phone: user.phone || f.phone,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   const [docIdFront, setDocIdFront] = useState<File | null>(null);
   const [docIdBack, setDocIdBack] = useState<File | null>(null);
