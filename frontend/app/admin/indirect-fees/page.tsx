@@ -113,7 +113,7 @@ export default function IndirectFeesAdminPage() {
         </div>
         <button 
           onClick={() => handleOpenModal()}
-          className="bg-[#003b70] hover:bg-[#002855] text-white px-6 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+          className="bg-brand-primary hover:bg-brand-primary/90 text-white px-6 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Nuevo Cargo
@@ -146,8 +146,8 @@ export default function IndirectFeesAdminPage() {
                 fees.map((fee) => (
                   <tr key={fee.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900">#{fee.id}</td>
-                    <td className="px-6 py-4 font-bold text-[#003b70]">{fee.name}</td>
-                    <td className="px-6 py-4 text-[#35b8db] font-medium">{FEE_TYPE_LABELS[fee.feeType]}</td>
+                    <td className="px-6 py-4 font-bold text-brand-primary">{fee.name}</td>
+                    <td className="px-6 py-4 text-brand-secondary font-medium">{FEE_TYPE_LABELS[fee.feeType]}</td>
                     <td className="px-6 py-4">
                       {fee.feeType === 'FIXED_PER_INSTALLMENT' ? '$' : ''}
                       {Number(fee.value).toFixed(2)}
@@ -163,7 +163,7 @@ export default function IndirectFeesAdminPage() {
                     <td className="px-6 py-4 text-right space-x-2">
                       <button 
                         onClick={() => handleOpenModal(fee)}
-                        className="p-2 text-slate-400 hover:text-[#35b8db] hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-brand-secondary hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -186,7 +186,7 @@ export default function IndirectFeesAdminPage() {
       {isModalOpen && editingFee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95">
-            <div className="bg-[#003b70] px-6 py-4 flex justify-between items-center text-white">
+            <div className="bg-brand-primary px-6 py-4 flex justify-between items-center text-white">
               <h2 className="text-xl font-bold">{editingFee.id ? 'Editar Cargo' : 'Nuevo Cargo'}</h2>
               <button onClick={handleCloseModal} className="hover:bg-white/20 p-1 rounded transition-colors"><X className="w-6 h-6"/></button>
             </div>
@@ -200,7 +200,7 @@ export default function IndirectFeesAdminPage() {
                   required 
                   value={editingFee.name || ''} 
                   onChange={e => setEditingFee({...editingFee, name: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
                 />
               </div>
 
@@ -209,7 +209,7 @@ export default function IndirectFeesAdminPage() {
                 <select 
                   value={editingFee.feeType} 
                   onChange={e => setEditingFee({...editingFee, feeType: e.target.value as FeeTypeEnum})}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none"
                 >
                   {Object.entries(FEE_TYPE_LABELS).map(([key, label]) => (
                     <option key={key} value={key}>{label}</option>
@@ -230,7 +230,7 @@ export default function IndirectFeesAdminPage() {
                   required 
                   value={editingFee.value || ''} 
                   onChange={e => setEditingFee({...editingFee, value: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" 
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
                 />
               </div>
 
@@ -240,7 +240,7 @@ export default function IndirectFeesAdminPage() {
                   id="isMandatory"
                   checked={editingFee.isMandatory || false} 
                   onChange={e => setEditingFee({...editingFee, isMandatory: e.target.checked})} 
-                  className="w-5 h-5 text-[#35b8db] rounded focus:ring-[#35b8db]" 
+                  className="w-5 h-5 text-brand-secondary rounded focus:ring-brand-secondary" 
                 />
                 <label htmlFor="isMandatory" className="text-sm font-semibold text-slate-700 cursor-pointer select-none">
                   ¿Es obligatorio? (Aplicar a todos los créditos)
@@ -249,7 +249,7 @@ export default function IndirectFeesAdminPage() {
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button type="button" onClick={handleCloseModal} className="px-6 py-2 rounded-lg font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
-                <button type="submit" className="bg-[#35b8db] hover:bg-[#2ca0c0] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
+                <button type="submit" className="bg-brand-secondary hover:bg-brand-secondary/90 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
                   <Save className="w-5 h-5"/> Guardar
                 </button>
               </div>

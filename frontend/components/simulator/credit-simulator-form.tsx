@@ -79,8 +79,8 @@ export default function CreditSimulatorForm() {
 
   if (loadingInitial) {
     return (
-      <div className="flex items-center justify-center py-32 text-[#003b70]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003b70]"></div>
+      <div className="flex items-center justify-center py-32 text-brand-primary">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
         <span className="ml-3 font-semibold">Cargando simulador...</span>
       </div>
     );
@@ -114,7 +114,7 @@ export default function CreditSimulatorForm() {
     <div className="w-full flex flex-col">
       {/* 1. Tabs Menu - Aligned Right first */}
       <div className="w-full flex justify-end">
-        <div className="bg-[#35b8db] text-white flex flex-wrap justify-center md:justify-end items-center text-sm md:text-base py-3 px-6 md:px-8 md:rounded-bl-3xl shadow-sm">
+        <div className="bg-brand-secondary text-white flex flex-wrap justify-center md:justify-end items-center text-sm md:text-base py-3 px-6 md:px-8 md:rounded-bl-3xl shadow-sm">
           {creditTypes.map((type, index) => (
             <div key={type.id} className="flex items-center">
               <button 
@@ -137,7 +137,7 @@ export default function CreditSimulatorForm() {
 
       {/* 2. Title centered below it */}
       <div className="w-full text-center mt-10 mb-4">
-        <h1 className="text-3xl font-bold text-[#003b70] uppercase tracking-wide">
+        <h1 className="text-3xl font-bold text-brand-primary uppercase tracking-wide">
           SIMULADOR DE CRÉDITO
         </h1>
       </div>
@@ -157,21 +157,21 @@ export default function CreditSimulatorForm() {
             />
             
             {/* Blue Label over image */}
-            <div className="absolute bottom-6 right-[-20px] bg-[#003b70] text-white py-3 px-8 rounded-l-xl shadow-xl z-10 font-bold tracking-wider text-sm uppercase">
+            <div className="absolute bottom-6 right-[-20px] bg-brand-primary text-white py-3 px-8 rounded-l-xl shadow-xl z-10 font-bold tracking-wider text-sm uppercase">
               {activeCreditType?.name || "CRÉDITO"}
             </div>
           </div>
 
           {/* Right Form Section */}
           <div className="w-full lg:w-[500px] flex flex-col pl-4">
-            <h2 className="text-3xl font-normal text-[#003b70] mb-2">
+            <h2 className="text-3xl font-normal text-brand-primary mb-2">
               {activeCreditType?.name}
             </h2>
             <p className="text-slate-500 text-sm mb-6 border-b border-slate-200 pb-6">
               {activeCreditType?.description || `Destinado para capital de trabajo y adquisición de activos desde $${activeCreditType?.minAmount} hasta $${activeCreditType?.maxAmount}`}
             </p>
 
-            <h3 className="text-[#003b70] font-semibold mb-6">Ingrese los Datos</h3>
+            <h3 className="text-brand-primary font-semibold mb-6">Ingrese los Datos</h3>
 
             {error && (
               <div className="mb-6 p-3 bg-red-50 text-red-600 border border-red-200 rounded text-sm">
@@ -183,12 +183,12 @@ export default function CreditSimulatorForm() {
               
               {/* Tipo de Crédito Read-Only Block */}
               <div className="flex w-full">
-                <div className="bg-[#003b70] text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-[#003b70]">
-                  Tipo de Crédito <span className="ml-auto font-bold text-[#35b8db] pl-2">|</span>
+                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
+                  Tipo de Crédito <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
                 </div>
                 <div className="flex-1 px-4 py-3 border-y border-r border-slate-300 bg-white text-slate-800 text-sm flex items-center justify-between">
                   <span>{activeCreditType?.name}</span>
-                  <span className="text-xs font-bold text-[#003b70] bg-slate-100 px-2 py-1 rounded">
+                  <span className="text-xs font-bold text-brand-primary bg-slate-100 px-2 py-1 rounded">
                     Tasa: {activeCreditType?.annualInterestRate}%
                   </span>
                 </div>
@@ -196,15 +196,15 @@ export default function CreditSimulatorForm() {
 
               {/* Custom Input Block */}
               <div className="flex w-full">
-                <div className="bg-[#003b70] text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-[#003b70]">
-                  Cuánto dinero necesita? <span className="ml-auto font-bold text-[#35b8db] pl-2">|</span>
+                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
+                  Cuánto dinero necesita? <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
                 </div>
                 <input 
                   type="number"
                   min={activeCreditType?.minAmount || "0"}
                   max={activeCreditType?.maxAmount}
                   step="0.01"
-                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-[#35b8db] bg-white text-slate-800 text-sm min-w-0"
+                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-brand-secondary bg-white text-slate-800 text-sm min-w-0"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
                   placeholder={`mín: ${activeCreditType?.minAmount} - máx: ${activeCreditType?.maxAmount}`}
@@ -214,14 +214,14 @@ export default function CreditSimulatorForm() {
 
               {/* Custom Input Block */}
               <div className="flex w-full">
-                <div className="bg-[#003b70] text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-[#003b70]">
-                  Plazo en Meses <span className="ml-auto font-bold text-[#35b8db] pl-2">|</span>
+                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
+                  Plazo en Meses <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
                 </div>
                 <input 
                   type="number"
                   min={activeCreditType?.minTermMonths || "1"}
                   max={activeCreditType?.maxTermMonths}
-                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-[#35b8db] bg-white text-slate-800 text-sm min-w-0"
+                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-brand-secondary bg-white text-slate-800 text-sm min-w-0"
                   value={termMonths}
                   onChange={e => setTermMonths(e.target.value)}
                   placeholder={`máx: ${activeCreditType?.maxTermMonths}`}
@@ -231,11 +231,11 @@ export default function CreditSimulatorForm() {
 
               {/* Custom Select Block */}
               <div className="flex w-full">
-                <div className="bg-[#003b70] text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-[#003b70]">
-                  Tipo de Amortización <span className="ml-auto font-bold text-[#35b8db] pl-2">|</span>
+                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
+                  Tipo de Amortización <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
                 </div>
                 <select 
-                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-[#35b8db] bg-white text-slate-800 text-sm appearance-none min-w-0 cursor-pointer"
+                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-brand-secondary bg-white text-slate-800 text-sm appearance-none min-w-0 cursor-pointer"
                   value={method}
                   onChange={e => setMethod(e.target.value as any)}
                 >
@@ -249,12 +249,12 @@ export default function CreditSimulatorForm() {
                 <button 
                   type="submit"
                   disabled={loadingSimulation || !amount || !termMonths || !creditTypeId}
-                  className="flex items-center group relative overflow-hidden rounded-full shadow-md border border-slate-200 bg-gradient-to-b from-white to-slate-100 pl-6 pr-1 py-1 hover:border-[#003b70] hover:text-[#003b70] transition-colors disabled:opacity-50"
+                  className="flex items-center group relative overflow-hidden rounded-full shadow-md border border-slate-200 bg-gradient-to-b from-white to-slate-100 pl-6 pr-1 py-1 hover:border-brand-primary hover:text-brand-primary transition-colors disabled:opacity-50"
                 >
-                  <span className="italic font-semibold text-slate-500 group-hover:text-[#003b70] mr-4 transition-colors">
+                  <span className="italic font-semibold text-slate-500 group-hover:text-brand-primary mr-4 transition-colors">
                     {loadingSimulation ? "Calculando..." : "Calcular"}
                   </span>
-                  <div className="w-8 h-8 rounded-full bg-[#003b70] flex items-center justify-center text-white shadow-inner">
+                  <div className="w-8 h-8 rounded-full bg-brand-primary flex items-center justify-center text-white shadow-inner">
                     <ChevronRight className="w-5 h-5" />
                   </div>
                 </button>
@@ -262,10 +262,10 @@ export default function CreditSimulatorForm() {
                 <button 
                   type="button"
                   onClick={handleClear}
-                  className="flex items-center group relative overflow-hidden rounded-full shadow-md border border-slate-200 bg-gradient-to-b from-white to-slate-100 pl-6 pr-1 py-1 hover:border-[#003b70] hover:text-[#003b70] transition-colors"
+                  className="flex items-center group relative overflow-hidden rounded-full shadow-md border border-slate-200 bg-gradient-to-b from-white to-slate-100 pl-6 pr-1 py-1 hover:border-brand-primary hover:text-brand-primary transition-colors"
                 >
-                  <span className="italic font-semibold text-slate-500 group-hover:text-[#003b70] mr-4 transition-colors">Limpiar</span>
-                  <div className="w-8 h-8 rounded-full bg-[#003b70] flex items-center justify-center text-white shadow-inner">
+                  <span className="italic font-semibold text-slate-500 group-hover:text-brand-primary mr-4 transition-colors">Limpiar</span>
+                  <div className="w-8 h-8 rounded-full bg-brand-primary flex items-center justify-center text-white shadow-inner">
                     <ChevronRight className="w-5 h-5" />
                   </div>
                 </button>

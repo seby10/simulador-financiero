@@ -51,10 +51,10 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800">
       
       {/* Sidebar */}
-      <aside className="w-64 bg-[#003b70] text-white flex flex-col shadow-2xl shrink-0 sticky top-0 h-screen">
+      <aside className="w-64 bg-brand-primary text-white flex flex-col shadow-2xl shrink-0 sticky top-0 h-screen">
         <div className="h-20 flex items-center px-6 border-b border-blue-900/50">
           <Link href="/admin" className="flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-[#35b8db]" />
+            <Building2 className="w-8 h-8 text-brand-secondary" />
             <div className="flex flex-col">
               <span className="font-bold text-sm leading-none">ADMINISTRACIÓN</span>
               <span className="font-light text-xs text-blue-200 mt-1">Coop. Ambato</span>
@@ -62,30 +62,30 @@ export default async function AdminLayout({
           </Link>
         </div>
 
-        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
-          <Link href="/admin" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+        <nav className="flex-1 py-6 px-4 space-y-2">
+          <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <LayoutDashboard className="w-5 h-5" />
-            <span className="font-medium text-sm">Dashboard</span>
+            <span className="font-semibold">Dashboard</span>
           </Link>
-          <Link href="/admin/credits" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/admin/credits" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <CreditCard className="w-5 h-5" />
-            <span className="font-medium text-sm">Tipos de Crédito</span>
+            <span className="font-semibold">Tipos de Crédito</span>
           </Link>
-          <Link href="/admin/indirect-fees" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/admin/indirect-fees" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <PieChart className="w-5 h-5" />
-            <span className="font-medium text-sm">Cargos Indirectos</span>
+            <span className="font-semibold">Cargos Indirectos</span>
           </Link>
-          <Link href="/admin/investments" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/admin/investments" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <PieChart className="w-5 h-5" />
-            <span className="font-medium text-sm">Pólizas</span>
+            <span className="font-semibold">Pólizas</span>
           </Link>
-          <Link href="/admin/institution" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/admin/institution" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <Building className="w-5 h-5" />
-            <span className="font-medium text-sm">Institución</span>
+            <span className="font-semibold">Institución</span>
           </Link>
-          <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <Users className="w-5 h-5" />
-            <span className="font-medium text-sm">Usuarios</span>
+            <span className="font-semibold">Usuarios</span>
           </Link>
         </nav>
 
@@ -104,7 +104,7 @@ export default async function AdminLayout({
           <h2 className="text-xl font-bold text-slate-800">Panel de Control</h2>
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
-              <span className="font-bold text-[#003b70]">A</span>
+              <span className="font-bold text-brand-primary">A</span>
             </div>
             <div className="flex flex-col">
               <span className="font-semibold text-sm">Administrador</span>

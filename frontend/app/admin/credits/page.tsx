@@ -101,7 +101,7 @@ export default function CreditsAdminPage() {
         </div>
         <button 
           onClick={() => handleOpenModal()}
-          className="bg-[#003b70] hover:bg-[#002855] text-white px-6 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+          className="bg-brand-primary hover:bg-brand-primary/90 text-white px-6 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Nuevo Crédito
@@ -135,13 +135,13 @@ export default function CreditsAdminPage() {
                 credits.map((credit) => (
                   <tr key={credit.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900">#{credit.id}</td>
-                    <td className="px-6 py-4 font-bold text-[#003b70]">{credit.name}</td>
+                    <td className="px-6 py-4 font-bold text-brand-primary">{credit.name}</td>
                     <td className="px-6 py-4">${credit.minAmount} - ${credit.maxAmount}</td>
                     <td className="px-6 py-4">{credit.minTermMonths} - {credit.maxTermMonths} meses</td>
                     <td className="px-6 py-4">{Number(credit.annualInterestRate).toFixed(2)}%</td>
                     <td className="px-6 py-4">
                       {credit.imageUrl ? (
-                        <a href={credit.imageUrl} target="_blank" className="text-[#35b8db] underline max-w-[150px] truncate block">Ver imagen</a>
+                        <a href={credit.imageUrl} target="_blank" className="text-brand-secondary underline max-w-[150px] truncate block">Ver imagen</a>
                       ) : (
                         <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Sin Imagen</span>
                       )}
@@ -149,7 +149,7 @@ export default function CreditsAdminPage() {
                     <td className="px-6 py-4 text-right space-x-2">
                       <button 
                         onClick={() => handleOpenModal(credit)}
-                        className="p-2 text-slate-400 hover:text-[#35b8db] hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-brand-secondary hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -169,7 +169,7 @@ export default function CreditsAdminPage() {
       {isModalOpen && editingCredit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="bg-[#003b70] px-6 py-4 flex justify-between items-center text-white">
+            <div className="bg-brand-primary px-6 py-4 flex justify-between items-center text-white">
               <h2 className="text-xl font-bold">{editingCredit.id ? 'Editar Crédito' : 'Nuevo Crédito'}</h2>
               <button onClick={handleCloseModal} className="hover:bg-white/20 p-1 rounded transition-colors"><X className="w-6 h-6"/></button>
             </div>
@@ -179,45 +179,45 @@ export default function CreditsAdminPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">Nombre del Crédito</label>
-                  <input type="text" required value={editingCredit.name || ''} onChange={e => setEditingCredit({...editingCredit, name: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" />
+                  <input type="text" required value={editingCredit.name || ''} onChange={e => setEditingCredit({...editingCredit, name: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">Tasa Nominal Anual (%)</label>
-                  <input type="number" step="0.01" required value={editingCredit.annualInterestRate || ''} onChange={e => setEditingCredit({...editingCredit, annualInterestRate: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" />
+                  <input type="number" step="0.01" required value={editingCredit.annualInterestRate || ''} onChange={e => setEditingCredit({...editingCredit, annualInterestRate: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">Monto Mínimo (USD)</label>
-                  <input type="number" required value={editingCredit.minAmount || ''} onChange={e => setEditingCredit({...editingCredit, minAmount: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" />
+                  <input type="number" required value={editingCredit.minAmount || ''} onChange={e => setEditingCredit({...editingCredit, minAmount: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">Monto Máximo (USD)</label>
-                  <input type="number" required value={editingCredit.maxAmount || ''} onChange={e => setEditingCredit({...editingCredit, maxAmount: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" />
+                  <input type="number" required value={editingCredit.maxAmount || ''} onChange={e => setEditingCredit({...editingCredit, maxAmount: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">Plazo Mínimo (meses)</label>
-                  <input type="number" required value={editingCredit.minTermMonths || ''} onChange={e => setEditingCredit({...editingCredit, minTermMonths: parseInt(e.target.value)})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" />
+                  <input type="number" required value={editingCredit.minTermMonths || ''} onChange={e => setEditingCredit({...editingCredit, minTermMonths: parseInt(e.target.value)})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">Plazo Máximo (meses)</label>
-                  <input type="number" required value={editingCredit.maxTermMonths || ''} onChange={e => setEditingCredit({...editingCredit, maxTermMonths: parseInt(e.target.value)})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" />
+                  <input type="number" required value={editingCredit.maxTermMonths || ''} onChange={e => setEditingCredit({...editingCredit, maxTermMonths: parseInt(e.target.value)})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <label className="text-sm font-semibold text-slate-700">URL de Imagen (Unsplash, etc.)</label>
-                <input type="url" value={editingCredit.imageUrl || ''} onChange={e => setEditingCredit({...editingCredit, imageUrl: e.target.value})} placeholder="https://images.unsplash.com/..." className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#35b8db] outline-none" />
+                <input type="url" value={editingCredit.imageUrl || ''} onChange={e => setEditingCredit({...editingCredit, imageUrl: e.target.value})} placeholder="https://images.unsplash.com/..." className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
                 <p className="text-xs text-slate-500 mt-1">Pega el link de la imagen que quieres que aparezca en el simulador para este crédito.</p>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button type="button" onClick={handleCloseModal} className="px-6 py-2 rounded-lg font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
-                <button type="submit" className="bg-[#35b8db] hover:bg-[#2ca0c0] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
+                <button type="submit" className="bg-brand-secondary hover:bg-brand-secondary/90 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
                   <Save className="w-5 h-5"/> Guardar
                 </button>
               </div>

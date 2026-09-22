@@ -20,6 +20,8 @@ export class UpdateInstitutionDto {
   @IsEmail() email: string;
   /** Texto legal impreso en los PDF. */
   @IsString() @IsNotEmpty() @MaxLength(2000) disclaimerText: string;
+  @IsString() @IsNotEmpty() @MaxLength(7) primaryColor: string;
+  @IsString() @IsNotEmpty() @MaxLength(7) secondaryColor: string;
 }
 
 /** Campo multipart del logo (PNG o JPEG, máx. 5 MB). */

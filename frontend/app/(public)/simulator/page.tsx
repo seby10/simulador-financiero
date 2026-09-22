@@ -16,7 +16,7 @@ export default function SimulatorPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#003b70] text-slate-300 py-12 mt-auto">
+      <footer className="bg-brand-primary text-slate-300 py-12 mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2 text-white">
             <Building2 className="w-6 h-6" />

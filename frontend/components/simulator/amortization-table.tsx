@@ -56,7 +56,7 @@ export default function AmortizationTable({
       <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
-        <div className="bg-[#35b8db] px-6 py-4 flex justify-between items-center shrink-0">
+        <div className="bg-brand-secondary px-6 py-4 flex justify-between items-center shrink-0">
           <h2 className="text-xl font-bold text-white">Simulador de Crédito</h2>
           <div className="flex items-center gap-4">
             {onDownloadPdf && (
@@ -84,34 +84,34 @@ export default function AmortizationTable({
           <div className="grid grid-cols-2 gap-x-12 gap-y-8 mb-10 max-w-3xl mx-auto">
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-slate-800 mb-1">Monto a solicitar:</span>
-              <div className="text-slate-500 pb-1 border-b border-[#35b8db]">
+              <div className="text-slate-500 pb-1 border-b border-brand-secondary">
                 {summary.principal} USD
               </div>
             </div>
             
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-slate-800 mb-1">Plazo:</span>
-              <div className="text-slate-500 pb-1 border-b border-[#35b8db]">
+              <div className="text-slate-500 pb-1 border-b border-brand-secondary">
                 {summary.termMonths} meses
               </div>
             </div>
 
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-slate-800 mb-1">Tasa efectiva:</span>
-              <div className="text-slate-500 pb-1 border-b border-[#35b8db]">
+              <div className="text-slate-500 pb-1 border-b border-brand-secondary">
                 {Number(summary.nominalAnnualRatePct).toFixed(2)} %
               </div>
             </div>
 
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-slate-800 mb-1">Tipo de Cuota:</span>
-              <div className="text-slate-500 pb-1 border-b border-[#35b8db] uppercase">
+              <div className="text-slate-500 pb-1 border-b border-brand-secondary uppercase">
                 {summary.method === 'FRENCH' ? 'FIJA' : 'VARIABLE'}
               </div>
             </div>
           </div>
 
-          <h3 className="text-center text-[#003b70] text-lg font-medium tracking-wide mb-6">
+          <h3 className="text-center text-brand-primary text-lg font-medium tracking-wide mb-6">
             TABLA DE AMORTIZACIÓN
           </h3>
 
@@ -119,7 +119,7 @@ export default function AmortizationTable({
           <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-center">
-                <thead className="text-[#003b70] font-bold bg-white border-b border-slate-200">
+                <thead className="text-brand-primary font-bold bg-white border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-4 font-semibold">No.</th>
                     <th className="px-4 py-4 font-semibold">Fecha</th>
@@ -145,7 +145,7 @@ export default function AmortizationTable({
                   {/* Periods 1..N */}
                   {enhancedSchedule.map((row: any, idx: number) => (
                     <tr key={row.period} className={idx % 2 === 0 ? "bg-white" : "bg-cyan-50/30"}>
-                      <td className="px-4 py-3 text-[#35b8db]">{row.period}</td>
+                      <td className="px-4 py-3 text-brand-secondary">{row.period}</td>
                       <td className="px-4 py-3">{row.date}</td>
                       <td className="px-4 py-3 text-right pr-6">$ {row.principal}</td>
                       <td className="px-4 py-3 text-right pr-6">$ {row.interest}</td>
@@ -161,7 +161,7 @@ export default function AmortizationTable({
                     <td className="px-4 py-4 text-right pr-6">$ {totalPrincipal}</td>
                     <td className="px-4 py-4 text-right pr-6">$ {totalInterest}</td>
                     <td className="px-4 py-4 text-right pr-6">$ {totalFees}</td>
-                    <td className="px-4 py-4 text-right pr-6 text-[#003b70]">$ {totalPayments}</td>
+                    <td className="px-4 py-4 text-right pr-6 text-brand-primary">$ {totalPayments}</td>
                     <td></td>
                   </tr>
                 </tbody>

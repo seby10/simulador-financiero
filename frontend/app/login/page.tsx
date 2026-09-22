@@ -58,11 +58,11 @@ export default function LoginPage() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
           
-          <div className="bg-[#003b70] p-8 text-white flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="bg-brand-primary p-8 text-white flex flex-col items-center justify-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-full bg-blue-900/50 backdrop-blur-3xl z-0"></div>
             <div className="relative z-10 flex flex-col items-center">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4 border border-white/20 backdrop-blur-md">
-                <Lock className="w-8 h-8 text-[#35b8db]" />
+                <Lock className="w-8 h-8 text-brand-secondary" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight">Banca Virtual</h1>
               <p className="text-blue-200 text-sm mt-2 text-center">
@@ -92,7 +92,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#35b8db] focus:border-transparent outline-none transition-all text-slate-700"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-secondary focus:border-transparent outline-none transition-all text-slate-700"
                     placeholder="admin@cooperativa.ec"
                   />
                 </div>
@@ -101,7 +101,7 @@ export default function LoginPage() {
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
                   <label className="text-sm font-semibold text-slate-700">Contraseña</label>
-                  <a href="#" className="text-xs text-[#35b8db] hover:underline">¿Olvidaste tu clave?</a>
+                  <a href="#" className="text-xs text-brand-secondary hover:underline">¿Olvidaste tu clave?</a>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -112,7 +112,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#35b8db] focus:border-transparent outline-none transition-all text-slate-700"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-secondary focus:border-transparent outline-none transition-all text-slate-700"
                     placeholder="••••••••"
                   />
                 </div>
@@ -121,7 +121,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#003b70] hover:bg-[#002855] text-white py-3.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full bg-brand-primary hover:bg-brand-primary/90 text-white py-3.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? "Iniciando sesión..." : "Ingresar a mi cuenta"}
                 {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}

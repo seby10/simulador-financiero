@@ -63,6 +63,8 @@ model InstitutionConfig {
   phone               String
   email               String
   logoUrl             String?
+  primaryColor        String   @default("#003b70")
+  secondaryColor      String   @default("#35b8db")
   disclaimerText      String
   updatedAt           DateTime @updatedAt
 }
