@@ -8,12 +8,14 @@ import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [institution, setInstitution] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${API_URL}/institution`)
       .then(res => res.json())
       .then(data => setInstitution(data))
-      .catch(err => console.error("Error fetching institution for navbar", err));
+      .catch(err => console.error("Error fetching institution for navbar", err))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -27,7 +29,9 @@ export default function Navbar() {
       >
         <div className="w-full px-6 lg:px-12 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            {institution?.logoUrl ? (
+            {loading ? (
+              <div className="w-12 h-12" />
+            ) : institution?.logoUrl ? (
               <img src={`${API_URL?.replace('/api', '') || ''}${institution.logoUrl}`} alt="Logo" className="h-12 w-auto object-contain" />
             ) : (
               <div className="w-12 h-12 rounded bg-brand-primary flex items-center justify-center text-white shadow-md">
