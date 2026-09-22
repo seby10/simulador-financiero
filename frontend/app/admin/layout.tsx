@@ -19,7 +19,7 @@ async function verifySession() {
   ].filter(Boolean).join('; ');
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/me`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
       headers: {
         Cookie: cookieHeader,
       },

@@ -48,7 +48,7 @@ export default function InvestmentsSimulatorPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/investment/plans`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/investment/plans`)
       .then(r => r.json())
       .then((data: InvestmentPlan[]) => {
         setPlans(data);
@@ -66,7 +66,7 @@ export default function InvestmentsSimulatorPage() {
     setResult(null);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/investment/simulate`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/investment/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

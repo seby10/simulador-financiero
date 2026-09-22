@@ -6,6 +6,18 @@ const nextConfig: NextConfig = {
     "192.168.1.43:3000",
     "localhost:3000",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

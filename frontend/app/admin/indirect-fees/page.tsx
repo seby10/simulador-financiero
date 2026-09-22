@@ -29,7 +29,7 @@ export default function IndirectFeesAdminPage() {
 
   const fetchFees = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/credit/fees`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/credit/fees`);
       const data = await res.json();
       setFees(data);
     } catch (err) {
@@ -68,7 +68,7 @@ export default function IndirectFeesAdminPage() {
 
     try {
       const isEditing = !!editingFee.id;
-      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/credit/fees${isEditing ? `/${editingFee.id}` : ''}`;
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/credit/fees${isEditing ? `/${editingFee.id}` : ''}`;
       
       const res = await fetch(url, {
         method: isEditing ? "PATCH" : "POST",
@@ -92,7 +92,7 @@ export default function IndirectFeesAdminPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("¿Seguro que deseas eliminar este cargo?")) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/credit/fees/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/credit/fees/${id}`, {
         method: "DELETE",
         credentials: "include",
       });

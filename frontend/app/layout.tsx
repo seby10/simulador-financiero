@@ -13,7 +13,7 @@ export default async function RootLayout({
 }) {
   let config = null;
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/institution`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/institution`, { cache: 'no-store' });
     if (res.ok) {
       config = await res.json();
     }

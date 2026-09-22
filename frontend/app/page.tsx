@@ -6,7 +6,21 @@ export const metadata = {
   title: "Cooperativa Financiera | Inicio",
 };
 
-export default function Home() {
+export default async function Home() {
+  let config = null;
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/institution`, { cache: 'no-store' });
+    if (res.ok) {
+      config = await res.json();
+    }
+  } catch (err) {
+    console.error("Failed to fetch config", err);
+  }
+
+  const heroImage = config?.heroImageUrl || "https://images.unsplash.com/photo-1573164713988-8665fc963095?q=80&w=2069&auto=format&fit=crop";
+  const heroTitle = config?.heroTitle || "El respaldo financiero \nque necesitas.";
+  const heroSubtitle = config?.heroSubtitle || "Crecemos junto a ti. Solicita tu crédito hoy mismo y simula tus pagos de forma transparente.";
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Navbar />
@@ -16,27 +30,27 @@ export default function Home() {
         {/* Banner with background image */}
         <div className="w-full relative bg-brand-primary h-[400px] sm:h-[500px] overflow-hidden">
           <img 
-            src="https://images.unsplash.com/photo-1573164713988-8665fc963095?q=80&w=2069&auto=format&fit=crop" 
-            alt="Familia feliz" 
+            src={heroImage} 
+            alt="Hero background" 
             className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#003b70] via-[#003b70]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-primary via-brand-primary/80 to-transparent" />
           
           <div className="relative z-10 max-w-7xl mx-auto px-4 h-full flex flex-col justify-center">
             <div className="max-w-2xl text-white space-y-6">
               <div className="inline-block bg-brand-secondary text-white px-3 py-1 text-xs font-bold uppercase tracking-wider mb-2">
                 Conectando tus sueños
               </div>
-              <h1 className="text-4xl sm:text-6xl font-extrabold leading-tight">
-                El respaldo financiero <br />que necesitas.
+              <h1 className="text-4xl sm:text-6xl font-extrabold leading-tight whitespace-pre-line">
+                {heroTitle}
               </h1>
               <p className="text-lg sm:text-xl text-blue-100 max-w-xl">
-                Crecemos junto a ti. Solicita tu crédito hoy mismo y simula tus pagos de forma transparente.
+                {heroSubtitle}
               </p>
               <div className="pt-4 flex gap-4">
                 <Link 
                   href="/simulator"
-                  className="bg-brand-secondary hover:bg-cyan-400 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all flex items-center gap-2"
+                  className="bg-brand-secondary hover:bg-brand-secondary/90 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all flex items-center gap-2"
                 >
                   Simular Crédito
                   <ArrowRight className="w-5 h-5" />
@@ -64,7 +78,7 @@ export default function Home() {
               </div>
               <h3 className="text-lg font-bold text-brand-primary mb-2">Inversiones</h3>
               <p className="text-slate-600 text-sm mb-6">Haz crecer tu dinero de manera segura con nuestras excelentes tasas a plazo fijo.</p>
-              <Link href="/investments/simulator" className="mt-auto text-brand-primary font-semibold text-sm hover:underline">Conoce más</Link>
+              <Link href="/investments" className="mt-auto text-brand-primary font-semibold text-sm hover:underline">Conoce más</Link>
             </div>
 
             <div className="bg-white rounded-xl shadow-lg border-t-4 border-emerald-500 p-8 flex flex-col items-center text-center group hover:-translate-y-1 transition-transform">
@@ -83,8 +97,12 @@ export default function Home() {
       <footer className="bg-brand-primary text-slate-300 py-12 mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2 text-white">
-            <Building2 className="w-6 h-6" />
-            <span className="font-bold tracking-wide">COOPERATIVA AMBATO</span>
+            {config?.logoUrl ? (
+              <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${config.logoUrl}`} alt="Logo" className="h-6 w-auto object-contain brightness-0 invert opacity-80" />
+            ) : (
+              <Building2 className="w-6 h-6" />
+            )}
+            <span className="font-bold tracking-wide uppercase">{config?.institutionName || "COOPERATIVA AMBATO"}</span>
           </div>
           <p className="text-sm">© {new Date().getFullYear()} Todos los derechos reservados.</p>
           <div className="flex items-center gap-4 text-sm">

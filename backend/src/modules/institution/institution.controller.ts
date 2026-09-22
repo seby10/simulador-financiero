@@ -24,6 +24,7 @@ import {
   InstitutionResponse,
   UpdateInstitutionDto,
   UploadLogoDto,
+  UploadHeroDto,
 } from './institution.dto.js';
 import { InstitutionService } from './institution.service.js';
 
@@ -61,5 +62,20 @@ export class InstitutionController {
   @ApiPayloadTooLargeResponse({ description: 'Archivo mayor a 5 MB' })
   uploadLogo(@UploadedFile() file?: Express.Multer.File) {
     return this.service.updateLogo(file);
+  }
+
+  /** Sube la imagen de fondo del Landing Page (PNG/JPEG). */
+  @Post('hero')
+  @AdminOnly()
+  @UseInterceptors(
+    FileInterceptor('hero', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UploadHeroDto })
+  @ApiCreatedResponse({ type: InstitutionResponse })
+  @ApiBadRequestResponse({ description: 'Archivo ausente o no es PNG/JPEG' })
+  @ApiPayloadTooLargeResponse({ description: 'Archivo mayor a 5 MB' })
+  uploadHero(@UploadedFile() file?: Express.Multer.File) {
+    return this.service.updateHero(file);
   }
 }

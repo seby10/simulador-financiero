@@ -25,7 +25,7 @@ export default function CreditsAdminPage() {
 
   const fetchCredits = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/credit/types`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/credit/types`);
       const data = await res.json();
       setCredits(data);
     } catch (err) {
@@ -68,7 +68,7 @@ export default function CreditsAdminPage() {
 
     try {
       const isEditing = !!editingCredit.id;
-      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/credit/types${isEditing ? `/${editingCredit.id}` : ''}`;
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/credit/types${isEditing ? `/${editingCredit.id}` : ''}`;
       
       const res = await fetch(url, {
         method: isEditing ? "PATCH" : "POST",
