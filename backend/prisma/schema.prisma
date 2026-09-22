@@ -110,6 +110,7 @@ model InvestmentPlan {
   tea                 Decimal                 @db.Decimal(7, 4)
   allowsMonthlyPayout Boolean                 @default(false)
   requiredDocuments   Json                    @default("[]")
+  imageUrl            String?
   applications        InvestmentApplication[]
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt

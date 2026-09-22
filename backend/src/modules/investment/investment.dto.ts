@@ -48,6 +48,10 @@ export class CreateInvestmentPlanDto {
   @ArrayUnique()
   @IsIn(DOCUMENT_KINDS, { each: true })
   requiredDocuments?: DocumentKind[];
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
 
 export class UpdateInvestmentPlanDto extends PartialType(
@@ -81,6 +85,7 @@ export class InvestmentPlanResponse {
   allowsMonthlyPayout: boolean;
   @ApiProperty({ isArray: true, enum: DOCUMENT_KINDS })
   requiredDocuments: DocumentKind[];
+  imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
