@@ -53,6 +53,14 @@ export class OnboardingController {
     private readonly biometrics: BiometricsService,
   ) {}
 
+  /** Consulta pública del estado de la solicitud por cédula. */
+  @Get('status-check/:idNumber')
+  @ApiOkResponse({ description: 'Estado de la solicitud de inversión' })
+  @ApiNotFoundResponse({ description: 'No se encontraron solicitudes' })
+  statusCheck(@Param('idNumber') idNumber: string) {
+    return this.onboarding.lookupByIdNumber(idNumber);
+  }
+
   /** Registra una solicitud de inversión (estado PENDING_REVIEW). */
   @Post('apply')
   @ApiCreatedResponse({ type: InvestmentApplicationWithPlanResponse })
@@ -109,6 +117,28 @@ export class OnboardingController {
   @ApiOkResponse({ type: [InvestmentApplicationWithPlanResponse] })
   list(@Query() query: ListApplicationsQuery) {
     return this.onboarding.list(query.status);
+  }
+
+  /** Aprueba una solicitud pendiente. */
+  @Post('applications/:id/approve')
+  @AdminOnly()
+  @HttpCode(200)
+  @ApiOkResponse({ type: InvestmentApplicationWithPlanResponse })
+  @ApiConflictResponse({ description: 'La solicitud ya fue resuelta' })
+  @ApiNotFoundResponse()
+  approve(@Param('id', uuid) id: string) {
+    return this.onboarding.approve(id);
+  }
+
+  /** Rechaza una solicitud pendiente. */
+  @Post('applications/:id/reject')
+  @AdminOnly()
+  @HttpCode(200)
+  @ApiOkResponse({ type: InvestmentApplicationWithPlanResponse })
+  @ApiConflictResponse({ description: 'La solicitud ya fue resuelta' })
+  @ApiNotFoundResponse()
+  reject(@Param('id', uuid) id: string) {
+    return this.onboarding.reject(id);
   }
 
   /** Detalle de una solicitud. */

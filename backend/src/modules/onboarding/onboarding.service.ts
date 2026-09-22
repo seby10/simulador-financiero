@@ -66,6 +66,19 @@ export class OnboardingService {
     });
   }
 
+  /** Consulta pública: busca la solicitud más reciente de un solicitante por cédula. */
+  async lookupByIdNumber(idNumber: string) {
+    const application = await this.prisma.investmentApplication.findFirst({
+      where: { applicantIdNumber: idNumber },
+      orderBy: { createdAt: 'desc' },
+      include: { investmentPlan: planSummary },
+    });
+    if (!application) throw new NotFoundException('No se encontraron solicitudes para esa cédula');
+    // Solo devolvemos campos no sensibles al cliente
+    const { applicantFullName, status, biometricScore, amount, termDays, payoutMethod, createdAt, investmentPlan, id } = application;
+    return { id, applicantFullName, status, biometricScore, amount, termDays, payoutMethod, createdAt, investmentPlan };
+  }
+
   async uploadDocuments(id: string, files: DocumentFiles = {}) {
     await this.getPending(id);
     const uploads = DOCUMENT_KINDS.flatMap((kind) => {
@@ -109,7 +122,7 @@ export class OnboardingService {
   }
 
   async readDocument(id: string, kind: string) {
-    if (!DOCUMENT_KINDS.includes(kind as DocumentKind))
+    if (!DOCUMENT_KINDS.includes(kind as DocumentKind) && kind !== 'selfie')
       throw new NotFoundException('Documento no válido');
     await this.get(id);
     const buffer = await readFile(
@@ -123,6 +136,24 @@ export class OnboardingService {
       mimeType: MIME_TYPES[fileKind],
       fileName: `${kind}.${fileKind}`,
     };
+  }
+
+  async approve(id: string) {
+    const application = await this.getPending(id);
+    return this.prisma.investmentApplication.update({
+      where: { id: application.id },
+      data: { status: ApplicationStatus.APPROVED },
+      include: { investmentPlan: planSummary },
+    });
+  }
+
+  async reject(id: string) {
+    const application = await this.getPending(id);
+    return this.prisma.investmentApplication.update({
+      where: { id: application.id },
+      data: { status: ApplicationStatus.REJECTED },
+      include: { investmentPlan: planSummary },
+    });
   }
 
   private async getPending(id: string) {

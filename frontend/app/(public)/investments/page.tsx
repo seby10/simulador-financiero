@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Calculator, ChevronRight, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import Navbar from "@/components/navbar";
 import { API_URL } from "@/lib/api";
@@ -35,6 +36,7 @@ type SimulationResult = {
 };
 
 export default function InvestmentsSimulatorPage() {
+  const router = useRouter();
   const [plans, setPlans] = useState<InvestmentPlan[]>([]);
   const [activePlanId, setActivePlanId] = useState<number | null>(null);
   
@@ -259,8 +261,19 @@ export default function InvestmentsSimulatorPage() {
                         )}
                       </div>
 
-                      <button className="w-full mt-4 border-2 border-brand-primary text-brand-primary hover:bg-blue-50 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
-                        Abrir esta Póliza <ChevronRight className="w-5 h-5" />
+                      <button 
+                        onClick={() => {
+                          if (!result || !activePlanId) return;
+                          const params = new URLSearchParams({
+                            planId: String(activePlanId),
+                            amount: result.amount,
+                            termDays: String(result.termDays),
+                            payoutMethod: result.payoutMethod,
+                          });
+                          router.push(`/investments/request?${params.toString()}`);
+                        }}
+                        className="w-full mt-4 border-2 border-brand-primary text-brand-primary hover:bg-blue-50 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
+                        Abrir esta Poliza <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
                   )}

@@ -51,6 +51,11 @@ export class ListApplicationsQuery {
   status?: ApplicationStatus;
 }
 
+export class StatusLookupQuery {
+  /** Cedula del solicitante para consultar su solicitud. */
+  @IsString() @IsNotEmpty() @MaxLength(10) idNumber: string;
+}
+
 /** Campos multipart de carga de documentos (JPEG, PNG o PDF, máx. 5 MB c/u). */
 export class UploadDocumentsDto {
   @ApiProperty({ type: 'string', format: 'binary', required: false })

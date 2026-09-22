@@ -29,6 +29,12 @@ export default function NavLinks() {
       >
         CRÉDITOS
       </Link>
+      <Link 
+        href="/investments/status" 
+        className={`transition-colors py-7 border-b-2 ${pathname.startsWith("/investments/status") ? "text-brand-secondary border-brand-secondary" : "border-transparent hover:border-brand-secondary hover:text-brand-secondary"}`}
+      >
+        CONSULTAR SOLICITUD
+      </Link>
       
       <div className="ml-4 pl-8 border-l border-slate-200/40">
         <Link 

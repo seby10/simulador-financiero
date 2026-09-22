@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Building2, LayoutDashboard, CreditCard, PieChart, Building, Users, LogOut } from "lucide-react";
+import { Building2, LayoutDashboard, CreditCard, PieChart, Building, Users, LogOut, ClipboardList } from "lucide-react";
 import { API_URL } from "@/lib/api";
 
 async function verifySession() {
@@ -94,7 +94,11 @@ export default async function AdminLayout({
           </Link>
           <Link href="/admin/investments" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <PieChart className="w-5 h-5" />
-            <span className="font-semibold">Pólizas</span>
+            <span className="font-semibold">Polizas</span>
+          </Link>
+          <Link href="/admin/applications" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
+            <ClipboardList className="w-5 h-5" />
+            <span className="font-semibold">Solicitudes</span>
           </Link>
           <Link href="/admin/institution" className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-white/10 transition-colors">
             <Building className="w-5 h-5" />

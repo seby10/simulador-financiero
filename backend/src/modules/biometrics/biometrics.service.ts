@@ -8,7 +8,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { readFile } from 'node:fs/promises';
-import { assertFileKind, onboardingDocumentPath } from '../../common/http.js';
+import { assertFileKind, onboardingDocumentPath, saveFile } from '../../common/http.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { ApplicationStatus } from '../../generated/prisma/enums.js';
 import {
@@ -102,6 +102,14 @@ export class BiometricsService {
           'Ya hay una verificación en curso para esta solicitud',
         );
       });
+
+    if (passed) {
+      await saveFile(onboardingDocumentPath(applicationId, 'selfie'), selfie);
+      await this.prisma.$executeRaw`
+        UPDATE "InvestmentApplication"
+        SET "documentUrls" = "documentUrls" || ${JSON.stringify({ selfie: `/api/onboarding/applications/${applicationId}/documents/selfie` })}::jsonb
+        WHERE id = ${applicationId}`;
+    }
 
     const status = passed
       ? await this.approve(applicationId, assessment.matchScore)
