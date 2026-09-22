@@ -26,7 +26,7 @@ export default function CreditsAdminPage() {
   const [editingCredit, setEditingCredit] = useState<Partial<CreditType> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error"}>({
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error" | "warning" | "info", onConfirm?: () => void}>({
     isOpen: false,
     title: "",
     message: "",
@@ -123,16 +123,24 @@ export default function CreditsAdminPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este crédito?')) return;
-    try {
-      const res = await fetch(`${API_URL}/credit/types/${id}`, { method: 'DELETE', credentials: 'include' });
-      if (!res.ok) throw new Error("Error al eliminar");
-      setModal({ isOpen: true, title: "Éxito", message: "Crédito eliminado", type: "success" });
-      fetchCredits();
-    } catch(err: any) {
-      setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
-    }
+  const handleDelete = (id: number) => {
+    setModal({
+      isOpen: true,
+      title: "Confirmar eliminación",
+      message: "¿Seguro que deseas eliminar este crédito?",
+      type: "warning",
+      onConfirm: async () => {
+        try {
+          setModal({ ...modal, isOpen: false });
+          const res = await fetch(`${API_URL}/credit/types/${id}`, { method: 'DELETE', credentials: 'include' });
+          if (!res.ok) throw new Error("Error al eliminar");
+          setModal({ isOpen: true, title: "Éxito", message: "Crédito eliminado", type: "success" });
+          fetchCredits();
+        } catch(err: any) {
+          setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
+        }
+      }
+    });
   };
 
   return (
@@ -140,6 +148,7 @@ export default function CreditsAdminPage() {
       <Modal 
         isOpen={modal.isOpen} 
         onClose={() => setModal({...modal, isOpen: false})} 
+        onConfirm={modal.onConfirm}
         title={modal.title} 
         message={modal.message} 
         type={modal.type} 

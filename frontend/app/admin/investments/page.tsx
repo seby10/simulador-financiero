@@ -27,7 +27,7 @@ export default function InvestmentsAdminPage() {
   const [editingPlan, setEditingPlan] = useState<Partial<InvestmentPlan> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error"}>({
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error" | "warning" | "info", onConfirm?: () => void}>({
     isOpen: false,
     title: "",
     message: "",
@@ -130,20 +130,28 @@ export default function InvestmentsAdminPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Seguro que deseas eliminar este plan de inversión?")) return;
-    try {
-      const res = await fetch(`${API_URL}/investment/plans/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to delete");
-      setModal({ isOpen: true, title: "Éxito", message: "Plan de inversión eliminado", type: "success" });
-      await fetchPlans();
-    } catch (err: any) {
-      console.error(err);
-      setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
-    }
+  const handleDelete = (id: number) => {
+    setModal({
+      isOpen: true,
+      title: "Confirmar eliminación",
+      message: "¿Seguro que deseas eliminar este plan de inversión?",
+      type: "warning",
+      onConfirm: async () => {
+        try {
+          setModal({ ...modal, isOpen: false }); // close warning modal first
+          const res = await fetch(`${API_URL}/investment/plans/${id}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+          if (!res.ok) throw new Error("Failed to delete");
+          setModal({ isOpen: true, title: "Éxito", message: "Plan de inversión eliminado", type: "success" });
+          await fetchPlans();
+        } catch (err: any) {
+          console.error(err);
+          setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
+        }
+      }
+    });
   };
 
   return (
@@ -151,6 +159,7 @@ export default function InvestmentsAdminPage() {
       <Modal 
         isOpen={modal.isOpen} 
         onClose={() => setModal({...modal, isOpen: false})} 
+        onConfirm={modal.onConfirm}
         title={modal.title} 
         message={modal.message} 
         type={modal.type} 

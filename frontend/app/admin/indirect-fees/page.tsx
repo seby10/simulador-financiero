@@ -29,7 +29,7 @@ export default function IndirectFeesAdminPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFee, setEditingFee] = useState<Partial<IndirectFee> | null>(null);
 
-  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error"}>({
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error" | "warning" | "info", onConfirm?: () => void}>({
     isOpen: false,
     title: "",
     message: "",
@@ -106,20 +106,28 @@ export default function IndirectFeesAdminPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Seguro que deseas eliminar este cargo?")) return;
-    try {
-      const res = await fetch(`${API_URL}/credit/fees/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to delete");
-      setModal({ isOpen: true, title: "Éxito", message: "Cargo eliminado", type: "success" });
-      await fetchFees();
-    } catch (err: any) {
-      console.error(err);
-      setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
-    }
+  const handleDelete = (id: number) => {
+    setModal({
+      isOpen: true,
+      title: "Confirmar eliminación",
+      message: "¿Seguro que deseas eliminar este cargo?",
+      type: "warning",
+      onConfirm: async () => {
+        try {
+          setModal({ ...modal, isOpen: false });
+          const res = await fetch(`${API_URL}/credit/fees/${id}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+          if (!res.ok) throw new Error("Failed to delete");
+          setModal({ isOpen: true, title: "Éxito", message: "Cargo eliminado", type: "success" });
+          await fetchFees();
+        } catch (err: any) {
+          console.error(err);
+          setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
+        }
+      }
+    });
   };
 
   return (
@@ -127,6 +135,7 @@ export default function IndirectFeesAdminPage() {
       <Modal 
         isOpen={modal.isOpen} 
         onClose={() => setModal({...modal, isOpen: false})} 
+        onConfirm={modal.onConfirm}
         title={modal.title} 
         message={modal.message} 
         type={modal.type} 
