@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import Modal from "@/components/ui/modal";
 
 type InvestmentPlan = {
   id: number;
@@ -24,6 +25,14 @@ export default function InvestmentsAdminPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Partial<InvestmentPlan> | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error"}>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success"
+  });
 
   const fetchPlans = async () => {
     try {
@@ -57,12 +66,14 @@ export default function InvestmentsAdminPage() {
         imageUrl: "",
       });
     }
+    setImageFile(null);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingPlan(null);
+    setImageFile(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -73,8 +84,9 @@ export default function InvestmentsAdminPage() {
       const isEditing = !!editingPlan.id;
       const url = `${API_URL}/investment/plans${isEditing ? `/${editingPlan.id}` : ''}`;
       
+      const { id, createdAt, updatedAt, ...rest } = editingPlan as any;
       const payload = {
-        ...editingPlan,
+        ...rest,
         termMinDays: Number(editingPlan.termMinDays),
         termMaxDays: Number(editingPlan.termMaxDays),
       };
@@ -87,14 +99,34 @@ export default function InvestmentsAdminPage() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to save");
+        let errStr = "Failed to save";
+        try {
+          const errData = await res.json();
+          errStr = Array.isArray(errData.message) ? errData.message.join(', ') : errData.message || errStr;
+        } catch(e) {}
+        throw new Error(errStr);
       }
       
+      const data = await res.json();
+      const planId = data.id;
+
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const imgRes = await fetch(`${API_URL}/investment/plans/${planId}/image`, {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        if (!imgRes.ok) throw new Error("Error al subir imagen");
+      }
+      
+      setModal({ isOpen: true, title: "Éxito", message: "Plan de inversión guardado exitosamente", type: "success" });
       await fetchPlans();
       handleCloseModal();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error al guardar");
+      setModal({ isOpen: true, title: "Error", message: err.message || "Error al guardar", type: "error" });
     }
   };
 
@@ -106,15 +138,23 @@ export default function InvestmentsAdminPage() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to delete");
+      setModal({ isOpen: true, title: "Éxito", message: "Plan de inversión eliminado", type: "success" });
       await fetchPlans();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error al eliminar");
+      setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
     }
   };
 
   return (
     <div className="space-y-6">
+      <Modal 
+        isOpen={modal.isOpen} 
+        onClose={() => setModal({...modal, isOpen: false})} 
+        title={modal.title} 
+        message={modal.message} 
+        type={modal.type} 
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Pólizas de Inversión (DPF)</h1>
@@ -157,7 +197,7 @@ export default function InvestmentsAdminPage() {
                   <tr key={plan.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900">#{plan.id}</td>
                     <td className="px-6 py-4 font-bold text-brand-primary">{plan.name}</td>
-                    <td className="px-6 py-4 text-brand-secondary font-medium">${Number(plan.minAmount)} - ${Number(plan.maxAmount)}</td>
+                    <td className="px-6 py-4 text-brand-secondary font-medium">\${Number(plan.minAmount)} - \${Number(plan.maxAmount)}</td>
                     <td className="px-6 py-4">{plan.termMinDays} - {plan.termMaxDays} días</td>
                     <td className="px-6 py-4 font-bold">{Number(plan.tea).toFixed(2)}%</td>
                     <td className="px-6 py-4">
@@ -268,18 +308,29 @@ export default function InvestmentsAdminPage() {
                   />
                 </div>
 
-                <div className="space-y-1 col-span-2">
+                <div className="space-y-2 col-span-2">
                   <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                     <ImageIcon className="w-4 h-4" />
-                    URL de Imagen (Opcional)
+                    Imagen del Plan (Opcional)
                   </label>
-                  <input 
-                    type="url" 
-                    value={editingPlan.imageUrl || ''} 
-                    onChange={e => setEditingPlan({...editingPlan, imageUrl: e.target.value})} 
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
-                    placeholder="https://ejemplo.com/imagen.jpg"
-                  />
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-primary hover:file:bg-blue-100 cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-slate-500">O pegar URL externa:</span>
+                    <input 
+                      type="text" 
+                      value={editingPlan.imageUrl || ''} 
+                      onChange={e => setEditingPlan({...editingPlan, imageUrl: e.target.value})} 
+                      className="flex-1 px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
+                      placeholder="https://ejemplo.com/imagen.jpg o /uploads/..."
+                    />
+                  </div>
                 </div>
               </div>
 

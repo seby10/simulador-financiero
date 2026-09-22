@@ -41,12 +41,7 @@ export default function Navbar() {
                 </span>
               ) : (
                 <>
-                  <span className="font-bold text-xl tracking-tight leading-none mt-1" style={{ color: 'var(--brand-primary, #003b70)' }}>
-                    COOPERATIVA
-                  </span>
-                  <span className="font-extrabold text-2xl tracking-tighter leading-none" style={{ color: 'var(--brand-primary, #003b70)' }}>
-                    AMBATO
-                  </span>
+
                 </>
               )}
             </div>

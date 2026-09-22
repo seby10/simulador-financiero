@@ -486,11 +486,11 @@ export default function InstitutionAdminPage() {
                     <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
                       <span className="text-xs text-slate-400 font-medium whitespace-nowrap">O pegar URL externa:</span>
                       <input 
-                        type="url" 
+                        type="text" 
                         value={config.heroImageUrl || ''} 
                         onChange={e => setConfig({...config, heroImageUrl: e.target.value})} 
                         className="flex-1 px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" 
-                        placeholder="https://ejemplo.com/imagen.jpg"
+                        placeholder="https://ejemplo.com/imagen.jpg o /uploads/..."
                       />
                     </div>
                   </div>

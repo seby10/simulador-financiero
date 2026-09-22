@@ -121,7 +121,7 @@ export default async function Home() {
             ) : (
               <Building2 className="w-6 h-6" />
             )}
-            <span className="font-bold tracking-wide uppercase">{config?.institutionName || "COOPERATIVA AMBATO"}</span>
+            <span className="font-bold tracking-wide uppercase">{config?.institutionName}</span>
           </div>
           <p className="text-sm">© {new Date().getFullYear()} Todos los derechos reservados.</p>
           <div className="flex items-center gap-4 text-sm">

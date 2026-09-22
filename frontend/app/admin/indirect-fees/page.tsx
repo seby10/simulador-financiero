@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, X, Save } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import Modal from "@/components/ui/modal";
 
 type FeeTypeEnum = 'FIXED_PER_INSTALLMENT' | 'PERCENTAGE_REMAINING_BALANCE' | 'PERCENTAGE_INITIAL_AMOUNT';
 
@@ -27,6 +28,13 @@ export default function IndirectFeesAdminPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFee, setEditingFee] = useState<Partial<IndirectFee> | null>(null);
+
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error"}>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success"
+  });
 
   const fetchFees = async () => {
     try {
@@ -71,22 +79,30 @@ export default function IndirectFeesAdminPage() {
       const isEditing = !!editingFee.id;
       const url = `${API_URL}/credit/fees${isEditing ? `/${editingFee.id}` : ''}`;
       
+      const { id, createdAt, updatedAt, ...payload } = editingFee as any;
+
       const res = await fetch(url, {
         method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(editingFee),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to save");
+        let errStr = "Failed to save";
+        try {
+          const errData = await res.json();
+          errStr = Array.isArray(errData.message) ? errData.message.join(', ') : errData.message || errStr;
+        } catch(e) {}
+        throw new Error(errStr);
       }
       
+      setModal({ isOpen: true, title: "Éxito", message: "Cargo guardado exitosamente", type: "success" });
       await fetchFees();
       handleCloseModal();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error al guardar");
+      setModal({ isOpen: true, title: "Error", message: err.message || "Error al guardar", type: "error" });
     }
   };
 
@@ -98,15 +114,23 @@ export default function IndirectFeesAdminPage() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to delete");
+      setModal({ isOpen: true, title: "Éxito", message: "Cargo eliminado", type: "success" });
       await fetchFees();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error al eliminar");
+      setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
     }
   };
 
   return (
     <div className="space-y-6">
+      <Modal 
+        isOpen={modal.isOpen} 
+        onClose={() => setModal({...modal, isOpen: false})} 
+        title={modal.title} 
+        message={modal.message} 
+        type={modal.type} 
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Cargos Indirectos y Seguros</h1>

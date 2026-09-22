@@ -48,6 +48,16 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
+  let config = null;
+  try {
+    const res = await fetch(`${API_URL}/institution`, { cache: 'no-store' });
+    if (res.ok) {
+      config = await res.json();
+    }
+  } catch (error) {
+    console.error("Failed to fetch institution config", error);
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800">
       
@@ -55,10 +65,16 @@ export default async function AdminLayout({
       <aside className="w-64 bg-brand-primary text-white flex flex-col shadow-2xl shrink-0 sticky top-0 h-screen">
         <div className="h-20 flex items-center px-6 border-b border-blue-900/50">
           <Link href="/admin" className="flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-brand-secondary" />
+            {config?.logoUrl ? (
+              <img src={`${API_URL?.replace('/api', '') || ''}${config.logoUrl}`} alt="Logo" className="h-10 w-auto object-contain bg-white/10 rounded p-1" />
+            ) : (
+              <Building2 className="w-8 h-8 text-brand-secondary" />
+            )}
             <div className="flex flex-col">
               <span className="font-bold text-sm leading-none">ADMINISTRACIÓN</span>
-              <span className="font-light text-xs text-blue-200 mt-1">Coop. Ambato</span>
+              <span className="font-light text-xs text-blue-200 mt-1 line-clamp-1 truncate max-w-[130px]" title={config?.institutionName }>
+                {config?.institutionName}
+              </span>
             </div>
           </Link>
         </div>

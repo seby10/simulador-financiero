@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, X, Save } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import Modal from "@/components/ui/modal";
 
 type CreditType = {
   id: number;
@@ -23,6 +24,14 @@ export default function CreditsAdminPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCredit, setEditingCredit] = useState<Partial<CreditType> | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: "success" | "error"}>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success"
+  });
 
   const fetchCredits = async () => {
     try {
@@ -55,12 +64,14 @@ export default function CreditsAdminPage() {
         imageUrl: ""
       });
     }
+    setImageFile(null);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingCredit(null);
+    setImageFile(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -71,30 +82,68 @@ export default function CreditsAdminPage() {
       const isEditing = !!editingCredit.id;
       const url = `${API_URL}/credit/types${isEditing ? `/${editingCredit.id}` : ''}`;
       
+      const { id, createdAt, updatedAt, ...payload } = editingCredit as any;
+
       const res = await fetch(url, {
         method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        // Important: Next.js fetch doesn't send cookies cross-origin by default without credentials: 'include' if on different ports, but we're on same localhost maybe? 
-        // Actually, backend needs the token.
-        // wait, we need credentials: "include" for httpOnly cookies.
         credentials: "include",
-        body: JSON.stringify(editingCredit),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to save");
+        let errStr = "Failed to save";
+        try {
+          const errData = await res.json();
+          errStr = Array.isArray(errData.message) ? errData.message.join(', ') : errData.message || errStr;
+        } catch(e) {}
+        throw new Error(errStr);
       }
       
+      const data = await res.json();
+      const creditId = data.id;
+
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const imgRes = await fetch(`${API_URL}/credit/types/${creditId}/image`, {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        if (!imgRes.ok) throw new Error("Error al subir imagen");
+      }
+      
+      setModal({ isOpen: true, title: "Éxito", message: "Crédito guardado exitosamente", type: "success" });
       await fetchCredits();
       handleCloseModal();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error al guardar");
+      setModal({ isOpen: true, title: "Error", message: err.message || "Error al guardar", type: "error" });
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este crédito?')) return;
+    try {
+      const res = await fetch(`${API_URL}/credit/types/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error("Error al eliminar");
+      setModal({ isOpen: true, title: "Éxito", message: "Crédito eliminado", type: "success" });
+      fetchCredits();
+    } catch(err: any) {
+      setModal({ isOpen: true, title: "Error", message: err.message || "Error al eliminar", type: "error" });
     }
   };
 
   return (
     <div className="space-y-6">
+      <Modal 
+        isOpen={modal.isOpen} 
+        onClose={() => setModal({...modal, isOpen: false})} 
+        title={modal.title} 
+        message={modal.message} 
+        type={modal.type} 
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Tipos de Crédito</h1>
@@ -142,7 +191,7 @@ export default function CreditsAdminPage() {
                     <td className="px-6 py-4">{Number(credit.annualInterestRate).toFixed(2)}%</td>
                     <td className="px-6 py-4">
                       {credit.imageUrl ? (
-                        <a href={credit.imageUrl} target="_blank" className="text-brand-secondary underline max-w-[150px] truncate block">Ver imagen</a>
+                        <a href={`${credit.imageUrl.startsWith('http') ? '' : API_URL?.replace('/api', '')}${credit.imageUrl}`} target="_blank" className="text-brand-secondary underline max-w-[150px] truncate block">Ver imagen</a>
                       ) : (
                         <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Sin Imagen</span>
                       )}
@@ -154,7 +203,7 @@ export default function CreditsAdminPage() {
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <button onClick={() => handleDelete(credit.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
@@ -210,10 +259,20 @@ export default function CreditsAdminPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700">URL de Imagen (Unsplash, etc.)</label>
-                <input type="url" value={editingCredit.imageUrl || ''} onChange={e => setEditingCredit({...editingCredit, imageUrl: e.target.value})} placeholder="https://images.unsplash.com/..." className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
-                <p className="text-xs text-slate-500 mt-1">Pega el link de la imagen que quieres que aparezca en el simulador para este crédito.</p>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Imagen del Crédito</label>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-primary hover:file:bg-blue-100 cursor-pointer"
+                  />
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-slate-500">O pegar URL externa:</span>
+                  <input type="text" value={editingCredit.imageUrl || ''} onChange={e => setEditingCredit({...editingCredit, imageUrl: e.target.value})} placeholder="https://... o /uploads/..." className="flex-1 px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-brand-secondary outline-none" />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
