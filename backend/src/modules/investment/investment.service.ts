@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { assertMinMax, assertRange } from '../../common/http.js';
+import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
+import { assertFileKind, assertMinMax, assertRange, PUBLIC_UPLOADS, saveFile } from '../../common/http.js';
 import {
   PAYOUT_PERIOD_DAYS,
   simulateInvestment,
@@ -36,6 +38,18 @@ export class InvestmentService {
 
   deletePlan(id: number) {
     return this.prisma.investmentPlan.delete({ where: { id } });
+  }
+
+  async updateImage(id: number, file: Express.Multer.File | undefined) {
+    if (!file) throw new BadRequestException('Adjunte la imagen');
+    await this.getPlan(id);
+    const kind = assertFileKind(file.buffer, ['png', 'jpg'], 'image');
+    const name = `investment-${id}-${randomUUID()}.${kind}`;
+    await saveFile(join(PUBLIC_UPLOADS, 'investment', name), file.buffer);
+    return this.prisma.investmentPlan.update({
+      where: { id },
+      data: { imageUrl: `/uploads/investment/${name}` },
+    });
   }
 
   /** Valida monto, plazo y modalidad contra el plan. Reutilizado por onboarding. */

@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -20,12 +21,30 @@ export class UpdateInstitutionDto {
   @IsEmail() email: string;
   /** Texto legal impreso en los PDF. */
   @IsString() @IsNotEmpty() @MaxLength(2000) disclaimerText: string;
+  @IsString() @IsNotEmpty() @MaxLength(7) primaryColor: string;
+  @IsString() @IsNotEmpty() @MaxLength(7) secondaryColor: string;
+  @IsOptional() @IsString() @MaxLength(7) accentColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) navbarBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) navbarTextColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) pageBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) cardBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) footerBgColor?: string;
+  @IsOptional() @IsString() @MaxLength(7) footerTextColor?: string;
+  @IsOptional() @IsString() heroImageUrl?: string;
+  @IsString() @IsNotEmpty() @MaxLength(100) heroTitle: string;
+  @IsString() @IsNotEmpty() @MaxLength(300) heroSubtitle: string;
 }
 
 /** Campo multipart del logo (PNG o JPEG, máx. 5 MB). */
 export class UploadLogoDto {
   @ApiProperty({ type: 'string', format: 'binary' })
   logo: unknown;
+}
+
+/** Campo multipart para la imagen de fondo (PNG o JPEG, máx. 5 MB). */
+export class UploadHeroDto {
+  @ApiProperty({ type: 'string', format: 'binary' })
+  hero: unknown;
 }
 
 // ───────────── Respuestas (solo documentación OpenAPI) ─────────────

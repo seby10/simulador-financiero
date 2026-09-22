@@ -45,12 +45,6 @@ export function BiometricsScanner() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
   const startCamera = async () => {
     setCameraError(null);
     setCapturedImage(null);
@@ -80,6 +74,13 @@ export function BiometricsScanner() {
     }
     setCameraActive(false);
   };
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const capturePhoto = () => {
     if (!videoRef.current) return;

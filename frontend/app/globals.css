@@ -5,6 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-navbar-bg: var(--brand-navbar-bg);
+  --color-brand-navbar-text: var(--brand-navbar-text);
+  --color-brand-page-bg: var(--brand-page-bg);
+  --color-brand-card-bg: var(--brand-card-bg);
+  --color-brand-footer-bg: var(--brand-footer-bg);
+  --color-brand-footer-text: var(--brand-footer-text);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);

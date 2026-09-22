@@ -63,6 +63,18 @@ model InstitutionConfig {
   phone               String
   email               String
   logoUrl             String?
+  primaryColor        String   @default("#003b70")
+  secondaryColor      String   @default("#35b8db")
+  accentColor         String   @default("#10b981")
+  navbarBgColor       String   @default("#ffffff")
+  navbarTextColor     String   @default("#1e293b")
+  pageBgColor         String   @default("#f8fafc")
+  cardBgColor         String   @default("#ffffff")
+  footerBgColor       String   @default("#003b70")
+  footerTextColor     String   @default("#e2e8f0")
+  heroImageUrl        String?
+  heroTitle           String   @default("El respaldo financiero que necesitas.")
+  heroSubtitle        String   @default("Crecemos junto a ti. Solicita tu crédito hoy mismo y simula tus pagos de forma transparente.")
   disclaimerText      String
   updatedAt           DateTime @updatedAt
 }
@@ -77,6 +89,7 @@ model CreditType {
   maxTermMonths      Int
   /// Tasa nominal anual (%). La efectiva se deriva: (1 + r/12)^12 - 1
   annualInterestRate Decimal  @db.Decimal(7, 4)
+  imageUrl           String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -109,6 +122,7 @@ model InvestmentPlan {
   tea                 Decimal                 @db.Decimal(7, 4)
   allowsMonthlyPayout Boolean                 @default(false)
   requiredDocuments   Json                    @default("[]")
+  imageUrl            String?
   applications        InvestmentApplication[]
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt

@@ -48,4 +48,17 @@ export class InstitutionService {
       data: { logoUrl: `/uploads/institution/${name}` },
     });
   }
+
+  async updateHero(file: Express.Multer.File | undefined) {
+    if (!file)
+      throw new BadRequestException('Adjunte el archivo en el campo "hero"');
+    await this.get();
+    const kind = assertFileKind(file.buffer, ['png', 'jpg'], 'hero');
+    const name = `hero-${randomUUID()}.${kind}`;
+    await saveFile(join(PUBLIC_UPLOADS, 'institution', name), file.buffer);
+    return this.prisma.institutionConfig.update({
+      where: { id: SINGLETON_ID },
+      data: { heroImageUrl: `/uploads/institution/${name}` },
+    });
+  }
 }
