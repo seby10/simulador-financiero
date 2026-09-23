@@ -8,6 +8,18 @@ export const UPLOADS_URL = typeof window === 'undefined'
 
 const API_BASE_URL = API_URL;
 
+/** Mensaje legible de una respuesta de error de la API (Nest devuelve string o string[]). */
+export async function readApiError(res: Response, fallback: string) {
+  const data: unknown = await res.json().catch(() => null);
+  const message = (data as { message?: unknown } | null)?.message;
+  if (Array.isArray(message)) return message.join(", ");
+  return typeof message === "string" ? message : fallback;
+}
+
+/** Texto de un error capturado en un `catch`, sea o no una instancia de Error. */
+export const errorMessage = (err: unknown, fallback = "Ocurrió un error inesperado") =>
+  err instanceof Error ? err.message : fallback;
+
 export async function fetchCreditTypes() {
   const res = await fetch(`${API_BASE_URL}/credit/types`, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch credit types");

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Lock,
@@ -16,13 +15,12 @@ import {
   KeyRound,
 } from "lucide-react";
 import Navbar from "@/components/navbar";
-import { API_URL } from "@/lib/api";
+import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import { analyzeImageQuality } from "@/lib/face-analysis";
 
 type Step = 1 | 2 | 3 | 4;
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
 
   // Form states
@@ -33,7 +31,6 @@ export default function ForgotPasswordPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [userName, setUserName] = useState("");
   const [biometricScore, setBiometricScore] = useState<string | null>(null);
 
   // Camera states
@@ -50,10 +47,6 @@ export default function ForgotPasswordPage() {
         faceapi.nets.faceLandmark68Net.loadFromUri("/models");
       })
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    return () => stopCamera();
   }, []);
 
   const startCamera = async () => {
@@ -78,6 +71,9 @@ export default function ForgotPasswordPage() {
     setCameraActive(false);
   };
 
+  // Al salir de la página se libera la cámara (solo toca el stream, no el estado).
+  useEffect(() => () => mediaStreamRef.current?.getTracks().forEach((t) => t.stop()), []);
+
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const canvas = document.createElement("canvas");
@@ -91,33 +87,13 @@ export default function ForgotPasswordPage() {
     stopCamera();
   };
 
-  // Step 1: Check Email
-  const handleStep1Submit = async (e: React.FormEvent) => {
+  // Paso 1: solo se toma el correo. Si existe o no se sabrá junto con la
+  // comparación facial, con el mismo mensaje en ambos casos.
+  const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
-
-    try {
-      const res = await fetch(`${API_URL}/auth/biometric-reset/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || "Correo no registrado");
-      }
-
-      const data = await res.json();
-      setUserName(data.fullName);
-      setStep(2);
-      startCamera();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    setStep(2);
+    startCamera();
   };
 
   // Step 2: Facial Verification
@@ -142,17 +118,14 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email, selfieBase64: capturedImage }),
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.message || "La verificación biométrica no fue exitosa");
-      }
+      if (!res.ok) throw new Error(await readApiError(res, "La verificación biométrica no fue exitosa"));
 
       const result = await res.json();
       setResetToken(result.resetToken);
       setBiometricScore(result.matchScore);
       setStep(3);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -165,8 +138,8 @@ export default function ForgotPasswordPage() {
       setError("Las contraseñas no coinciden.");
       return;
     }
-    if (newPassword.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres.");
+    if (newPassword.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
@@ -180,14 +153,11 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ resetToken, newPassword }),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || "Error al actualizar contraseña");
-      }
+      if (!res.ok) throw new Error(await readApiError(res, "Error al actualizar contraseña"));
 
       setStep(4);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -273,7 +243,7 @@ export default function ForgotPasswordPage() {
                   className="w-full text-white py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-70 text-sm"
                   style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
                 >
-                  {loading ? "Verificando correo..." : "Continuar a Verificación Facial"}
+                  Continuar a Verificación Facial
                   {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 </button>
 
@@ -289,8 +259,11 @@ export default function ForgotPasswordPage() {
             {step === 2 && (
               <div className="space-y-5">
                 <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-xs text-slate-700">
-                  <p className="font-bold text-slate-900">Titular detectado: {userName}</p>
-                  <p className="text-slate-500 mt-0.5">Ubica tu rostro frente a la cámara dentro del óvalo guía.</p>
+                  <p className="font-bold text-slate-900">Cuenta: {email}</p>
+                  <p className="text-slate-500 mt-0.5">
+                    Ubica tu rostro frente a la cámara dentro del óvalo guía. Se comparará con la foto que
+                    verificó tu identidad en tu última solicitud.
+                  </p>
                 </div>
 
                 {/* Camera Container */}
@@ -381,7 +354,7 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleStep3Submit} className="space-y-5">
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-xs font-semibold flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  Identidad facial validada correctamente ({biometricScore || "94.8"}% Match). Ingresa tu nueva clave.
+                  Identidad facial validada correctamente ({biometricScore}% de coincidencia). Ingresa tu nueva clave.
                 </div>
 
                 <div className="space-y-2">
@@ -391,7 +364,7 @@ export default function ForgotPasswordPage() {
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-slate-800 text-sm font-medium"
@@ -407,7 +380,7 @@ export default function ForgotPasswordPage() {
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-slate-800 text-sm font-medium"

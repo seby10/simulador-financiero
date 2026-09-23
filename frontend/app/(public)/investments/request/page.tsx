@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import Navbar from "@/components/navbar";
-import { API_URL } from "@/lib/api";
+import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import Modal from "@/components/ui/modal";
 import {
   User,
@@ -19,7 +20,6 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
-import { analyzeImageQuality, runSimulatedVerification } from "@/lib/face-analysis";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -29,6 +29,39 @@ const STEPS = [
   { id: 3, label: "Verificacion Biometrica", icon: ShieldCheck },
   { id: 4, label: "Confirmacion", icon: CheckCircle2 },
 ];
+
+function FileUploadBox({
+  label, file, onFile, accept = "image/jpeg,image/png,application/pdf", hint = "JPG, PNG o PDF - max 5 MB", required = false,
+}: { label: string; file: File | null; onFile: (f: File) => void; accept?: string; hint?: string; required?: boolean }) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div
+        onClick={() => ref.current?.click()}
+        className={`border-2 border-dashed rounded-xl p-4 cursor-pointer text-center transition-colors ${
+          file ? "border-emerald-400 bg-emerald-50" : "border-slate-300 hover:border-brand-secondary hover:bg-slate-50"
+        }`}
+      >
+        {file ? (
+          <div className="flex items-center justify-center gap-2 text-emerald-700">
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+          </div>
+        ) : (
+          <div className="text-slate-400">
+            <Upload className="w-6 h-6 mx-auto mb-1" />
+            <p className="text-xs">Haz clic para seleccionar archivo</p>
+            <p className="text-xs text-slate-400 mt-0.5">{hint}</p>
+          </div>
+        )}
+      </div>
+      <input ref={ref} type="file" accept={accept} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
+    </div>
+  );
+}
 
 function InvestmentRequestContent() {
   const router = useRouter();
@@ -87,6 +120,9 @@ function InvestmentRequestContent() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [biometricPassed, setBiometricPassed] = useState(false);
   const [biometricScore, setBiometricScore] = useState<number | null>(null);
+  /** Se agotaron los intentos: la solicitud sigue, con revision manual de identidad. */
+  const [manualReview, setManualReview] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -98,17 +134,8 @@ function InvestmentRequestContent() {
   const [saving, setSaving] = useState(false);
   const [stepError, setStepError] = useState("");
 
-  useEffect(() => {
-    import("face-api.js").then((faceapi) => {
-      faceapi.nets.tinyFaceDetector.loadFromUri("/models");
-      faceapi.nets.faceLandmark68Net.loadFromUri("/models");
-    }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    return () => stopCamera();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Al salir de la pagina se libera la camara (solo toca el stream, no el estado).
+  useEffect(() => () => mediaStreamRef.current?.getTracks().forEach((t) => t.stop()), []);
 
   const startCamera = async () => {
     setCameraError(null);
@@ -161,20 +188,33 @@ function InvestmentRequestContent() {
     try {
       const res = await fetch(`${API_URL}/biometrics/applications/${applicationId}/verify`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ selfieBase64: capturedImage }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Error al validar la identidad");
+      if (res.status === 429) {
+        setManualReview(true);
+        throw new Error("Se agotaron los intentos. Un asesor revisara tu identidad con los documentos cargados.");
       }
+      if (!res.ok) throw new Error(await readApiError(res, "Error al validar la identidad"));
+      const data: {
+        passed: boolean;
+        matchScore: string;
+        biometricStatus: "PENDING" | "VERIFIED" | "FAILED";
+        remainingAttempts: number;
+        failureReason: string | null;
+      } = await res.json();
       setBiometricPassed(data.passed);
-      setBiometricScore(data.matchScore ? Math.round(Number(data.matchScore)) : 75);
-      if (!data.passed) {
-        setStepError(data.failureReason || "Verificacion fallida. Intenta nuevamente.");
+      setBiometricScore(Math.round(Number(data.matchScore)));
+      setRemainingAttempts(data.remainingAttempts);
+      if (data.biometricStatus === "FAILED") {
+        setManualReview(true);
+        setStepError("No fue posible verificar tu rostro y se agotaron los intentos. Un asesor revisara tu identidad con los documentos cargados.");
+      } else if (!data.passed) {
+        setStepError(`${data.failureReason || "Verificacion fallida."} Te quedan ${data.remainingAttempts} intento(s).`);
       }
-    } catch (err: any) {
-      setStepError(err.message);
+    } catch (err) {
+      setStepError(errorMessage(err));
     } finally {
       setIsVerifying(false);
     }
@@ -187,6 +227,7 @@ function InvestmentRequestContent() {
     try {
       const res = await fetch(`${API_URL}/onboarding/apply`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
@@ -194,16 +235,12 @@ function InvestmentRequestContent() {
           termDays: Number(form.termDays),
         }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        const msg = Array.isArray(err?.message) ? err.message.join(", ") : err?.message || "Error al enviar solicitud";
-        throw new Error(msg);
-      }
+      if (!res.ok) throw new Error(await readApiError(res, "Error al enviar solicitud"));
       const data = await res.json();
       setApplicationId(data.id);
       setStep(2);
-    } catch (err: any) {
-      setStepError(err.message);
+    } catch (err) {
+      setStepError(errorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -224,60 +261,25 @@ function InvestmentRequestContent() {
       if (docUtilityBill) formData.append("utilityBill", docUtilityBill);
       const res = await fetch(`${API_URL}/onboarding/${applicationId}/documents`, {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.message || "Error al subir documentos");
-      }
+      if (!res.ok) throw new Error(await readApiError(res, "Error al subir documentos"));
       setStep(3);
-    } catch (err: any) {
-      setStepError(err.message);
+    } catch (err) {
+      setStepError(errorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
   const handleStep3Finish = () => {
-    if (!biometricPassed) {
+    if (!biometricPassed && !manualReview) {
       setStepError("La verificacion biometrica no fue exitosa. Intenta de nuevo.");
       return;
     }
     setStepError("");
     setStep(4);
-  };
-
-  const FileUploadBox = ({
-    label, file, onFile, accept = "image/*,application/pdf", required = false,
-  }: { label: string; file: File | null; onFile: (f: File) => void; accept?: string; required?: boolean }) => {
-    const ref = useRef<HTMLInputElement>(null);
-    return (
-      <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <div
-          onClick={() => ref.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-4 cursor-pointer text-center transition-colors ${
-            file ? "border-emerald-400 bg-emerald-50" : "border-slate-300 hover:border-brand-secondary hover:bg-slate-50"
-          }`}
-        >
-          {file ? (
-            <div className="flex items-center justify-center gap-2 text-emerald-700">
-              <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
-            </div>
-          ) : (
-            <div className="text-slate-400">
-              <Upload className="w-6 h-6 mx-auto mb-1" />
-              <p className="text-xs">Haz clic para seleccionar archivo</p>
-              <p className="text-xs text-slate-400 mt-0.5">JPG, PNG o PDF - max 5 MB</p>
-            </div>
-          )}
-        </div>
-        <input ref={ref} type="file" accept={accept} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
-      </div>
-    );
   };
 
   return (
@@ -405,7 +407,7 @@ function InvestmentRequestContent() {
               <form onSubmit={handleStep2Submit} className="space-y-5">
                 <p className="text-sm text-slate-500 mb-2">Sube los documentos requeridos. Los archivos son confidenciales y encriptados.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FileUploadBox label="Cedula - Parte Frontal" file={docIdFront} onFile={setDocIdFront} required />
+                  <FileUploadBox label="Cedula - Parte Frontal" file={docIdFront} onFile={setDocIdFront} accept="image/jpeg,image/png" hint="Foto JPG o PNG (se compara con tu rostro) - max 5 MB" required />
                   <FileUploadBox label="Cedula - Parte Reverso" file={docIdBack} onFile={setDocIdBack} required />
                   <div className="md:col-span-2">
                     <FileUploadBox label="Planilla de Servicio Basico (Opcional)" file={docUtilityBill} onFile={setDocUtilityBill} />
@@ -500,7 +502,7 @@ function InvestmentRequestContent() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {capturedImage && !biometricPassed ? (
+                  {manualReview ? null : capturedImage && !biometricPassed ? (
                     <>
                       <button onClick={() => { setCapturedImage(null); setBiometricPassed(false); if (inputMode === "camera") startCamera(); }} disabled={isVerifying}
                         className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm flex items-center gap-1.5 transition-all disabled:opacity-50">
@@ -528,12 +530,16 @@ function InvestmentRequestContent() {
                   </div>
                 )}
 
+                {remainingAttempts !== null && !biometricPassed && !manualReview && (
+                  <p className="text-xs text-slate-500">Intentos restantes: {remainingAttempts}</p>
+                )}
+
                 <div className="flex justify-between pt-2">
                   <button onClick={() => { setStepError(""); setStep(2); stopCamera(); }}
                     className="px-6 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-sm">
                     Atras
                   </button>
-                  <button onClick={handleStep3Finish} disabled={!biometricPassed}
+                  <button onClick={handleStep3Finish} disabled={!biometricPassed && !manualReview}
                     className="bg-brand-secondary hover:bg-brand-secondary/90 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     Finalizar Solicitud <ChevronRight className="w-5 h-5" />
                   </button>
@@ -549,8 +555,9 @@ function InvestmentRequestContent() {
                 <div>
                   <h3 className="text-2xl font-extrabold text-slate-800 mb-2">Solicitud Enviada!</h3>
                   <p className="text-slate-500 max-w-md mx-auto text-sm">
-                    Tu solicitud de inversion ha sido recibida y esta siendo revisada por nuestro equipo.
-                    Te notificaremos por correo electronico cuando sea procesada.
+                    {manualReview
+                      ? "Tu solicitud fue recibida. Como no fue posible verificar tu rostro, un asesor revisara tu identidad con los documentos antes de decidir."
+                      : "Tu identidad fue verificada y tu solicitud esta en revision por nuestro equipo. Puedes seguir su estado en Mis Solicitudes."}
                   </p>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left max-w-sm mx-auto text-sm">
@@ -566,10 +573,10 @@ function InvestmentRequestContent() {
                     </div>
                   </div>
                 </div>
-                <a href="/investments"
+                <Link href="/my-applications"
                   className="inline-block bg-brand-primary hover:bg-brand-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow transition-all">
-                  Volver al Simulador
-                </a>
+                  Ver Mis Solicitudes
+                </Link>
               </div>
             )}
           </div>

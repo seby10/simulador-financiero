@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Building2, Lock, Mail, AlertCircle, ArrowRight, UserCheck, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Lock, Mail, AlertCircle, ArrowRight, UserCheck } from "lucide-react";
 import Navbar from "@/components/navbar";
-import { API_URL } from "@/lib/api";
+import { API_URL, errorMessage, readApiError } from "@/lib/api";
 
 function LoginContent() {
-  const router = Router();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect") || "/";
 
@@ -31,10 +31,6 @@ function LoginContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  function Router() {
-    return useRouter();
-  }
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -48,10 +44,7 @@ function LoginContent() {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || "Credenciales incorrectas");
-      }
+      if (!res.ok) throw new Error(await readApiError(res, "Credenciales incorrectas"));
 
       const session = await res.json();
       if (session.user.role === "ADMIN" && !searchParams.get("redirect")) {
@@ -59,8 +52,8 @@ function LoginContent() {
       } else {
         router.push(redirectUrl);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -98,7 +91,6 @@ function LoginContent() {
           idNumber,
           firstName,
           lastName,
-          fullName: `${firstName} ${lastName}`.trim(),
           email: regEmail,
           phone,
           address,
@@ -106,16 +98,12 @@ function LoginContent() {
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        const msg = Array.isArray(data?.message) ? data.message.join(", ") : data?.message || "Error al crear la cuenta";
-        throw new Error(msg);
-      }
+      if (!res.ok) throw new Error(await readApiError(res, "Error al crear la cuenta"));
 
       // Automatically logged in by backend cookie
       router.push(redirectUrl);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -303,7 +291,7 @@ function LoginContent() {
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-secondary outline-none"
@@ -315,7 +303,7 @@ function LoginContent() {
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-secondary outline-none"
