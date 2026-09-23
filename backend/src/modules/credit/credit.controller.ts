@@ -20,11 +20,14 @@ import {
   ApiOkResponse,
   ApiTags,
   ApiConsumes,
-  ApiBody,
   ApiPayloadTooLargeResponse,
 } from '@nestjs/swagger';
 import { AdminOnly } from '../../common/auth.js';
-import { ApiPdfResponse, pdfFile, MAX_UPLOAD_BYTES } from '../../common/http.js';
+import {
+  ApiPdfResponse,
+  pdfFile,
+  MAX_UPLOAD_BYTES,
+} from '../../common/http.js';
 import { InstitutionService } from '../institution/institution.service.js';
 import { PdfService } from '../pdf/pdf.service.js';
 import {

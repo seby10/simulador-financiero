@@ -1,6 +1,75 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/auth/biometric-reset/verify": {
+      "post": {
+        "operationId": "AuthController_biometricResetVerify",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricResetVerifyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiometricResetVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "La captura no es JPEG/PNG"
+          },
+          "401": {
+            "description": "Identidad no verificada (mismo mensaje exista o no la cuenta)"
+          },
+          "429": {
+            "description": "Demasiados intentos fallidos"
+          }
+        },
+        "summary": "Recuperación de clave por biometría: compara una captura en vivo con la selfie\nque verificó la identidad del titular en una solicitud. Máx. 5 fallos por hora.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/biometric-reset/confirm": {
+      "post": {
+        "operationId": "AuthController_biometricResetConfirm",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricResetConfirmDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Contraseña actualizada"
+          },
+          "401": {
+            "description": "Token inválido, usado o expirado"
+          }
+        },
+        "summary": "Fija la nueva contraseña con el token de un solo uso y cierra todas las sesiones.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/auth/register": {
       "post": {
         "operationId": "AuthController_register",
@@ -27,7 +96,7 @@
             }
           },
           "409": {
-            "description": "El correo ya está registrado"
+            "description": "Ya existe una cuenta con ese correo o esa cédula"
           }
         },
         "summary": "Crea la cuenta (rol CUSTOMER) y deja la sesión abierta.",
@@ -207,6 +276,121 @@
         ]
       }
     },
+    "/api/biometrics/applications/{id}/verify": {
+      "post": {
+        "operationId": "BiometricsController_verify",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiometricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Faltan documentos, la captura no es JPEG/PNG o la cédula frontal no es una foto"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          },
+          "404": {
+            "description": "Solicitud inexistente o de otro usuario"
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta o la identidad ya fue verificada"
+          },
+          "429": {
+            "description": "Se agotaron los intentos"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Verifica prueba de vida y coincidencia facial contra la cédula cargada.\nSi ambos puntajes superan su umbral la identidad queda verificada; aprobar\nla inversión sigue siendo decisión de un administrador.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/applications/{id}": {
+      "get": {
+        "operationId": "BiometricsController_history",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BiometricAttemptResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": "Solicitud inexistente"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Historial de intentos, con sus puntajes y motivos de rechazo.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
     "/api/institution": {
       "get": {
         "operationId": "InstitutionController_get",
@@ -329,6 +513,61 @@
           }
         ],
         "summary": "Sube el logo institucional (PNG/JPEG).",
+        "tags": [
+          "Institución"
+        ]
+      }
+    },
+    "/api/institution/hero": {
+      "post": {
+        "operationId": "InstitutionController_uploadHero",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadHeroDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Archivo ausente o no es PNG/JPEG"
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Sube la imagen de fondo del Landing Page (PNG/JPEG).",
         "tags": [
           "Institución"
         ]
@@ -546,6 +785,60 @@
           }
         ],
         "summary": "Elimina un tipo de crédito.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/credit/types/{id}/image": {
+      "post": {
+        "operationId": "CreditController_uploadImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Sube la imagen del tipo de crédito.",
         "tags": [
           "Crédito"
         ]
@@ -1062,6 +1355,60 @@
         ]
       }
     },
+    "/api/investment/plans/{id}/image": {
+      "post": {
+        "operationId": "InvestmentController_uploadImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Sube la imagen de la póliza.",
+        "tags": [
+          "Inversión"
+        ]
+      }
+    },
     "/api/investment/simulate": {
       "post": {
         "operationId": "InvestmentController_simulate",
@@ -1136,72 +1483,10 @@
         ]
       }
     },
-    "/api/biometrics/applications/{id}/verify": {
-      "post": {
-        "operationId": "BiometricsController_verify",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BiometricsDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BiometricsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Faltan documentos o la captura no es JPEG/PNG"
-          },
-          "404": {
-            "description": "Solicitud inexistente"
-          },
-          "409": {
-            "description": "La solicitud ya fue resuelta"
-          },
-          "429": {
-            "description": "Se agotaron los intentos"
-          }
-        },
-        "summary": "Verifica prueba de vida y coincidencia facial contra la cédula cargada.\nAprueba la solicitud solo si ambos puntajes superan su umbral.",
-        "tags": [
-          "Biometría"
-        ]
-      }
-    },
-    "/api/biometrics/applications/{id}": {
+    "/api/onboarding/my-applications": {
       "get": {
-        "operationId": "BiometricsController_history",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "OnboardingController_myApplications",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "",
@@ -1210,36 +1495,24 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/BiometricAttemptResponse"
+                    "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
                   }
                 }
               }
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key o sesión ausente o inválida"
-          },
-          "403": {
-            "description": "La sesión no tiene rol ADMIN"
-          },
-          "404": {
-            "description": "Solicitud inexistente"
-          },
-          "503": {
-            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+            "description": "Sesión ausente, inválida o expirada"
           }
         },
         "security": [
           {
-            "admin": []
-          },
-          {
             "session": []
           }
         ],
-        "summary": "Historial de intentos, con sus puntajes y motivos de rechazo.",
+        "summary": "Solicitudes de la cuenta autenticada, con su estado y el de la biometría.",
         "tags": [
-          "Biometría"
+          "Onboarding"
         ]
       }
     },
@@ -1269,13 +1542,21 @@
             }
           },
           "400": {
-            "description": "Datos inválidos o fuera de rango de la póliza"
+            "description": "Datos inválidos, fuera de rango de la póliza o cédula distinta a la de la cuenta"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
           },
           "404": {
             "description": "Póliza inexistente"
           }
         },
-        "summary": "Registra una solicitud de inversión (estado PENDING_REVIEW).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Registra una solicitud de inversión de la cuenta autenticada (PENDING_REVIEW).",
         "tags": [
           "Onboarding"
         ]
@@ -1318,62 +1599,25 @@
           "400": {
             "description": "Sin archivos, campo desconocido o tipo no permitido"
           },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          },
+          "404": {
+            "description": "Solicitud inexistente o de otro usuario"
+          },
           "409": {
-            "description": "La solicitud ya fue resuelta"
+            "description": "La solicitud ya fue resuelta o la identidad ya fue evaluada"
           },
           "413": {
             "description": "Archivo mayor a 5 MB"
           }
         },
-        "summary": "Carga cédula (frontal/reverso) y planilla de servicio. Se puede repetir mientras esté pendiente.",
-        "tags": [
-          "Onboarding"
-        ]
-      }
-    },
-    "/api/onboarding/{id}/biometrics": {
-      "post": {
-        "deprecated": true,
-        "operationId": "OnboardingController_verifyBiometrics",
-        "parameters": [
+        "security": [
           {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "session": []
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BiometricsDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BiometricsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Faltan documentos o la captura no es JPEG/PNG"
-          },
-          "409": {
-            "description": "La solicitud ya fue resuelta"
-          }
-        },
-        "summary": "",
+        "summary": "Carga cédula (frontal/reverso) y planilla de servicio. La cédula frontal debe\nser JPEG/PNG porque es la referencia facial. Se puede repetir hasta verificar.",
         "tags": [
           "Onboarding"
         ]
@@ -1425,6 +1669,114 @@
           }
         ],
         "summary": "Lista solicitudes, opcionalmente filtradas por estado.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/applications/{id}/approve": {
+      "post": {
+        "operationId": "OnboardingController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta o la biometría sigue pendiente"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Aprueba una solicitud pendiente con la identidad ya resuelta.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/applications/{id}/reject": {
+      "post": {
+        "operationId": "OnboardingController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Rechaza una solicitud pendiente.",
         "tags": [
           "Onboarding"
         ]
@@ -1501,7 +1853,8 @@
               "enum": [
                 "idFront",
                 "idBack",
-                "utilityBill"
+                "utilityBill",
+                "selfie"
               ],
               "type": "string"
             }
@@ -1552,7 +1905,7 @@
             "session": []
           }
         ],
-        "summary": "Descarga un documento cargado (datos personales: solo administradores).",
+        "summary": "Descarga un documento cargado o la selfie verificada (solo administradores).",
         "tags": [
           "Onboarding"
         ]
@@ -1581,13 +1934,96 @@
       }
     },
     "schemas": {
+      "BiometricResetVerifyDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "selfieBase64": {
+            "type": "string",
+            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
+            "maxLength": 7000000
+          }
+        },
+        "required": [
+          "email",
+          "selfieBase64"
+        ]
+      },
+      "BiometricResetVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "resetToken": {
+            "type": "string",
+            "description": "Úselo en `biometric-reset/confirm` antes de que expire (15 min)."
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-09-23T18:30:00.000Z"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "92.41"
+          }
+        },
+        "required": [
+          "resetToken",
+          "expiresAt",
+          "matchScore"
+        ]
+      },
+      "BiometricResetConfirmDto": {
+        "type": "object",
+        "properties": {
+          "resetToken": {
+            "type": "string",
+            "description": "Token de un solo uso devuelto por `biometric-reset/verify`.",
+            "maxLength": 100
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Mínimo 8 caracteres; cierra todas las sesiones abiertas.",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "resetToken",
+          "newPassword"
+        ]
+      },
       "RegisterDto": {
         "type": "object",
         "properties": {
-          "fullName": {
+          "idNumber": {
             "type": "string",
-            "example": "María José Andrade",
-            "maxLength": 200
+            "description": "Cédula ecuatoriana; una cuenta por titular.",
+            "example": "1710034065"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "María José",
+            "maxLength": 100
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Andrade",
+            "maxLength": 100
+          },
+          "phone": {
+            "type": "string",
+            "example": "0991234567",
+            "pattern": "^\\+?\\d{7,15}$"
+          },
+          "address": {
+            "type": "string",
+            "example": "Av. Amazonas y Colón",
+            "maxLength": 300
           },
           "email": {
             "type": "string",
@@ -1597,14 +2033,17 @@
           },
           "password": {
             "type": "string",
-            "description": "Mínimo 12 caracteres.",
+            "description": "Mínimo 8 caracteres.",
             "example": "cafe-con-pan-1892",
-            "minLength": 12,
+            "minLength": 8,
             "maxLength": 128
           }
         },
         "required": [
-          "fullName",
+          "idNumber",
+          "firstName",
+          "lastName",
+          "phone",
           "email",
           "password"
         ]
@@ -1635,7 +2074,30 @@
             "example": "maria.andrade@example.com"
           },
           "fullName": {
-            "type": "string"
+            "type": "string",
+            "description": "Nombres y apellidos.",
+            "example": "María José Andrade"
+          },
+          "idNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null solo en cuentas administrativas creadas por el seed."
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
           },
           "isActive": {
             "type": "boolean"
@@ -1650,6 +2112,11 @@
           "id",
           "email",
           "fullName",
+          "idNumber",
+          "firstName",
+          "lastName",
+          "phone",
+          "address",
           "isActive",
           "createdAt"
         ]
@@ -1700,8 +2167,8 @@
           },
           "newPassword": {
             "type": "string",
-            "description": "Mínimo 12 caracteres; cierra todas las sesiones abiertas.",
-            "minLength": 12,
+            "description": "Mínimo 8 caracteres; cierra todas las sesiones abiertas.",
+            "minLength": 8,
             "maxLength": 128
           }
         },
@@ -1710,9 +2177,220 @@
           "newPassword"
         ]
       },
+      "BiometricsDto": {
+        "type": "object",
+        "properties": {
+          "selfieBase64": {
+            "type": "string",
+            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
+            "example": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+            "maxLength": 7000000
+          }
+        },
+        "required": [
+          "selfieBase64"
+        ]
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING_REVIEW",
+          "APPROVED",
+          "REJECTED"
+        ],
+        "description": "Estado de la solicitud; la biometría no lo cambia, lo decide un administrador."
+      },
+      "BiometricStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "VERIFIED",
+          "FAILED"
+        ],
+        "description": "VERIFIED si este intento pasó; FAILED si agotó los intentos."
+      },
+      "BiometricChecksDto": {
+        "type": "object",
+        "properties": {
+          "liveness": {
+            "type": "string",
+            "description": "PASSED o FAILED según el umbral de vivacidad.",
+            "example": "PASSED"
+          },
+          "faceMatch": {
+            "type": "string",
+            "description": "MATCH o NO_MATCH según el umbral de coincidencia.",
+            "example": "MATCH"
+          }
+        },
+        "required": [
+          "liveness",
+          "faceMatch"
+        ]
+      },
+      "BiometricsResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Estado de la solicitud; la biometría no lo cambia, lo decide un administrador.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "biometricStatus": {
+            "description": "VERIFIED si este intento pasó; FAILED si agotó los intentos.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BiometricStatus"
+              }
+            ]
+          },
+          "applicationId": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "number",
+            "description": "Número de intento, empezando en 1.",
+            "example": 1
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "livenessScore": {
+            "type": "string",
+            "example": "92.41"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "95.07"
+          },
+          "remainingAttempts": {
+            "type": "number",
+            "description": "Intentos que aún quedan disponibles.",
+            "example": 2
+          },
+          "checks": {
+            "$ref": "#/components/schemas/BiometricChecksDto"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Umbral que no se alcanzó, o null si la verificación pasó."
+          }
+        },
+        "required": [
+          "status",
+          "biometricStatus",
+          "applicationId",
+          "attempt",
+          "passed",
+          "livenessScore",
+          "matchScore",
+          "remainingAttempts",
+          "checks",
+          "failureReason"
+        ]
+      },
+      "BiometricAttemptResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "number"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "livenessScore": {
+            "type": "string",
+            "example": "92.41"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "95.07"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string",
+            "example": "simulated"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "attempt",
+          "passed",
+          "livenessScore",
+          "matchScore",
+          "failureReason",
+          "provider",
+          "createdAt"
+        ]
+      },
       "InstitutionResponse": {
         "type": "object",
         "properties": {
+          "primaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "secondaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "accentColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "pageBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "cardBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "heroImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Fondo del landing; se sube con POST /institution/hero o se enlaza por https.",
+            "example": "/uploads/institution/hero-3f1c.jpg"
+          },
           "id": {
             "type": "number",
             "description": "Siempre 1 (configuración única)."
@@ -1758,6 +2436,15 @@
             "type": "string",
             "description": "Texto legal impreso en los PDF.",
             "maxLength": 2000
+          },
+          "heroTitle": {
+            "type": "string",
+            "example": "El respaldo financiero que necesitas.",
+            "maxLength": 100
+          },
+          "heroSubtitle": {
+            "type": "string",
+            "maxLength": 300
           }
         },
         "required": [
@@ -1776,6 +2463,57 @@
       "UpdateInstitutionDto": {
         "type": "object",
         "properties": {
+          "primaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "secondaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "accentColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "pageBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "cardBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "heroImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Fondo del landing; se sube con POST /institution/hero o se enlaza por https.",
+            "example": "/uploads/institution/hero-3f1c.jpg"
+          },
           "institutionName": {
             "type": "string",
             "example": "Cooperativa de Ahorro y Crédito Andina",
@@ -1807,6 +2545,15 @@
             "type": "string",
             "description": "Texto legal impreso en los PDF.",
             "maxLength": 2000
+          },
+          "heroTitle": {
+            "type": "string",
+            "example": "El respaldo financiero que necesitas.",
+            "maxLength": 100
+          },
+          "heroSubtitle": {
+            "type": "string",
+            "maxLength": 300
           }
         },
         "required": [
@@ -1829,6 +2576,18 @@
         },
         "required": [
           "logo"
+        ]
+      },
+      "UploadHeroDto": {
+        "type": "object",
+        "properties": {
+          "hero": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "hero"
         ]
       },
       "CreditTypeResponse": {
@@ -1863,6 +2622,10 @@
             "description": "Tasa nominal anual en %.",
             "example": "16"
           },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -1881,6 +2644,7 @@
           "minTermMonths",
           "maxTermMonths",
           "annualInterestRate",
+          "imageUrl",
           "createdAt",
           "updatedAt"
         ]
@@ -1905,6 +2669,12 @@
             "description": "Decimal: número positivo con hasta 3 enteros y 4 decimales (se acepta también number JSON).",
             "pattern": "^\\d{1,3}(\\.\\d{1,4})?$",
             "example": "16.0000"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /credit/types/{id}/image o se enlaza por https.",
+            "example": "/uploads/institution/hero-3f1c.jpg"
           },
           "name": {
             "type": "string",
@@ -1954,6 +2724,12 @@
             "description": "Decimal: número positivo con hasta 3 enteros y 4 decimales (se acepta también number JSON).",
             "pattern": "^\\d{1,3}(\\.\\d{1,4})?$",
             "example": "16.0000"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /credit/types/{id}/image o se enlaza por https.",
+            "example": "/uploads/institution/hero-3f1c.jpg"
           },
           "name": {
             "type": "string",
@@ -2354,6 +3130,10 @@
           "allowsMonthlyPayout": {
             "type": "boolean"
           },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -2373,6 +3153,7 @@
           "termMaxDays",
           "tea",
           "allowsMonthlyPayout",
+          "imageUrl",
           "createdAt",
           "updatedAt"
         ]
@@ -2415,6 +3196,12 @@
               "idBack",
               "utilityBill"
             ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /investment/plans/{id}/image o se enlaza por https.",
+            "example": "/uploads/institution/hero-3f1c.jpg"
           },
           "name": {
             "type": "string",
@@ -2482,6 +3269,12 @@
               "idBack",
               "utilityBill"
             ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /investment/plans/{id}/image o se enlaza por https.",
+            "example": "/uploads/institution/hero-3f1c.jpg"
           },
           "name": {
             "type": "string",
@@ -2670,146 +3463,131 @@
           "payoutSchedule"
         ]
       },
-      "BiometricsDto": {
+      "ApplicationPlanRefDto": {
         "type": "object",
         "properties": {
-          "selfieBase64": {
-            "type": "string",
-            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
-            "example": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
-            "maxLength": 7000000
-          }
-        },
-        "required": [
-          "selfieBase64"
-        ]
-      },
-      "ApplicationStatus": {
-        "type": "string",
-        "enum": [
-          "PENDING_REVIEW",
-          "APPROVED",
-          "REJECTED"
-        ],
-        "description": "Estado de la solicitud tras el intento."
-      },
-      "BiometricChecksDto": {
-        "type": "object",
-        "properties": {
-          "liveness": {
-            "type": "string",
-            "description": "PASSED o FAILED según el umbral de vivacidad.",
-            "example": "PASSED"
+          "id": {
+            "type": "number"
           },
-          "faceMatch": {
+          "name": {
+            "type": "string"
+          },
+          "tea": {
             "type": "string",
-            "description": "MATCH o NO_MATCH según el umbral de coincidencia.",
-            "example": "MATCH"
+            "example": "8.5"
           }
         },
         "required": [
-          "liveness",
-          "faceMatch"
+          "id",
+          "name",
+          "tea"
         ]
       },
-      "BiometricsResponse": {
+      "InvestmentApplicationWithPlanResponse": {
         "type": "object",
         "properties": {
+          "payoutMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutMethod"
+              }
+            ]
+          },
           "status": {
-            "description": "Estado de la solicitud tras el intento.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ApplicationStatus"
               }
             ]
           },
-          "applicationId": {
-            "type": "string"
+          "biometricStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BiometricStatus"
+              }
+            ]
           },
-          "attempt": {
-            "type": "number",
-            "description": "Número de intento, empezando en 1.",
-            "example": 1
+          "documentUrls": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Tipo de documento → URL de descarga (requiere credencial de administrador).",
+            "example": {
+              "idFront": "/api/onboarding/applications/ce64e373-f776-4b61-8bf0-78a19bb86da4/documents/idFront"
+            }
           },
-          "passed": {
-            "type": "boolean"
+          "investmentPlan": {
+            "$ref": "#/components/schemas/ApplicationPlanRefDto"
           },
-          "livenessScore": {
+          "id": {
             "type": "string",
-            "example": "92.41"
+            "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
           },
-          "matchScore": {
-            "type": "string",
-            "example": "95.07"
-          },
-          "remainingAttempts": {
-            "type": "number",
-            "description": "Intentos que aún quedan disponibles.",
-            "example": 2
-          },
-          "checks": {
-            "$ref": "#/components/schemas/BiometricChecksDto"
-          },
-          "failureReason": {
+          "userId": {
             "type": "string",
             "nullable": true,
-            "description": "Umbral que no se alcanzó, o null si la verificación pasó."
-          }
-        },
-        "required": [
-          "status",
-          "applicationId",
-          "attempt",
-          "passed",
-          "livenessScore",
-          "matchScore",
-          "remainingAttempts",
-          "checks",
-          "failureReason"
-        ]
-      },
-      "BiometricAttemptResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
+            "description": "Cuenta que creó la solicitud."
+          },
+          "applicantFullName": {
             "type": "string"
           },
-          "attempt": {
+          "applicantIdNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sourceOfFunds": {
+            "type": "string"
+          },
+          "investmentPlanId": {
             "type": "number"
           },
-          "passed": {
-            "type": "boolean"
-          },
-          "livenessScore": {
+          "amount": {
             "type": "string",
-            "example": "92.41"
+            "example": "15000"
           },
-          "matchScore": {
+          "termDays": {
+            "type": "number"
+          },
+          "biometricScore": {
             "type": "string",
+            "nullable": true,
+            "description": "Coincidencia facial del intento que verificó la identidad.",
             "example": "95.07"
           },
-          "failureReason": {
-            "type": "string",
-            "nullable": true
-          },
-          "provider": {
-            "type": "string",
-            "example": "simulated"
-          },
           "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
             "format": "date-time",
             "type": "string"
           }
         },
         "required": [
+          "payoutMethod",
+          "status",
+          "biometricStatus",
+          "documentUrls",
+          "investmentPlan",
           "id",
-          "attempt",
-          "passed",
-          "livenessScore",
-          "matchScore",
-          "failureReason",
-          "provider",
-          "createdAt"
+          "userId",
+          "applicantFullName",
+          "applicantIdNumber",
+          "email",
+          "phone",
+          "sourceOfFunds",
+          "investmentPlanId",
+          "amount",
+          "termDays",
+          "biometricScore",
+          "createdAt",
+          "updatedAt"
         ]
       },
       "ApplyDto": {
@@ -2874,131 +3652,22 @@
           "termDays"
         ]
       },
-      "ApplicationPlanRefDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number"
-          },
-          "name": {
-            "type": "string"
-          },
-          "tea": {
-            "type": "string",
-            "example": "8.5"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "tea"
-        ]
-      },
-      "InvestmentApplicationWithPlanResponse": {
-        "type": "object",
-        "properties": {
-          "payoutMethod": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PayoutMethod"
-              }
-            ]
-          },
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApplicationStatus"
-              }
-            ]
-          },
-          "documentUrls": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Tipo de documento → URL de descarga (requiere credencial de administrador).",
-            "example": {
-              "idFront": "/api/onboarding/applications/ce64e373-f776-4b61-8bf0-78a19bb86da4/documents/idFront"
-            }
-          },
-          "investmentPlan": {
-            "$ref": "#/components/schemas/ApplicationPlanRefDto"
-          },
-          "id": {
-            "type": "string",
-            "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
-          },
-          "applicantFullName": {
-            "type": "string"
-          },
-          "applicantIdNumber": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "sourceOfFunds": {
-            "type": "string"
-          },
-          "investmentPlanId": {
-            "type": "number"
-          },
-          "amount": {
-            "type": "string",
-            "example": "15000"
-          },
-          "termDays": {
-            "type": "number"
-          },
-          "biometricScore": {
-            "type": "string",
-            "nullable": true,
-            "example": "95.07"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "payoutMethod",
-          "status",
-          "documentUrls",
-          "investmentPlan",
-          "id",
-          "applicantFullName",
-          "applicantIdNumber",
-          "email",
-          "phone",
-          "sourceOfFunds",
-          "investmentPlanId",
-          "amount",
-          "termDays",
-          "biometricScore",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
       "UploadDocumentsDto": {
         "type": "object",
         "properties": {
           "idFront": {
             "type": "string",
+            "description": "Solo JPEG o PNG: es la referencia de la verificación facial.",
             "format": "binary"
           },
           "idBack": {
             "type": "string",
+            "description": "JPEG, PNG o PDF.",
             "format": "binary"
           },
           "utilityBill": {
             "type": "string",
+            "description": "JPEG, PNG o PDF.",
             "format": "binary"
           }
         }
@@ -3020,6 +3689,13 @@
               }
             ]
           },
+          "biometricStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BiometricStatus"
+              }
+            ]
+          },
           "documentUrls": {
             "type": "object",
             "additionalProperties": {
@@ -3033,6 +3709,11 @@
           "id": {
             "type": "string",
             "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cuenta que creó la solicitud."
           },
           "applicantFullName": {
             "type": "string"
@@ -3062,6 +3743,7 @@
           "biometricScore": {
             "type": "string",
             "nullable": true,
+            "description": "Coincidencia facial del intento que verificó la identidad.",
             "example": "95.07"
           },
           "createdAt": {
@@ -3076,8 +3758,10 @@
         "required": [
           "payoutMethod",
           "status",
+          "biometricStatus",
           "documentUrls",
           "id",
+          "userId",
           "applicantFullName",
           "applicantIdNumber",
           "email",

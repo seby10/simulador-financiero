@@ -8,13 +8,20 @@ import { readFile } from 'node:fs/promises';
 import {
   assertFileKind,
   detectFileKind,
+  type FileKind,
   MIME_TYPES,
   onboardingDocumentPath,
   saveFile,
 } from '../../common/http.js';
 import { PrismaService } from '../../database/prisma.service.js';
-import { Prisma } from '../../generated/prisma/client.js';
-import { ApplicationStatus } from '../../generated/prisma/enums.js';
+import {
+  ApplicationStatus,
+  BiometricStatus,
+} from '../../generated/prisma/enums.js';
+import {
+  REFERENCE_DOCUMENT,
+  SELFIE_DOCUMENT,
+} from '../biometrics/biometrics.service.js';
 import {
   DOCUMENT_KINDS,
   type DocumentKind,
@@ -28,6 +35,16 @@ export type DocumentFiles = Partial<
 
 const planSummary = { select: { id: true, name: true, tea: true } } as const;
 
+/** Documentos descargables por un administrador: los cargados más la selfie verificada. */
+const READABLE_DOCUMENTS: readonly string[] = [
+  ...DOCUMENT_KINDS,
+  SELFIE_DOCUMENT,
+];
+
+/** La cédula frontal es la referencia biométrica: tiene que ser una foto. */
+const allowedKinds = (kind: DocumentKind): FileKind[] =>
+  kind === REFERENCE_DOCUMENT ? ['png', 'jpg'] : ['png', 'jpg', 'pdf'];
+
 @Injectable()
 export class OnboardingService {
   constructor(
@@ -35,7 +52,18 @@ export class OnboardingService {
     private readonly investment: InvestmentService,
   ) {}
 
-  async apply(dto: ApplyDto) {
+  async apply(dto: ApplyDto, userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { idNumber: true },
+    });
+    // La biometría compara contra la cédula que se cargue: una cuenta solo
+    // puede solicitar a nombre de su propio titular.
+    if (user.idNumber && user.idNumber !== dto.applicantIdNumber) {
+      throw new BadRequestException(
+        'La cédula del solicitante debe coincidir con la de tu cuenta',
+      );
+    }
     await this.investment.loadPlanFor({
       planId: dto.investmentPlanId,
       amount: dto.amount,
@@ -43,7 +71,18 @@ export class OnboardingService {
       payoutMethod: dto.payoutMethod,
     });
     return this.prisma.investmentApplication.create({
-      data: dto,
+      data: {
+        userId,
+        applicantFullName: dto.applicantFullName,
+        applicantIdNumber: dto.applicantIdNumber,
+        email: dto.email,
+        phone: dto.phone,
+        sourceOfFunds: dto.sourceOfFunds,
+        investmentPlanId: dto.investmentPlanId,
+        amount: dto.amount,
+        termDays: dto.termDays,
+        payoutMethod: dto.payoutMethod,
+      },
       include: { investmentPlan: planSummary },
     });
   }
@@ -56,13 +95,9 @@ export class OnboardingService {
     });
   }
 
-  async listMyApplications(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return [];
-    const conditions: Prisma.InvestmentApplicationWhereInput[] = [{ email: user.email }];
-    if (user.idNumber) conditions.push({ applicantIdNumber: user.idNumber });
+  listMine(userId: string) {
     return this.prisma.investmentApplication.findMany({
-      where: { OR: conditions },
+      where: { userId },
       include: { investmentPlan: planSummary },
       orderBy: { createdAt: 'desc' },
     });
@@ -79,21 +114,14 @@ export class OnboardingService {
     });
   }
 
-  /** Consulta pública: busca la solicitud más reciente de un solicitante por cédula. */
-  async lookupByIdNumber(idNumber: string) {
-    const application = await this.prisma.investmentApplication.findFirst({
-      where: { applicantIdNumber: idNumber },
-      orderBy: { createdAt: 'desc' },
-      include: { investmentPlan: planSummary },
-    });
-    if (!application) throw new NotFoundException('No se encontraron solicitudes para esa cédula');
-    // Solo devolvemos campos no sensibles al cliente
-    const { applicantFullName, status, biometricScore, amount, termDays, payoutMethod, createdAt, investmentPlan, id } = application;
-    return { id, applicantFullName, status, biometricScore, amount, termDays, payoutMethod, createdAt, investmentPlan };
-  }
-
-  async uploadDocuments(id: string, files: DocumentFiles = {}) {
-    await this.getPending(id);
+  async uploadDocuments(id: string, userId: string, files: DocumentFiles = {}) {
+    const application = await this.getOwnedPending(id, userId);
+    // Cambiar la cédula después de verificar invalidaría la comparación facial.
+    if (application.biometricStatus !== BiometricStatus.PENDING) {
+      throw new ConflictException(
+        'La identidad ya fue evaluada; los documentos no se pueden reemplazar',
+      );
+    }
     const uploads = DOCUMENT_KINDS.flatMap((kind) => {
       const file = files[kind]?.[0];
       return file ? [{ kind, file }] : [];
@@ -105,7 +133,7 @@ export class OnboardingService {
     }
     // Validar todo antes de escribir para no dejar cargas parciales.
     uploads.forEach(({ kind, file }) =>
-      assertFileKind(file.buffer, ['png', 'jpg', 'pdf'], kind),
+      assertFileKind(file.buffer, allowedKinds(kind), kind),
     );
     await Promise.all(
       uploads.map(({ kind, file }) =>
@@ -125,7 +153,7 @@ export class OnboardingService {
       UPDATE "InvestmentApplication"
       SET "documentUrls" = "documentUrls" || ${JSON.stringify(patch)}::jsonb,
           "updatedAt" = now()
-      WHERE id = ${id} AND status = 'PENDING_REVIEW'`;
+      WHERE id = ${id} AND status = 'PENDING_REVIEW' AND "biometricStatus" = 'PENDING'`;
     if (updated === 0) {
       throw new ConflictException('La solicitud ya fue resuelta');
     }
@@ -135,14 +163,14 @@ export class OnboardingService {
   }
 
   async readDocument(id: string, kind: string) {
-    if (!DOCUMENT_KINDS.includes(kind as DocumentKind) && kind !== 'selfie')
+    if (!READABLE_DOCUMENTS.includes(kind))
       throw new NotFoundException('Documento no válido');
     await this.get(id);
-    const buffer = await readFile(
-      onboardingDocumentPath(id, kind as DocumentKind),
-    ).catch(() => {
-      throw new NotFoundException('Documento no cargado');
-    });
+    const buffer = await readFile(onboardingDocumentPath(id, kind)).catch(
+      () => {
+        throw new NotFoundException('Documento no cargado');
+      },
+    );
     const fileKind = detectFileKind(buffer) ?? 'pdf';
     return {
       buffer,
@@ -151,26 +179,63 @@ export class OnboardingService {
     };
   }
 
-  async approve(id: string) {
-    const application = await this.getPending(id);
-    return this.prisma.investmentApplication.update({
-      where: { id: application.id },
-      data: { status: ApplicationStatus.APPROVED },
-      include: { investmentPlan: planSummary },
+  /**
+   * Solo con la identidad resuelta: verificada por biometría, o agotados los
+   * intentos (el administrador la revisó a mano con los documentos).
+   */
+  approve(id: string) {
+    return this.resolve(id, ApplicationStatus.APPROVED, {
+      biometricStatus: {
+        in: [BiometricStatus.VERIFIED, BiometricStatus.FAILED],
+      },
     });
   }
 
-  async reject(id: string) {
-    const application = await this.getPending(id);
-    return this.prisma.investmentApplication.update({
-      where: { id: application.id },
-      data: { status: ApplicationStatus.REJECTED },
-      include: { investmentPlan: planSummary },
-    });
+  reject(id: string) {
+    return this.resolve(id, ApplicationStatus.REJECTED, {});
   }
 
-  private async getPending(id: string) {
+  /** Condicionado al estado: dos administradores no resuelven la misma solicitud dos veces. */
+  private async resolve(
+    id: string,
+    status: ApplicationStatus,
+    guard: { biometricStatus?: { in: BiometricStatus[] } },
+  ) {
     const application = await this.get(id);
+    if (application.status !== ApplicationStatus.PENDING_REVIEW) {
+      throw new ConflictException(
+        `La solicitud ya fue resuelta (${application.status})`,
+      );
+    }
+    if (
+      guard.biometricStatus &&
+      !guard.biometricStatus.in.includes(application.biometricStatus)
+    ) {
+      throw new ConflictException(
+        'El solicitante aún no completa la verificación biométrica',
+      );
+    }
+    const { count } = await this.prisma.investmentApplication.updateMany({
+      where: { id, status: ApplicationStatus.PENDING_REVIEW, ...guard },
+      data: { status },
+    });
+    if (count === 0) {
+      throw new ConflictException('La solicitud ya fue resuelta');
+    }
+    return this.prisma.investmentApplication.findUniqueOrThrow({
+      where: { id },
+      include: { investmentPlan: planSummary },
+    });
+  }
+
+  /** A quien no es dueño se le responde como si no existiera. */
+  private async getOwnedPending(id: string, userId: string) {
+    const application = await this.prisma.investmentApplication.findUnique({
+      where: { id },
+    });
+    if (!application || application.userId !== userId) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
     if (application.status !== ApplicationStatus.PENDING_REVIEW) {
       throw new ConflictException(
         `La solicitud ya fue resuelta (${application.status})`,

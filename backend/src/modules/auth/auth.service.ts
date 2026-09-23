@@ -1,12 +1,17 @@
 import {
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { assertFileKind } from '../../common/http.js';
+import { readFile } from 'node:fs/promises';
+import {
+  decodeImageBase64,
+  onboardingDocumentPath,
+} from '../../common/http.js';
 import {
   accessTtlSeconds,
   hashRefreshToken,
@@ -16,6 +21,11 @@ import {
 } from '../../common/tokens.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma, type User } from '../../generated/prisma/client.js';
+import { BiometricStatus } from '../../generated/prisma/enums.js';
+import {
+  BiometricsService,
+  SELFIE_DOCUMENT,
+} from '../biometrics/biometrics.service.js';
 import { ChangePasswordDto, LoginDto, RegisterDto } from './auth.dto.js';
 import { hashPassword, verifyPassword } from './password.js';
 
@@ -29,6 +39,14 @@ export interface SessionContext {
 const INVALID_CREDENTIALS = 'Correo o contraseña incorrectos';
 const INVALID_SESSION = 'Sesión inválida';
 const DISABLED_ACCOUNT = 'La cuenta está desactivada';
+
+/** Mismo texto para correo inexistente, cuenta sin verificación previa o rostro distinto. */
+const RESET_FAILED =
+  'No fue posible verificar tu identidad. La recuperación por biometría solo está disponible si ya verificaste tu rostro en una solicitud.';
+const RESET_EXPIRED = 'El token de recuperación es inválido o expiró';
+const RESET_TTL_MS = 15 * 60 * 1000;
+const RESET_WINDOW_MS = 60 * 60 * 1000;
+const RESET_MAX_FAILURES = 5;
 
 const PUBLIC_FIELDS = [
   'id',
@@ -52,104 +70,110 @@ const toPublicUser = (user: User) =>
 
 @Injectable()
 export class AuthService {
-  private resetTokens = new Map<string, { userId: string; expiresAt: number }>();
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly biometrics: BiometricsService,
+  ) {}
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  /** Inicia el proceso de recuperación probando la existencia del usuario. */
-  async biometricResetStart(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-    if (!user) {
-      throw new NotFoundException('No existe una cuenta registrada con este correo electrónico');
-    }
-    return {
-      exists: true,
-      email: user.email,
-      fullName: user.fullName,
-      message: 'Usuario verificado. Procede con la captura biométrica facial.',
-    };
-  }
-
-  /** Procesa la verificación biométrica facial para restablecer la clave. */
+  /**
+   * Contrasta una captura en vivo con la selfie que ya verificó la identidad del
+   * titular en una solicitud. Si pasa, emite un token de un solo uso para fijar
+   * la nueva clave. Toda falla responde igual: no se revela si el correo existe
+   * ni si la cuenta tiene una verificación previa.
+   */
   async biometricResetVerify(email: string, selfieBase64: string) {
+    const selfie = decodeImageBase64(selfieBase64, 'selfieBase64');
     const user = await this.prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email },
+      select: { id: true, isActive: true },
     });
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+    const reference = user?.isActive
+      ? await this.verifiedSelfie(user.id)
+      : null;
+    if (!user || !reference) throw new UnauthorizedException(RESET_FAILED);
+
+    const failures = await this.prisma.biometricPasswordReset.count({
+      where: {
+        userId: user.id,
+        passed: false,
+        createdAt: { gte: new Date(Date.now() - RESET_WINDOW_MS) },
+      },
+    });
+    if (failures >= RESET_MAX_FAILURES) {
+      throw new HttpException(
+        'Demasiados intentos fallidos. Espera una hora antes de volver a intentar.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
-    const base64Clean = selfieBase64.replace(/^data:image\/[a-z]+;base64,/i, '');
-    const selfieBuffer = Buffer.from(base64Clean, 'base64');
-    assertFileKind(selfieBuffer, ['png', 'jpg'], 'selfieBase64');
-
-    // Generar token de recuperación con 15 minutos de vigencia
-    const resetToken = randomUUID();
-    this.resetTokens.set(resetToken, {
-      userId: user.id,
-      expiresAt: Date.now() + 15 * 60 * 1000,
+    const evaluation = await this.biometrics.evaluate(selfie, reference);
+    const resetToken = evaluation.passed ? newRefreshToken() : null;
+    const expiresAt = resetToken ? new Date(Date.now() + RESET_TTL_MS) : null;
+    await this.prisma.biometricPasswordReset.create({
+      data: {
+        userId: user.id,
+        passed: evaluation.passed,
+        livenessScore: evaluation.livenessScore.toFixed(2),
+        matchScore: evaluation.matchScore.toFixed(2),
+        provider: evaluation.provider,
+        tokenHash: resetToken && hashRefreshToken(resetToken),
+        expiresAt,
+      },
     });
-
+    if (!resetToken) throw new UnauthorizedException(RESET_FAILED);
     return {
-      verified: true,
-      matchScore: '94.80',
       resetToken,
-      message: 'Verificación biométrica exitosa. Ingresa tu nueva contraseña.',
+      expiresAt,
+      matchScore: evaluation.matchScore.toFixed(2),
     };
   }
 
-  /** Aplica el cambio de contraseña usando el resetToken devuelto tras el chequeo biométrico. */
+  /** Canjea el token de recuperación (una sola vez) y cierra todas las sesiones. */
   async biometricResetConfirm(resetToken: string, newPassword: string) {
-    const entry = this.resetTokens.get(resetToken);
-    if (!entry || entry.expiresAt < Date.now()) {
-      this.resetTokens.delete(resetToken);
-      throw new UnauthorizedException('El token de restablecimiento es inválido o ha expirado');
-    }
-
-    const passwordHash = await hashPassword(newPassword);
-    await this.prisma.user.update({
-      where: { id: entry.userId },
-      data: { passwordHash },
+    const reset = await this.prisma.biometricPasswordReset.findUnique({
+      where: { tokenHash: hashRefreshToken(resetToken) },
     });
+    if (!reset?.expiresAt || reset.usedAt || reset.expiresAt <= new Date()) {
+      throw new UnauthorizedException(RESET_EXPIRED);
+    }
+    // Condicionado: dos canjes simultáneos del mismo token no cambian la clave dos veces.
+    const { count } = await this.prisma.biometricPasswordReset.updateMany({
+      where: { id: reset.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    if (count === 0) throw new UnauthorizedException(RESET_EXPIRED);
 
-    this.resetTokens.delete(resetToken);
-    await this.logoutAll(entry.userId);
-
-    return {
-      success: true,
-      message: 'Tu contraseña ha sido actualizada correctamente. Ahora puedes iniciar sesión.',
-    };
+    await this.prisma.user.update({
+      where: { id: reset.userId },
+      data: { passwordHash: await hashPassword(newPassword) },
+    });
+    await this.logoutAll(reset.userId);
   }
 
   async register(dto: RegisterDto, context: SessionContext) {
     const passwordHash = await hashPassword(dto.password);
-    const fullName =
-      dto.fullName ||
-      `${dto.firstName || ''} ${dto.lastName || ''}`.trim() ||
-      dto.email;
-
     const user = await this.prisma.user
       .create({
         data: {
           email: dto.email,
-          fullName,
-          idNumber: dto.idNumber || null,
-          firstName: dto.firstName || null,
-          lastName: dto.lastName || null,
-          phone: dto.phone || null,
+          fullName: `${dto.firstName} ${dto.lastName}`,
+          idNumber: dto.idNumber,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          phone: dto.phone,
           address: dto.address || null,
           passwordHash,
         },
       })
       .catch((error: unknown) => {
-        // P2002 = violación de índice único; el único que hay aquí es el correo.
+        // P2002 = violación de índice único: el correo o la cédula ya tienen cuenta.
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === 'P2002'
         ) {
-          throw new ConflictException('El correo ya está registrado');
+          throw new ConflictException(
+            'Ya existe una cuenta con ese correo o esa cédula',
+          );
         }
         throw error;
       });
@@ -291,6 +315,19 @@ export class AuthService {
       where: { familyId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  /** Selfie aprobada más reciente de la cuenta, o null si nunca verificó su rostro. */
+  private async verifiedSelfie(userId: string) {
+    const application = await this.prisma.investmentApplication.findFirst({
+      where: { userId, biometricStatus: BiometricStatus.VERIFIED },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true },
+    });
+    if (!application) return null;
+    return readFile(
+      onboardingDocumentPath(application.id, SELFIE_DOCUMENT),
+    ).catch(() => null);
   }
 
   /** ponytail: limpieza oportunista; con volumen conviene una tarea programada. */

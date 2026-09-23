@@ -20,7 +20,6 @@ import {
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiOperation,
   ApiParam,
   ApiPayloadTooLargeResponse,
   ApiProduces,
@@ -28,11 +27,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminOnly, Authenticated, CurrentUser } from '../../common/auth.js';
 import { MAX_UPLOAD_BYTES } from '../../common/http.js';
-import {
-  BiometricsDto,
-  BiometricsResponse,
-} from '../biometrics/biometrics.dto.js';
-import { BiometricsService } from '../biometrics/biometrics.service.js';
+import { SELFIE_DOCUMENT } from '../biometrics/biometrics.service.js';
 import { DOCUMENT_KINDS } from '../investment/investment.dto.js';
 import {
   ApplyDto,
@@ -48,40 +43,35 @@ const uuid = new ParseUUIDPipe({ version: '4' });
 @ApiTags('Onboarding')
 @Controller('onboarding')
 export class OnboardingController {
-  constructor(
-    private readonly onboarding: OnboardingService,
-    private readonly biometrics: BiometricsService,
-  ) {}
+  constructor(private readonly onboarding: OnboardingService) {}
 
-  /** Lista las solicitudes del cliente autenticado. */
+  /** Solicitudes de la cuenta autenticada, con su estado y el de la biometría. */
   @Get('my-applications')
   @Authenticated()
   @ApiOkResponse({ type: [InvestmentApplicationWithPlanResponse] })
   myApplications(@CurrentUser('sub') userId: string) {
-    return this.onboarding.listMyApplications(userId);
+    return this.onboarding.listMine(userId);
   }
 
-  /** Consulta pública del estado de la solicitud por cédula. */
-  @Get('status-check/:idNumber')
-  @ApiOkResponse({ description: 'Estado de la solicitud de inversión' })
-  @ApiNotFoundResponse({ description: 'No se encontraron solicitudes' })
-  statusCheck(@Param('idNumber') idNumber: string) {
-    return this.onboarding.lookupByIdNumber(idNumber);
-  }
-
-  /** Registra una solicitud de inversión (estado PENDING_REVIEW). */
+  /** Registra una solicitud de inversión de la cuenta autenticada (PENDING_REVIEW). */
   @Post('apply')
+  @Authenticated()
   @ApiCreatedResponse({ type: InvestmentApplicationWithPlanResponse })
   @ApiBadRequestResponse({
-    description: 'Datos inválidos o fuera de rango de la póliza',
+    description:
+      'Datos inválidos, fuera de rango de la póliza o cédula distinta a la de la cuenta',
   })
   @ApiNotFoundResponse({ description: 'Póliza inexistente' })
-  apply(@Body() dto: ApplyDto) {
-    return this.onboarding.apply(dto);
+  apply(@Body() dto: ApplyDto, @CurrentUser('sub') userId: string) {
+    return this.onboarding.apply(dto, userId);
   }
 
-  /** Carga cédula (frontal/reverso) y planilla de servicio. Se puede repetir mientras esté pendiente. */
+  /**
+   * Carga cédula (frontal/reverso) y planilla de servicio. La cédula frontal debe
+   * ser JPEG/PNG porque es la referencia facial. Se puede repetir hasta verificar.
+   */
   @Post(':id/documents')
+  @Authenticated()
   @UseInterceptors(
     FileFieldsInterceptor(
       DOCUMENT_KINDS.map((name) => ({ name, maxCount: 1 })),
@@ -94,29 +84,19 @@ export class OnboardingController {
   @ApiBadRequestResponse({
     description: 'Sin archivos, campo desconocido o tipo no permitido',
   })
+  @ApiNotFoundResponse({
+    description: 'Solicitud inexistente o de otro usuario',
+  })
   @ApiPayloadTooLargeResponse({ description: 'Archivo mayor a 5 MB' })
-  @ApiConflictResponse({ description: 'La solicitud ya fue resuelta' })
+  @ApiConflictResponse({
+    description: 'La solicitud ya fue resuelta o la identidad ya fue evaluada',
+  })
   uploadDocuments(
     @Param('id', uuid) id: string,
+    @CurrentUser('sub') userId: string,
     @UploadedFiles() files?: DocumentFiles,
   ) {
-    return this.onboarding.uploadDocuments(id, files);
-  }
-
-  /**
-   * @deprecated Usar `POST /api/biometrics/applications/{id}/verify`, que además
-   * devuelve los puntajes por separado y los intentos restantes.
-   */
-  @Post(':id/biometrics')
-  @HttpCode(200)
-  @ApiOperation({ deprecated: true })
-  @ApiOkResponse({ type: BiometricsResponse })
-  @ApiBadRequestResponse({
-    description: 'Faltan documentos o la captura no es JPEG/PNG',
-  })
-  @ApiConflictResponse({ description: 'La solicitud ya fue resuelta' })
-  verifyBiometrics(@Param('id', uuid) id: string, @Body() dto: BiometricsDto) {
-    return this.biometrics.verify(id, dto);
+    return this.onboarding.uploadDocuments(id, userId, files);
   }
 
   /** Lista solicitudes, opcionalmente filtradas por estado. */
@@ -127,12 +107,14 @@ export class OnboardingController {
     return this.onboarding.list(query.status);
   }
 
-  /** Aprueba una solicitud pendiente. */
+  /** Aprueba una solicitud pendiente con la identidad ya resuelta. */
   @Post('applications/:id/approve')
   @AdminOnly()
   @HttpCode(200)
   @ApiOkResponse({ type: InvestmentApplicationWithPlanResponse })
-  @ApiConflictResponse({ description: 'La solicitud ya fue resuelta' })
+  @ApiConflictResponse({
+    description: 'La solicitud ya fue resuelta o la biometría sigue pendiente',
+  })
   @ApiNotFoundResponse()
   approve(@Param('id', uuid) id: string) {
     return this.onboarding.approve(id);
@@ -158,10 +140,10 @@ export class OnboardingController {
     return this.onboarding.get(id);
   }
 
-  /** Descarga un documento cargado (datos personales: solo administradores). */
+  /** Descarga un documento cargado o la selfie verificada (solo administradores). */
   @Get('applications/:id/documents/:kind')
   @AdminOnly()
-  @ApiParam({ name: 'kind', enum: DOCUMENT_KINDS })
+  @ApiParam({ name: 'kind', enum: [...DOCUMENT_KINDS, SELFIE_DOCUMENT] })
   @ApiProduces('image/png', 'image/jpeg', 'application/pdf')
   @ApiOkResponse({ schema: { type: 'string', format: 'binary' } })
   @ApiNotFoundResponse({ description: 'Solicitud o documento inexistente' })

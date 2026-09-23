@@ -15,7 +15,9 @@ import {
   ApiTags,
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
-import { AdminOnly } from '../../common/auth.js';
+import { Throttle } from '@nestjs/throttler';
+import { AdminOnly, Authenticated, CurrentUser } from '../../common/auth.js';
+import { STRICT } from '../../common/throttle.js';
 import {
   BiometricAttemptResponse,
   BiometricsDto,
@@ -32,19 +34,32 @@ export class BiometricsController {
 
   /**
    * Verifica prueba de vida y coincidencia facial contra la cédula cargada.
-   * Aprueba la solicitud solo si ambos puntajes superan su umbral.
+   * Si ambos puntajes superan su umbral la identidad queda verificada; aprobar
+   * la inversión sigue siendo decisión de un administrador.
    */
   @Post('applications/:id/verify')
+  @Authenticated()
+  @Throttle(STRICT)
   @HttpCode(200)
   @ApiOkResponse({ type: BiometricsResponse })
   @ApiBadRequestResponse({
-    description: 'Faltan documentos o la captura no es JPEG/PNG',
+    description:
+      'Faltan documentos, la captura no es JPEG/PNG o la cédula frontal no es una foto',
   })
-  @ApiNotFoundResponse({ description: 'Solicitud inexistente' })
-  @ApiConflictResponse({ description: 'La solicitud ya fue resuelta' })
+  @ApiNotFoundResponse({
+    description: 'Solicitud inexistente o de otro usuario',
+  })
+  @ApiConflictResponse({
+    description:
+      'La solicitud ya fue resuelta o la identidad ya fue verificada',
+  })
   @ApiTooManyRequestsResponse({ description: 'Se agotaron los intentos' })
-  verify(@Param('id', uuid) id: string, @Body() dto: BiometricsDto) {
-    return this.biometrics.verify(id, dto);
+  verify(
+    @Param('id', uuid) id: string,
+    @CurrentUser('sub') userId: string,
+    @Body() dto: BiometricsDto,
+  ) {
+    return this.biometrics.verify(id, userId, dto);
   }
 
   /** Historial de intentos, con sus puntajes y motivos de rechazo. */

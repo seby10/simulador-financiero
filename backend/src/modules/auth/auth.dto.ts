@@ -5,9 +5,11 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { IsCedula } from '../../common/validation/cedula.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 
 /** El correo identifica al usuario: se normaliza para que `A@X.com` y `a@x.com` sean el mismo. */
@@ -16,29 +18,33 @@ const NormalizedEmail = () =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   );
 
+const Trimmed = () =>
+  Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
+
 /**
- * Longitud mínima 12 y máxima 128, sin reglas de composición: NIST SP 800-63B
- * desaconseja exigir mayúsculas/símbolos y recomienda premiar la longitud.
+ * Longitud mínima 8 (el piso de NIST SP 800-63B) y máxima 128, sin reglas de
+ * composición: NIST desaconseja exigir mayúsculas/símbolos y premia la longitud.
  */
-const PASSWORD_MIN = 6;
+const PASSWORD_MIN = 8;
 const PASSWORD_MAX = 128;
 
 export class RegisterDto {
-  /** @example "1710034065" */
-  @IsOptional() @IsString() @MaxLength(10) idNumber?: string;
-  /** @example "María" */
-  @IsOptional() @IsString() @MaxLength(100) firstName?: string;
+  /** Cédula ecuatoriana; una cuenta por titular. @example "1710034065" */
+  @IsCedula() idNumber: string;
+  /** @example "María José" */
+  @Trimmed() @IsString() @IsNotEmpty() @MaxLength(100) firstName: string;
   /** @example "Andrade" */
-  @IsOptional() @IsString() @MaxLength(100) lastName?: string;
-  /** @example "María José Andrade" */
-  @IsOptional() @IsString() @MaxLength(200) fullName?: string;
+  @Trimmed() @IsString() @IsNotEmpty() @MaxLength(100) lastName: string;
   /** @example "0991234567" */
-  @IsOptional() @IsString() @MaxLength(20) phone?: string;
+  @Matches(/^\+?\d{7,15}$/, {
+    message: 'phone debe tener entre 7 y 15 dígitos',
+  })
+  phone: string;
   /** @example "Av. Amazonas y Colón" */
-  @IsOptional() @IsString() @MaxLength(300) address?: string;
+  @IsOptional() @Trimmed() @IsString() @MaxLength(300) address?: string;
   /** @example "maria.andrade@example.com" */
   @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
-  /** Mínimo 6 caracteres. @example "clave123456" */
+  /** Mínimo 8 caracteres. @example "cafe-con-pan-1892" */
   @IsString()
   @MinLength(PASSWORD_MIN)
   @MaxLength(PASSWORD_MAX)
@@ -54,24 +60,24 @@ export class LoginDto {
 
 export class ChangePasswordDto {
   @IsString() @IsNotEmpty() @MaxLength(PASSWORD_MAX) currentPassword: string;
-  /** Mínimo 6 caracteres; cierra todas las sesiones abiertas. */
+  /** Mínimo 8 caracteres; cierra todas las sesiones abiertas. */
   @IsString()
   @MinLength(PASSWORD_MIN)
   @MaxLength(PASSWORD_MAX)
   newPassword: string;
 }
 
-export class BiometricResetStartDto {
-  @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
-}
-
 export class BiometricResetVerifyDto {
+  /** @example "maria.andrade@example.com" */
   @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
-  @IsString() @IsNotEmpty() selfieBase64: string;
+  /** Captura facial JPEG/PNG en base64 (con o sin prefijo data URL). */
+  @IsString() @IsNotEmpty() @MaxLength(7_000_000) selfieBase64: string;
 }
 
 export class BiometricResetConfirmDto {
-  @IsString() @IsNotEmpty() resetToken: string;
+  /** Token de un solo uso devuelto por `biometric-reset/verify`. */
+  @IsString() @IsNotEmpty() @MaxLength(100) resetToken: string;
+  /** Mínimo 8 caracteres; cierra todas las sesiones abiertas. */
   @IsString()
   @MinLength(PASSWORD_MIN)
   @MaxLength(PASSWORD_MAX)
@@ -85,12 +91,14 @@ export class UserResponse {
   id: string;
   /** @example "maria.andrade@example.com" */
   email: string;
+  /** Nombres y apellidos. @example "María José Andrade" */
   fullName: string;
-  idNumber?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  phone?: string | null;
-  address?: string | null;
+  /** Null solo en cuentas administrativas creadas por el seed. */
+  idNumber: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  address: string | null;
   @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
   role: UserRole;
   isActive: boolean;
@@ -101,4 +109,13 @@ export class SessionResponse {
   user: UserResponse;
   /** Segundos de vida del access token recién emitido. @example 900 */
   accessTokenExpiresIn: number;
+}
+
+export class BiometricResetVerifyResponse {
+  /** Úselo en `biometric-reset/confirm` antes de que expire (15 min). */
+  resetToken: string;
+  /** @example "2026-09-23T18:30:00.000Z" */
+  expiresAt: Date;
+  /** @example "92.41" */
+  matchScore: string;
 }

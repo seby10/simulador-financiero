@@ -5,20 +5,33 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { readFile } from 'node:fs/promises';
-import { assertFileKind, onboardingDocumentPath, saveFile } from '../../common/http.js';
+import {
+  assertFileKind,
+  decodeImageBase64,
+  onboardingDocumentPath,
+  saveFile,
+} from '../../common/http.js';
 import { PrismaService } from '../../database/prisma.service.js';
-import { ApplicationStatus } from '../../generated/prisma/enums.js';
+import { Prisma } from '../../generated/prisma/client.js';
+import {
+  ApplicationStatus,
+  BiometricStatus,
+} from '../../generated/prisma/enums.js';
 import {
   BIOMETRIC_PROVIDER,
+  type BiometricAssessment,
   type BiometricProvider,
 } from './biometrics.provider.js';
 import { BiometricsDto } from './biometrics.dto.js';
 
 /** Documento contra el que se compara la selfie. */
-const REFERENCE_DOCUMENT = 'idFront';
+export const REFERENCE_DOCUMENT = 'idFront';
+/** Captura que verificó la identidad; sirve de referencia para recuperar la clave. */
+export const SELFIE_DOCUMENT = 'selfie';
 
 const number = (name: string, fallback: number, max: number) => {
   const raw = process.env[name];
@@ -37,7 +50,12 @@ const livenessMin = () => number('BIOMETRIC_LIVENESS_MIN', 75, 100);
 const matchMin = () => number('BIOMETRIC_MATCH_MIN', 75, 100);
 const maxAttempts = () => number('BIOMETRIC_MAX_ATTEMPTS', 3, 20);
 
-const planSummary = { select: { id: true, name: true, tea: true } } as const;
+/** Resultado de contrastar una captura con su referencia. */
+export interface BiometricEvaluation extends BiometricAssessment {
+  passed: boolean;
+  /** Qué umbral no se alcanzó; null si pasó. */
+  failureReason: string | null;
+}
 
 @Injectable()
 export class BiometricsService {
@@ -46,13 +64,24 @@ export class BiometricsService {
     @Inject(BIOMETRIC_PROVIDER) private readonly provider: BiometricProvider,
   ) {}
 
+  /** Contrasta una captura con una imagen de referencia y aplica los umbrales. */
+  async evaluate(
+    selfie: Buffer,
+    reference: Buffer,
+  ): Promise<BiometricEvaluation> {
+    const assessment = await this.provider.assess({ selfie, reference });
+    const failureReason = this.rejectionReason(assessment);
+    return { ...assessment, passed: failureReason === null, failureReason };
+  }
+
   /**
-   * Un intento de verificación: valida la captura, la contrasta con el documento
-   * y aprueba la solicitud solo si ambos puntajes superan su umbral. Cada intento
-   * queda registrado, pase o no.
+   * Un intento de verificación de identidad del dueño de la solicitud. Compara la
+   * captura con la cédula frontal; si pasa, la identidad queda verificada (la
+   * inversión la aprueba un administrador). Cada intento queda registrado, y al
+   * agotarlos la solicitud pasa a revisión manual.
    */
-  async verify(applicationId: string, dto: BiometricsDto) {
-    const application = await this.loadPending(applicationId);
+  async verify(applicationId: string, userId: string, dto: BiometricsDto) {
+    const application = await this.loadPending(applicationId, userId);
 
     const uploaded = application.documentUrls as Record<string, string>;
     const missing = (
@@ -62,9 +91,7 @@ export class BiometricsService {
       throw new BadRequestException(`Faltan documentos: ${missing.join(', ')}`);
     }
 
-    const base64 = dto.selfieBase64.replace(/^data:image\/[a-z]+;base64,/i, '');
-    const selfie = Buffer.from(base64, 'base64');
-    assertFileKind(selfie, ['png', 'jpg'], 'selfieBase64');
+    const selfie = decodeImageBase64(dto.selfieBase64, 'selfieBase64');
     const reference = await this.readReference(applicationId);
 
     const limit = maxAttempts();
@@ -78,9 +105,7 @@ export class BiometricsService {
       );
     }
 
-    const assessment = await this.provider.assess({ selfie, reference });
-    const failureReason = this.rejectionReason(assessment);
-    const passed = failureReason === null;
+    const evaluation = await this.evaluate(selfie, reference);
     const attempt = previous + 1;
 
     await this.prisma.biometricVerification
@@ -88,47 +113,54 @@ export class BiometricsService {
         data: {
           applicationId,
           attempt,
-          livenessScore: assessment.livenessScore.toFixed(2),
-          matchScore: assessment.matchScore.toFixed(2),
-          passed,
-          failureReason,
-          provider: assessment.provider,
+          livenessScore: evaluation.livenessScore.toFixed(2),
+          matchScore: evaluation.matchScore.toFixed(2),
+          passed: evaluation.passed,
+          failureReason: evaluation.failureReason,
+          provider: evaluation.provider,
         },
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         // Choque con el índice único [applicationId, attempt]: otra petición
         // simultánea ya ocupó este número. Falla cerrado en vez de duplicar.
-        throw new ConflictException(
-          'Ya hay una verificación en curso para esta solicitud',
-        );
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'Ya hay una verificación en curso para esta solicitud',
+          );
+        }
+        throw error;
       });
 
-    if (passed) {
-      await saveFile(onboardingDocumentPath(applicationId, 'selfie'), selfie);
-      await this.prisma.$executeRaw`
-        UPDATE "InvestmentApplication"
-        SET "documentUrls" = "documentUrls" || ${JSON.stringify({ selfie: `/api/onboarding/applications/${applicationId}/documents/selfie` })}::jsonb
-        WHERE id = ${applicationId}`;
+    let biometricStatus: BiometricStatus = BiometricStatus.PENDING;
+    if (evaluation.passed) {
+      await this.markVerified(applicationId, selfie, evaluation.matchScore);
+      biometricStatus = BiometricStatus.VERIFIED;
+    } else if (attempt >= limit) {
+      await this.prisma.investmentApplication.updateMany({
+        where: { id: applicationId, biometricStatus: BiometricStatus.PENDING },
+        data: { biometricStatus: BiometricStatus.FAILED },
+      });
+      biometricStatus = BiometricStatus.FAILED;
     }
-
-    const status = passed
-      ? await this.approve(applicationId, assessment.matchScore)
-      : application.status;
 
     return {
       applicationId,
       attempt,
-      passed,
-      livenessScore: assessment.livenessScore.toFixed(2),
-      matchScore: assessment.matchScore.toFixed(2),
-      status,
+      passed: evaluation.passed,
+      livenessScore: evaluation.livenessScore.toFixed(2),
+      matchScore: evaluation.matchScore.toFixed(2),
+      status: application.status,
+      biometricStatus,
       remainingAttempts: limit - attempt,
       checks: {
         liveness:
-          assessment.livenessScore >= livenessMin() ? 'PASSED' : 'FAILED',
-        faceMatch: assessment.matchScore >= matchMin() ? 'MATCH' : 'NO_MATCH',
+          evaluation.livenessScore >= livenessMin() ? 'PASSED' : 'FAILED',
+        faceMatch: evaluation.matchScore >= matchMin() ? 'MATCH' : 'NO_MATCH',
       },
-      failureReason,
+      failureReason: evaluation.failureReason,
     };
   }
 
@@ -147,10 +179,7 @@ export class BiometricsService {
   private rejectionReason({
     livenessScore,
     matchScore,
-  }: {
-    livenessScore: number;
-    matchScore: number;
-  }): string | null {
+  }: BiometricAssessment): string | null {
     const liveness = livenessMin();
     if (livenessScore < liveness) {
       return `Prueba de vida insuficiente (${livenessScore.toFixed(2)} < ${liveness})`;
@@ -162,46 +191,67 @@ export class BiometricsService {
     return null;
   }
 
-  /** Condicionado al estado: dos aprobaciones simultáneas no aprueban dos veces. */
-  private async approve(applicationId: string, matchScore: number) {
-    const { count } = await this.prisma.investmentApplication.updateMany({
-      where: { id: applicationId, status: ApplicationStatus.PENDING_REVIEW },
-      data: {
-        biometricScore: matchScore.toFixed(2),
-        status: ApplicationStatus.APPROVED,
-      },
-    });
-    if (count === 0) {
-      throw new ConflictException('La solicitud ya fue resuelta');
+  /**
+   * Guarda la captura aprobada y marca la identidad como verificada en una sola
+   * sentencia condicionada: dos intentos simultáneos no verifican dos veces.
+   */
+  private async markVerified(
+    applicationId: string,
+    selfie: Buffer,
+    matchScore: number,
+  ) {
+    await saveFile(
+      onboardingDocumentPath(applicationId, SELFIE_DOCUMENT),
+      selfie,
+    );
+    const url = `/api/onboarding/applications/${applicationId}/documents/${SELFIE_DOCUMENT}`;
+    const updated = await this.prisma.$executeRaw`
+      UPDATE "InvestmentApplication"
+      SET "biometricStatus" = 'VERIFIED',
+          "biometricScore" = ${matchScore.toFixed(2)}::numeric,
+          "documentUrls" = "documentUrls" || ${JSON.stringify({ [SELFIE_DOCUMENT]: url })}::jsonb,
+          "updatedAt" = now()
+      WHERE id = ${applicationId} AND "biometricStatus" = 'PENDING'`;
+    if (updated === 0) {
+      throw new ConflictException('La identidad ya fue verificada');
     }
-    return ApplicationStatus.APPROVED;
   }
 
-  private async loadPending(id: string) {
-    const application =
-      await this.prisma.investmentApplication.findUniqueOrThrow({
-        where: { id },
-        include: {
-          investmentPlan: {
-            select: { ...planSummary.select, requiredDocuments: true },
-          },
-        },
-      });
+  /**
+   * Solo el dueño opera sobre su solicitud; a cualquier otro se le responde como
+   * si no existiera, para no confirmar identificadores ajenos.
+   */
+  private async loadPending(id: string, userId: string) {
+    const application = await this.prisma.investmentApplication.findUnique({
+      where: { id },
+      include: {
+        investmentPlan: { select: { requiredDocuments: true } },
+      },
+    });
+    if (!application || application.userId !== userId) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
     if (application.status !== ApplicationStatus.PENDING_REVIEW) {
       throw new ConflictException(
         `La solicitud ya fue resuelta (${application.status})`,
       );
     }
+    if (application.biometricStatus === BiometricStatus.VERIFIED) {
+      throw new ConflictException('La identidad ya fue verificada');
+    }
     return application;
   }
 
-  private readReference(applicationId: string) {
-    return readFile(
+  private async readReference(applicationId: string) {
+    const reference = await readFile(
       onboardingDocumentPath(applicationId, REFERENCE_DOCUMENT),
     ).catch(() => {
       throw new BadRequestException(
         `Cargue ${REFERENCE_DOCUMENT} antes de la verificación biométrica`,
       );
     });
+    // Un PDF no tiene rostro que comparar: la cédula frontal debe ser una foto.
+    assertFileKind(reference, ['png', 'jpg'], REFERENCE_DOCUMENT);
+    return reference;
   }
 }

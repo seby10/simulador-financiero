@@ -1,7 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import { assertFileKind, assertMinMax, assertRange, PUBLIC_UPLOADS, saveFile } from '../../common/http.js';
+import {
+  assertFileKind,
+  assertMinMax,
+  assertRange,
+  PUBLIC_UPLOADS,
+  saveFile,
+} from '../../common/http.js';
 import {
   PAYOUT_PERIOD_DAYS,
   simulateInvestment,

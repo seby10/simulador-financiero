@@ -23,4 +23,3 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
 @Global()
 @Module({ providers: [PrismaService], exports: [PrismaService] })
 export class PrismaModule {}
-

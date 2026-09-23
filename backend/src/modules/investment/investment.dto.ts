@@ -14,6 +14,7 @@ import {
   Min,
 } from 'class-validator';
 import { IsDecimalString } from '../../common/http.js';
+import { IsOptionalImageUrl } from '../../common/validation/branding.js';
 import type {
   InvestmentResult,
   PayoutRow,
@@ -49,9 +50,8 @@ export class CreateInvestmentPlanDto {
   @IsIn(DOCUMENT_KINDS, { each: true })
   requiredDocuments?: DocumentKind[];
 
-  @IsOptional()
-  @IsString()
-  imageUrl?: string;
+  /** Se sube con POST /investment/plans/{id}/image o se enlaza por https. */
+  @IsOptionalImageUrl() imageUrl?: string | null;
 }
 
 export class UpdateInvestmentPlanDto extends PartialType(
@@ -85,7 +85,7 @@ export class InvestmentPlanResponse {
   allowsMonthlyPayout: boolean;
   @ApiProperty({ isArray: true, enum: DOCUMENT_KINDS })
   requiredDocuments: DocumentKind[];
-  imageUrl?: string;
+  imageUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
