@@ -45,14 +45,6 @@ export default function VerifyMobilePage() {
     loadModels();
   }, []);
 
-  // Try starting WebRTC camera feed
-  useEffect(() => {
-    startCamera();
-    return () => {
-      stopCamera();
-    };
-  }, [facingMode]);
-
   const startCamera = async () => {
     setCapturedImage(null);
     setResult(null);
@@ -87,6 +79,16 @@ export default function VerifyMobilePage() {
     }
     setCameraActive(false);
   };
+
+  // Try starting WebRTC camera feed
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facingMode]);
 
   const toggleCamera = () => {
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"));

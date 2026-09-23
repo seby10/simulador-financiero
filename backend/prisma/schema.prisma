@@ -17,17 +17,44 @@ enum UserRole {
 }
 
 model User {
-  id           String        @id @default(uuid())
+  id             String                   @id @default(uuid())
   /// Normalizado a minúsculas antes de guardar.
-  email        String        @unique
+  email          String                   @unique
   /// scrypt$N$r$p$salt$hash — nunca la contraseña en claro.
-  passwordHash String
-  fullName     String
-  role         UserRole      @default(CUSTOMER)
-  isActive     Boolean       @default(true)
-  sessions     AuthSession[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  passwordHash   String
+  fullName       String
+  /// Cédula. Opcional solo para cuentas creadas por el seed (administradores).
+  idNumber       String?                  @unique @db.VarChar(10)
+  firstName      String?
+  lastName       String?
+  phone          String?
+  address        String?
+  role           UserRole                 @default(CUSTOMER)
+  isActive       Boolean                  @default(true)
+  sessions       AuthSession[]
+  applications   InvestmentApplication[]
+  passwordResets BiometricPasswordReset[]
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+}
+
+/// Cada intento de recuperar la clave por biometría, pase o no. El token en claro
+/// solo viaja al cliente; aquí queda su SHA-256 y se invalida al usarlo.
+model BiometricPasswordReset {
+  id            String    @id @default(uuid())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  passed        Boolean
+  livenessScore Decimal   @db.Decimal(5, 2)
+  matchScore    Decimal   @db.Decimal(5, 2)
+  provider      String
+  /// Solo en intentos aprobados.
+  tokenHash     String?   @unique
+  expiresAt     DateTime?
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 /// Un refresh token vigente por fila. La rotación crea una fila nueva en la misma
@@ -63,6 +90,18 @@ model InstitutionConfig {
   phone               String
   email               String
   logoUrl             String?
+  primaryColor        String   @default("#003b70")
+  secondaryColor      String   @default("#35b8db")
+  accentColor         String   @default("#10b981")
+  navbarBgColor       String   @default("#ffffff")
+  navbarTextColor     String   @default("#1e293b")
+  pageBgColor         String   @default("#f8fafc")
+  cardBgColor         String   @default("#ffffff")
+  footerBgColor       String   @default("#003b70")
+  footerTextColor     String   @default("#e2e8f0")
+  heroImageUrl        String?
+  heroTitle           String   @default("El respaldo financiero que necesitas.")
+  heroSubtitle        String   @default("Crecemos junto a ti. Solicita tu crédito hoy mismo y simula tus pagos de forma transparente.")
   disclaimerText      String
   updatedAt           DateTime @updatedAt
 }
@@ -77,6 +116,7 @@ model CreditType {
   maxTermMonths      Int
   /// Tasa nominal anual (%). La efectiva se deriva: (1 + r/12)^12 - 1
   annualInterestRate Decimal  @db.Decimal(7, 4)
+  imageUrl           String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -109,6 +149,7 @@ model InvestmentPlan {
   tea                 Decimal                 @db.Decimal(7, 4)
   allowsMonthlyPayout Boolean                 @default(false)
   requiredDocuments   Json                    @default("[]")
+  imageUrl            String?
   applications        InvestmentApplication[]
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
@@ -123,6 +164,15 @@ enum ApplicationStatus {
   PENDING_REVIEW
   APPROVED
   REJECTED
+}
+
+/// La biometría confirma la identidad; aprobar la inversión lo decide un administrador.
+enum BiometricStatus {
+  /// Aún no hay un intento aprobado y quedan intentos.
+  PENDING
+  VERIFIED
+  /// Se agotaron los intentos: el administrador revisa manualmente.
+  FAILED
 }
 
 /// Cada intento de verificación biométrica, pase o no. Sirve de rastro de
@@ -148,24 +198,29 @@ model BiometricVerification {
 }
 
 model InvestmentApplication {
-  id                String            @id @default(uuid())
+  id                String                  @id @default(uuid())
+  /// Cuenta que creó la solicitud; null en las anteriores a exigir sesión.
+  user              User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId            String?
   applicantFullName String
-  applicantIdNumber String            @db.VarChar(10)
+  applicantIdNumber String                  @db.VarChar(10)
   email             String
   phone             String
   sourceOfFunds     String
-  investmentPlan    InvestmentPlan    @relation(fields: [investmentPlanId], references: [id], onDelete: Restrict)
+  investmentPlan    InvestmentPlan          @relation(fields: [investmentPlanId], references: [id], onDelete: Restrict)
   investmentPlanId  Int
-  amount            Decimal           @db.Decimal(14, 2)
+  amount            Decimal                 @db.Decimal(14, 2)
   termDays          Int
   payoutMethod      PayoutMethod
-  status            ApplicationStatus @default(PENDING_REVIEW)
-  /// Puntaje de coincidencia facial del intento que aprobó la solicitud.
-  biometricScore    Decimal?          @db.Decimal(5, 2)
+  status            ApplicationStatus       @default(PENDING_REVIEW)
+  biometricStatus   BiometricStatus         @default(PENDING)
+  /// Puntaje de coincidencia facial del intento que verificó la identidad.
+  biometricScore    Decimal?                @db.Decimal(5, 2)
   biometrics        BiometricVerification[]
-  documentUrls      Json              @default("{}")
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  documentUrls      Json                    @default("{}")
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
 
   @@index([status])
+  @@index([userId])
 }

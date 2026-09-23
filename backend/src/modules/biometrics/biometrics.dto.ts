@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
-import { ApplicationStatus } from '../../generated/prisma/enums.js';
+import {
+  ApplicationStatus,
+  BiometricStatus,
+} from '../../generated/prisma/enums.js';
 
 export class BiometricsDto {
   /** Captura facial JPEG/PNG en base64 (con o sin prefijo data URL). @example "data:image/jpeg;base64,/9j/4AAQSkZJRg..." */
@@ -25,9 +28,12 @@ export class BiometricsResponse {
   livenessScore: string;
   /** @example "95.07" */
   matchScore: string;
-  /** Estado de la solicitud tras el intento. */
+  /** Estado de la solicitud; la biometría no lo cambia, lo decide un administrador. */
   @ApiProperty({ enum: ApplicationStatus, enumName: 'ApplicationStatus' })
   status: ApplicationStatus;
+  /** VERIFIED si este intento pasó; FAILED si agotó los intentos. */
+  @ApiProperty({ enum: BiometricStatus, enumName: 'BiometricStatus' })
+  biometricStatus: BiometricStatus;
   /** Intentos que aún quedan disponibles. @example 2 */
   remainingAttempts: number;
   checks: BiometricChecksDto;

@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { writeFile } from 'node:fs/promises';
 import { AppModule } from './app.module.js';
 import {
@@ -22,6 +23,18 @@ try {
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+  // El frontend reenvía /api con un proxy local (rewrites de Next o nginx): sin
+  // confiar en él, request.ip sería 127.0.0.1 para todos y el límite por IP
+  // castigaría a todos los usuarios a la vez.
+  app.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback');
+  app.use(
+    helmet({
+      // Solo sirve JSON, archivos y Swagger UI (que usa scripts inline).
+      contentSecurityPolicy: false,
+      // Logos e imágenes de /uploads se muestran desde el dominio del frontend.
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.enableCors({
     origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
     // Las cookies de sesión solo viajan si el navegador tiene permiso explícito.

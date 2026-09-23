@@ -1,5 +1,6 @@
 export interface FaceAnalysisResult {
   hasCenteredFace: boolean;
+  hasFace?: boolean;
   skinRatio: number;
   reason: string | null;
 }
@@ -43,7 +44,7 @@ export async function analyzeImageQuality(
     });
 
     // Run face detection with landmarks using TinyFaceDetector
-    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 });
+    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.25 });
     const detections = await faceapi.detectAllFaces(img, options).withFaceLandmarks();
 
     console.log("face-api.js detections:", detections.length, detections);
@@ -52,8 +53,9 @@ export async function analyzeImageQuality(
     if (detections.length === 0) {
       return {
         hasCenteredFace: false,
+        hasFace: false,
         skinRatio: 0,
-        reason: "No se detectó un rostro. Asegúrate de que tu cara esté visible, descubierta y mirando a la cámara.",
+        reason: "No se detectó un rostro. Asegúrate de que tu cara esté visible y frente a la cámara.",
       };
     }
 
@@ -73,27 +75,30 @@ export async function analyzeImageQuality(
     const centerOffsetY = Math.abs(faceCenterY - imgH / 2) / imgH;
 
     // Check confidence score
-    if (detection.detection.score < 0.55) {
+    if (detection.detection.score < 0.35) {
       return {
         hasCenteredFace: false,
+        hasFace: false,
         skinRatio: faceAreaRatio,
-        reason: "El rostro no se detecta con claridad. Retira objetos que cubran tu cara y mira directamente a la cámara.",
+        reason: "El rostro no se detecta con suficiente claridad. Aumenta la iluminación de la habitación.",
       };
     }
 
     // FACE TOO SMALL
-    if (faceAreaRatio < 0.03) {
+    if (faceAreaRatio < 0.02) {
       return {
         hasCenteredFace: false,
+        hasFace: false,
         skinRatio: faceAreaRatio,
         reason: "Tu rostro se ve muy pequeño. Acércate más a la cámara.",
       };
     }
 
     // FACE NOT CENTERED
-    if (centerOffsetX > 0.30 || centerOffsetY > 0.30) {
+    if (centerOffsetX > 0.40 || centerOffsetY > 0.40) {
       return {
         hasCenteredFace: false,
+        hasFace: false,
         skinRatio: faceAreaRatio,
         reason: "Tu rostro no está centrado. Muévete al centro del encuadre.",
       };
@@ -140,7 +145,7 @@ export async function analyzeImageQuality(
       };
     }
 
-    return { hasCenteredFace: true, skinRatio: faceAreaRatio, reason: null };
+    return { hasCenteredFace: true, hasFace: true, skinRatio: faceAreaRatio, reason: null };
   } catch (err) {
     console.error("Error in analyzeImageQuality:", err);
     return {

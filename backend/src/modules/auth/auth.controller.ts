@@ -8,14 +8,17 @@ import {
   Res,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import {
   Authenticated,
@@ -23,7 +26,11 @@ import {
   readCookie,
   REFRESH_COOKIE,
 } from '../../common/auth.js';
+import { STRICT } from '../../common/throttle.js';
 import {
+  BiometricResetConfirmDto,
+  BiometricResetVerifyDto,
+  BiometricResetVerifyResponse,
   ChangePasswordDto,
   LoginDto,
   RegisterDto,
@@ -43,10 +50,41 @@ const contextOf = (request: Request): SessionContext => ({
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  /**
+   * Recuperación de clave por biometría: compara una captura en vivo con la selfie
+   * que verificó la identidad del titular en una solicitud. Máx. 5 fallos por hora.
+   */
+  @Post('biometric-reset/verify')
+  @Throttle(STRICT)
+  @HttpCode(200)
+  @ApiOkResponse({ type: BiometricResetVerifyResponse })
+  @ApiBadRequestResponse({ description: 'La captura no es JPEG/PNG' })
+  @ApiUnauthorizedResponse({
+    description:
+      'Identidad no verificada (mismo mensaje exista o no la cuenta)',
+  })
+  @ApiTooManyRequestsResponse({ description: 'Demasiados intentos fallidos' })
+  biometricResetVerify(@Body() dto: BiometricResetVerifyDto) {
+    return this.auth.biometricResetVerify(dto.email, dto.selfieBase64);
+  }
+
+  /** Fija la nueva contraseña con el token de un solo uso y cierra todas las sesiones. */
+  @Post('biometric-reset/confirm')
+  @Throttle(STRICT)
+  @HttpCode(204)
+  @ApiNoContentResponse({ description: 'Contraseña actualizada' })
+  @ApiUnauthorizedResponse({ description: 'Token inválido, usado o expirado' })
+  async biometricResetConfirm(@Body() dto: BiometricResetConfirmDto) {
+    await this.auth.biometricResetConfirm(dto.resetToken, dto.newPassword);
+  }
+
   /** Crea la cuenta (rol CUSTOMER) y deja la sesión abierta. */
   @Post('register')
+  @Throttle(STRICT)
   @ApiCreatedResponse({ type: SessionResponse })
-  @ApiConflictResponse({ description: 'El correo ya está registrado' })
+  @ApiConflictResponse({
+    description: 'Ya existe una cuenta con ese correo o esa cédula',
+  })
   async register(
     @Body() dto: RegisterDto,
     @Req() request: Request,
@@ -62,6 +100,7 @@ export class AuthController {
 
   /** Inicia sesión y emite las cookies httpOnly. */
   @Post('login')
+  @Throttle(STRICT)
   @HttpCode(200)
   @ApiOkResponse({ type: SessionResponse })
   @ApiUnauthorizedResponse({ description: 'Correo o contraseña incorrectos' })
