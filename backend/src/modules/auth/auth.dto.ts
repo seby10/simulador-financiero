@@ -84,6 +84,23 @@ export class BiometricResetConfirmDto {
   newPassword: string;
 }
 
+export class UpdateUserRoleDto {
+  @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
+  @IsNotEmpty()
+  role: UserRole;
+}
+
+export class UpdateUserStatusDto {
+  @IsNotEmpty()
+  isActive: boolean;
+}
+
+export class CreateUserAdminDto extends RegisterDto {
+  @IsOptional()
+  @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
+  role?: UserRole;
+}
+
 // ───────────── Respuestas (solo documentación OpenAPI) ─────────────
 
 export class UserResponse {
@@ -119,3 +136,4 @@ export class BiometricResetVerifyResponse {
   /** @example "92.41" */
   matchScore: string;
 }
+

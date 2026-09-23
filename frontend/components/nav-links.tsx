@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, ChevronDown } from "lucide-react";
 
 export default function NavLinks() {
   const pathname = usePathname();
@@ -24,61 +24,60 @@ export default function NavLinks() {
   };
 
   return (
-    <nav 
-      className="hidden md:flex items-center gap-8 font-semibold text-sm"
-      style={{ color: 'var(--brand-navbar-text, #1e293b)' }}
-    >
-      <Link 
-        href="/" 
-        className={`transition-colors py-7 border-b-2 ${pathname === "/" ? "text-brand-secondary border-brand-secondary" : "border-transparent hover:border-brand-secondary hover:text-brand-secondary"}`}
+    <nav className="hidden md:flex items-center gap-10 text-sm font-normal text-[#212832]">
+      <Link
+        href="/simulator"
+        className="hover:text-[#df6951] transition-colors py-2 font-medium"
       >
-        INICIO
+        Créditos
       </Link>
-      <Link 
-        href="/investments" 
-        className={`transition-colors py-7 border-b-2 ${pathname.startsWith("/investments") ? "text-brand-secondary border-brand-secondary" : "border-transparent hover:border-brand-secondary hover:text-brand-secondary"}`}
+      <Link
+        href="/investments"
+        className="hover:text-[#df6951] transition-colors py-2 font-medium"
       >
-        INVERSIONES
-      </Link>
-      <Link 
-        href="/simulator" 
-        className={`transition-colors py-7 border-b-2 ${pathname.startsWith("/simulator") ? "text-brand-secondary border-brand-secondary" : "border-transparent hover:border-brand-secondary hover:text-brand-secondary"}`}
-      >
-        CRÉDITOS
+        Inversiones
       </Link>
       {currentUser && currentUser.role === "CUSTOMER" && (
-        <Link 
-          href="/my-applications" 
-          className={`transition-colors py-7 border-b-2 ${pathname.startsWith("/my-applications") ? "text-brand-secondary border-brand-secondary" : "border-transparent hover:border-brand-secondary hover:text-brand-secondary"}`}
+        <Link
+          href="/my-applications"
+          className="hover:text-[#df6951] transition-colors py-2 font-medium"
         >
-          MIS SOLICITUDES
+          Mis Solicitudes
         </Link>
       )}
-      
-      <div className="ml-4 pl-8 border-l border-slate-200/40">
-        {currentUser ? (
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-slate-200">
-              <User className="w-3.5 h-3.5 text-brand-primary" />
-              {currentUser.firstName || currentUser.fullName?.split(" ")[0] || "Cliente"}
-            </span>
-            <button
-              onClick={handleLogout}
-              title="Cerrar Sesión"
-              className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <Link 
-            href="/login" 
-            className="bg-brand-primary hover:bg-brand-secondary text-white px-6 py-2 rounded-full transition-colors flex items-center gap-2 shadow-sm"
+
+      {currentUser ? (
+        <div className="flex items-center gap-4 ml-2">
+          <span className="text-xs font-semibold text-slate-800 bg-amber-50 px-4 py-2 rounded-lg flex items-center gap-2 border border-amber-200/80">
+            <User className="w-3.5 h-3.5 text-amber-600" />
+            {currentUser.firstName || currentUser.fullName?.split(" ")[0] || "Cliente"}
+          </span>
+          <button
+            onClick={handleLogout}
+            title="Cerrar Sesión"
+            className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50"
           >
-            Banca Virtual
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-10 ml-2">
+          <Link
+            href="/login"
+            className="border border-[#212832] text-[#212832] hover:bg-[#212832] hover:text-white font-medium text-sm px-5 py-1.5 rounded-[5px] transition-all shadow-2xs"
+          >
+            Iniciar Sesión
           </Link>
-        )}
+        </div>
+      )}
+
+      {/* Language dropdown */}
+      <div className="flex items-center gap-1 cursor-pointer hover:text-[#df6951] transition-colors font-medium text-sm text-[#212832]">
+        <span>ES</span>
+        <ChevronDown className="w-4 h-4 text-[#212832]" />
       </div>
     </nav>
   );
 }
+
+

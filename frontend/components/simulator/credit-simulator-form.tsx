@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import { fetchCreditTypes, fetchIndirectFees, simulateCredit, downloadAmortizationPdf } from "@/lib/api";
 import AmortizationTable from "./amortization-table";
+import FaqAccordion from "@/components/faq-accordion";
 
 export default function CreditSimulatorForm() {
   const [creditTypes, setCreditTypes] = useState<any[]>([]);
@@ -111,163 +112,191 @@ export default function CreditSimulatorForm() {
   const currentImage = getCreditImage();
 
   return (
-    <div className="w-full flex flex-col">
-      {/* 1. Tabs Menu - Aligned Right first */}
-      <div className="w-full flex justify-end">
-        <div className="bg-brand-secondary text-white flex flex-wrap justify-center md:justify-end items-center text-sm md:text-base py-3 px-6 md:px-8 md:rounded-bl-3xl shadow-sm">
-          {creditTypes.map((type, index) => (
-            <div key={type.id} className="flex items-center">
-              <button 
-                type="button"
-                onClick={() => {
-                  setCreditTypeId(type.id.toString());
-                  setSimulationResult(null);
-                }}
-                className={`px-2 md:px-3 py-1 transition-colors ${
-                  creditTypeId === type.id.toString() ? "font-bold underline decoration-2 underline-offset-4" : "hover:text-white/80"
-                }`}
-              >
-                {type.name}
-              </button>
-              {index < creditTypes.length - 1 && <span className="text-white/50 mx-1 md:mx-2">|</span>}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 2. Title centered below it */}
-      <div className="w-full text-center mt-10 mb-4">
-        <h1 className="text-3xl font-bold text-brand-primary uppercase tracking-wide">
-          SIMULADOR DE CRÉDITO
+    <div className="w-full flex flex-col relative z-10">
+      {/* 1. Header Banner */}
+      <div className="pt-10 pb-6 text-center max-w-3xl mx-auto px-4">
+        <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951] mb-2">
+          HERRAMIENTA DE SIMULACIÓN
+        </p>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#14183e] font-serif-title leading-tight mb-4">
+          Simulador de Crédito
         </h1>
+        <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+          Calcula tus cuotas mensuales, comparativa de sistemas de amortización y obtén tu desglose detallado al instante.
+        </p>
       </div>
 
-      <div className="w-full max-w-6xl mx-auto px-4 mt-12 mb-20">
-        <div className="flex flex-col lg:flex-row gap-12 items-start justify-center">
+      {/* 2. Credit Types Filter Tabs (Pills) */}
+      <div className="w-full flex flex-wrap justify-center items-center gap-2.5 sm:gap-3 px-4 mb-10">
+        {creditTypes.map((type) => (
+          <button
+            key={type.id}
+            type="button"
+            onClick={() => {
+              setCreditTypeId(type.id.toString());
+              setSimulationResult(null);
+            }}
+            className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
+              creditTypeId === type.id.toString()
+                ? "bg-[#df6951] text-white shadow-lg shadow-orange-500/25 scale-105"
+                : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
+            }`}
+          >
+            {type.name}
+          </button>
+        ))}
+      </div>
+
+      {/* 3. Main Form & Card Container */}
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Image Section */}
-          <div className="relative w-full lg:w-[450px] shrink-0 mt-4">
-            {/* The decorative frame behind */}
-            <div className="absolute inset-0 bg-[#e6e2df] rounded-[40px] transform rotate-3 scale-105 -z-10"></div>
+          {/* Left Feature Image Card */}
+          <div className="lg:col-span-5 relative group rounded-[32px] overflow-hidden shadow-xl border border-slate-100 bg-white">
+            <div className="relative h-[340px] lg:h-[480px] w-full overflow-hidden">
+              <img 
+                src={currentImage} 
+                alt={activeCreditType?.name || "Simulación"} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#14183e]/85 via-[#14183e]/20 to-transparent"></div>
+            </div>
             
-            <img 
-              src={currentImage} 
-              alt={activeCreditType?.name || "Asesoramiento"} 
-              className="w-full h-[450px] object-cover rounded-[30px] shadow-lg transition-opacity duration-500"
-            />
-            
-            {/* Blue Label over image */}
-            <div className="absolute bottom-6 right-[-20px] bg-brand-primary text-white py-3 px-8 rounded-l-xl shadow-xl z-10 font-bold tracking-wider text-sm uppercase">
-              {activeCreditType?.name || "CRÉDITO"}
+            {/* Floating Info Overlay */}
+            <div className="absolute bottom-6 left-6 right-6 text-white p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#f1a501] block mb-1">
+                TASA REFERENCIAL
+              </span>
+              <h3 className="text-2xl font-bold font-serif-title text-white">
+                {activeCreditType?.annualInterestRate}% <span className="text-sm font-normal opacity-90">Anual</span>
+              </h3>
+              <p className="text-xs text-slate-200 mt-1 line-clamp-2">
+                {activeCreditType?.description || `Monto desde $${activeCreditType?.minAmount} hasta $${activeCreditType?.maxAmount}`}
+              </p>
             </div>
           </div>
 
-          {/* Right Form Section */}
-          <div className="w-full lg:w-[500px] flex flex-col pl-4">
-            <h2 className="text-3xl font-normal text-brand-primary mb-2">
-              {activeCreditType?.name}
-            </h2>
-            <p className="text-slate-500 text-sm mb-6 border-b border-slate-200 pb-6">
-              {activeCreditType?.description || `Destinado para capital de trabajo y adquisición de activos desde $${activeCreditType?.minAmount} hasta $${activeCreditType?.maxAmount}`}
-            </p>
-
-            <h3 className="text-brand-primary font-semibold mb-6">Ingrese los Datos</h3>
+          {/* Right Form Container */}
+          <div className="lg:col-span-7 bg-white rounded-[32px] p-6 sm:p-10 shadow-xl border border-slate-100">
+            <div className="mb-6">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#14183e] font-serif-title mb-2">
+                {activeCreditType?.name}
+              </h2>
+              <p className="text-slate-500 text-xs sm:text-sm">
+                Ingresa los datos solicitados para calcular tu tabla de amortización.
+              </p>
+            </div>
 
             {error && (
-              <div className="mb-6 p-3 bg-red-50 text-red-600 border border-red-200 rounded text-sm">
+              <div className="mb-6 p-4 bg-red-50 text-red-600 border border-red-200 rounded-2xl text-sm font-medium">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleCalculate} className="space-y-4">
+            <form onSubmit={handleCalculate} className="space-y-5">
               
-              {/* Tipo de Crédito Read-Only Block */}
-              <div className="flex w-full">
-                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
-                  Tipo de Crédito <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
+              {/* Field 1: Amount */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                  ¿Cuánto dinero necesitas? (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                  <input 
+                    type="number"
+                    min={activeCreditType?.minAmount || "0"}
+                    max={activeCreditType?.maxAmount}
+                    step="0.01"
+                    className="w-full pl-9 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-900 font-semibold text-base transition-all"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    placeholder={`Min: $${activeCreditType?.minAmount} - Max: $${activeCreditType?.maxAmount}`}
+                    required
+                  />
                 </div>
-                <div className="flex-1 px-4 py-3 border-y border-r border-slate-300 bg-white text-slate-800 text-sm flex items-center justify-between">
-                  <span>{activeCreditType?.name}</span>
-                  <span className="text-xs font-bold text-brand-primary bg-slate-100 px-2 py-1 rounded">
-                    Tasa: {activeCreditType?.annualInterestRate}%
-                  </span>
+                <div className="flex justify-between text-[11px] text-slate-400 mt-1 font-medium">
+                  <span>Mínimo: ${activeCreditType?.minAmount}</span>
+                  <span>Máximo: ${activeCreditType?.maxAmount}</span>
                 </div>
               </div>
 
-              {/* Custom Input Block */}
-              <div className="flex w-full">
-                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
-                  Cuánto dinero necesita? <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
-                </div>
-                <input 
-                  type="number"
-                  min={activeCreditType?.minAmount || "0"}
-                  max={activeCreditType?.maxAmount}
-                  step="0.01"
-                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-brand-secondary bg-white text-slate-800 text-sm min-w-0"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  placeholder={`mín: ${activeCreditType?.minAmount} - máx: ${activeCreditType?.maxAmount}`}
-                  required
-                />
-              </div>
-
-              {/* Custom Input Block */}
-              <div className="flex w-full">
-                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
-                  Plazo en Meses <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
-                </div>
+              {/* Field 2: Term in Months */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                  Plazo en Meses
+                </label>
                 <input 
                   type="number"
                   min={activeCreditType?.minTermMonths || "1"}
                   max={activeCreditType?.maxTermMonths}
-                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-brand-secondary bg-white text-slate-800 text-sm min-w-0"
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-900 font-semibold text-base transition-all"
                   value={termMonths}
                   onChange={e => setTermMonths(e.target.value)}
-                  placeholder={`máx: ${activeCreditType?.maxTermMonths}`}
+                  placeholder={`Ej: 24 (Máximo ${activeCreditType?.maxTermMonths} meses)`}
                   required
                 />
               </div>
 
-              {/* Custom Select Block */}
-              <div className="flex w-full">
-                <div className="bg-brand-primary text-white text-sm font-semibold px-4 py-3 w-56 flex items-center border border-brand-primary">
-                  Tipo de Amortización <span className="ml-auto font-bold text-brand-secondary pl-2">|</span>
-                </div>
+              {/* Field 3: Amortization System */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                  Sistema de Amortización
+                </label>
                 <select 
-                  className="flex-1 px-4 py-3 border-y border-r border-slate-300 outline-none focus:ring-1 focus:ring-brand-secondary bg-white text-slate-800 text-sm appearance-none min-w-0 cursor-pointer"
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-900 font-semibold text-base transition-all cursor-pointer"
                   value={method}
                   onChange={e => setMethod(e.target.value as any)}
                 >
-                  <option value="FRENCH">Francés (Cuota Fija)</option>
-                  <option value="GERMAN">Alemán (Cuota Variable)</option>
+                  <option value="FRENCH">Sistema Francés (Cuotas Fijas)</option>
+                  <option value="GERMAN">Sistema Alemán (Cuotas Decrecientes)</option>
                 </select>
               </div>
 
+              {/* Optional Indirect Fees selection */}
+              {indirectFees.length > 0 && (
+                <div className="pt-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                    Servicios / Rubros Opcionales
+                  </label>
+                  <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    {indirectFees.map((fee: any) => (
+                      <label key={fee.id} className="flex items-center gap-3 text-xs text-slate-700 font-medium cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={optionalFeeIds.includes(fee.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setOptionalFeeIds([...optionalFeeIds, fee.id]);
+                            } else {
+                              setOptionalFeeIds(optionalFeeIds.filter(id => id !== fee.id));
+                            }
+                          }}
+                          className="w-4 h-4 rounded text-[#df6951] focus:ring-[#df6951]"
+                        />
+                        <span>{fee.name} ({fee.feeType === 'PERCENTAGE' ? `${fee.value}%` : `$${fee.value}`})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
-              <div className="flex gap-6 pt-6">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button 
                   type="submit"
                   disabled={loadingSimulation || !amount || !termMonths || !creditTypeId}
-                  className="flex items-center group relative overflow-hidden rounded-full shadow-md border border-slate-200 bg-gradient-to-b from-white to-slate-100 pl-6 pr-1 py-1 hover:border-brand-primary hover:text-brand-primary transition-colors disabled:opacity-50"
+                  className="flex-1 bg-[#df6951] hover:bg-[#c85640] text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="italic font-semibold text-slate-500 group-hover:text-brand-primary mr-4 transition-colors">
-                    {loadingSimulation ? "Calculando..." : "Calcular"}
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-brand-primary flex items-center justify-center text-white shadow-inner">
-                    <ChevronRight className="w-5 h-5" />
-                  </div>
+                  <span>{loadingSimulation ? "Calculando..." : "Calcular Cuotas"}</span>
+                  <ChevronRight className="w-5 h-5" />
                 </button>
 
                 <button 
                   type="button"
                   onClick={handleClear}
-                  className="flex items-center group relative overflow-hidden rounded-full shadow-md border border-slate-200 bg-gradient-to-b from-white to-slate-100 pl-6 pr-1 py-1 hover:border-brand-primary hover:text-brand-primary transition-colors"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-4 px-6 rounded-full transition-all text-center"
                 >
-                  <span className="italic font-semibold text-slate-500 group-hover:text-brand-primary mr-4 transition-colors">Limpiar</span>
-                  <div className="w-8 h-8 rounded-full bg-brand-primary flex items-center justify-center text-white shadow-inner">
-                    <ChevronRight className="w-5 h-5" />
-                  </div>
+                  Limpiar
                 </button>
               </div>
 
@@ -293,6 +322,24 @@ export default function CreditSimulatorForm() {
         )}
 
       </div>
+
+      {/* FAQ Section matching user screenshot */}
+      <FaqAccordion 
+        items={[
+          {
+            question: "¿Para qué sirve el simulador?",
+            answer: "Un simulador de crédito se utiliza para estimar las cuotas mensuales y el costo total de un préstamo, así puedes evaluar diferentes opciones antes de tomar una decisión."
+          },
+          {
+            question: "¿Los valores son los finales?",
+            answer: "Los valores calculados en el simulador son de carácter referencial e informativo. Los valores definitivos dependerán de la evaluación crediticia y la fecha exacta de desembolso."
+          },
+          {
+            question: "¿Puedo simular más de una vez?",
+            answer: "¡Sí, por supuesto! Puedes realizar todas las simulaciones que desees modificando el monto, plazo y tipo de tabla de amortización (Francés o Alemán)."
+          }
+        ]}
+      />
     </div>
   );
 }

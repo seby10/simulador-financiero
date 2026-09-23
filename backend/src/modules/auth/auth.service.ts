@@ -330,6 +330,92 @@ export class AuthService {
     ).catch(() => null);
   }
 
+  /** Lista todos los usuarios para la gestión de administración. */
+  async listUsers() {
+    const users = await this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        idNumber: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        address: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        _count: {
+          select: {
+            applications: true,
+          },
+        },
+      },
+    });
+    return users;
+  }
+
+  /** Cambia el rol de un usuario (ADMIN / CUSTOMER). */
+  async updateUserRole(userId: string, role: Prisma.UserUncheckedUpdateInput['role']) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    });
+    return toPublicUser(user);
+  }
+
+  /** Activa o desactiva la cuenta de un usuario. */
+  async toggleUserActive(userId: string, isActive: boolean) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+    });
+    if (!isActive) {
+      await this.logoutAll(userId);
+    }
+    return toPublicUser(user);
+  }
+
+  /** Crea un nuevo usuario desde el panel de administración con rol específico. */
+  async adminCreateUser(dto: {
+    idNumber: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address?: string;
+    email: string;
+    password: string;
+    role?: Prisma.UserUncheckedCreateInput['role'];
+  }) {
+    const existingEmail = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (existingEmail) throw new ConflictException('Ya existe una cuenta con ese correo');
+
+    const existingId = await this.prisma.user.findUnique({
+      where: { idNumber: dto.idNumber },
+    });
+    if (existingId) throw new ConflictException('Ya existe una cuenta con esa cédula');
+
+    const passwordHash = await hashPassword(dto.password);
+    const fullName = `${dto.firstName.trim()} ${dto.lastName.trim()}`;
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        idNumber: dto.idNumber,
+        firstName: dto.firstName.trim(),
+        lastName: dto.lastName.trim(),
+        fullName,
+        phone: dto.phone,
+        address: dto.address,
+        passwordHash,
+        role: dto.role || 'CUSTOMER',
+      },
+    });
+    return toPublicUser(user);
+  }
+
   /** ponytail: limpieza oportunista; con volumen conviene una tarea programada. */
   private async pruneExpired(userId: string) {
     await this.prisma.authSession.deleteMany({
@@ -337,3 +423,4 @@ export class AuthService {
     });
   }
 }
+

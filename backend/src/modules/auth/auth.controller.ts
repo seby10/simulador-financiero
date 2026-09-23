@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
+  Patch,
   Post,
   Req,
   Res,
@@ -21,6 +23,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import {
+  AdminOnly,
   Authenticated,
   CurrentUser,
   readCookie,
@@ -32,9 +35,12 @@ import {
   BiometricResetVerifyDto,
   BiometricResetVerifyResponse,
   ChangePasswordDto,
+  CreateUserAdminDto,
   LoginDto,
   RegisterDto,
   SessionResponse,
+  UpdateUserRoleDto,
+  UpdateUserStatusDto,
   UserResponse,
 } from './auth.dto.js';
 import { AuthService, type SessionContext } from './auth.service.js';
@@ -49,6 +55,41 @@ const contextOf = (request: Request): SessionContext => ({
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  /** Lista todos los usuarios (solo administradores). */
+  @Get('users')
+  @AdminOnly()
+  @ApiOkResponse({ type: [UserResponse] })
+  listUsers() {
+    return this.auth.listUsers();
+  }
+
+  /** Crea un nuevo usuario desde el panel administrativo (solo administradores). */
+  @Post('users')
+  @AdminOnly()
+  @ApiCreatedResponse({ type: UserResponse })
+  adminCreateUser(@Body() dto: CreateUserAdminDto) {
+    return this.auth.adminCreateUser(dto);
+  }
+
+  /** Cambia el rol de un usuario (ADMIN / CUSTOMER). */
+  @Patch('users/:id/role')
+  @AdminOnly()
+  @ApiOkResponse({ type: UserResponse })
+  updateUserRole(@Param('id') userId: string, @Body() dto: UpdateUserRoleDto) {
+    return this.auth.updateUserRole(userId, dto.role as any);
+  }
+
+  /** Activa o desactiva la cuenta de un usuario (solo administradores). */
+  @Patch('users/:id/status')
+  @AdminOnly()
+  @ApiOkResponse({ type: UserResponse })
+  toggleUserActive(
+    @Param('id') userId: string,
+    @Body() dto: UpdateUserStatusDto,
+  ) {
+    return this.auth.toggleUserActive(userId, dto.isActive);
+  }
 
   /**
    * Recuperación de clave por biometría: compara una captura en vivo con la selfie
@@ -200,3 +241,4 @@ export class AuthController {
     return session;
   }
 }
+
