@@ -8,6 +8,7 @@ import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import { identityUrl, needsIdentity } from "@/lib/identity";
 import type { LiveCapture } from "@/lib/liveness";
 import LivenessCapture from "@/components/liveness-capture";
+import ContinueOnPhone, { createHandoff } from "@/components/continue-on-phone";
 import Modal from "@/components/ui/modal";
 import {
   User,
@@ -418,8 +419,24 @@ function InvestmentRequestContent() {
                   </div>
                 </div>
 
-                {!biometricPassed && !manualReview && (
-                  <LivenessCapture purpose="APPLICATION" onComplete={executeBiometric} />
+                {!biometricPassed && !manualReview && applicationId && (
+                  <>
+                    <LivenessCapture purpose="APPLICATION" onComplete={executeBiometric} />
+                    <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <span className="h-px flex-1 bg-slate-200" /> ¿Sin cámara en esta computadora? <span className="h-px flex-1 bg-slate-200" />
+                    </div>
+                    <ContinueOnPhone
+                      create={() => createHandoff("/biometrics/handoff", { purpose: "APPLICATION", applicationId })}
+                      onCompleted={(result) => {
+                        if (result.passed) {
+                          setBiometricPassed(true);
+                          setBiometricScore(Math.round(Number(result.matchScore)));
+                        } else {
+                          setManualReview(true);
+                        }
+                      }}
+                    />
+                  </>
                 )}
 
                 {manualReview && (

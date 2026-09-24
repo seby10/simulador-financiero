@@ -26,12 +26,15 @@ import {
 
 type FaceApi = typeof import("face-api.js");
 type Point = { x: number; y: number };
-type Phase = "intro" | "starting" | "positioning" | "challenge" | "sending" | "error";
+export type LivenessPhase = "intro" | "starting" | "positioning" | "challenge" | "sending" | "error";
+type Phase = LivenessPhase;
 
 interface LivenessCaptureProps {
   purpose: LivenessPurpose;
   /** Recibe la captura para enviarla a la API; si lanza, se muestra el error y se ofrece reintentar. */
   onComplete: (capture: LiveCapture) => Promise<void>;
+  /** Avisa cada cambio de fase (el celular lo reporta a la computadora). */
+  onPhaseChange?: (phase: LivenessPhase) => void;
 }
 
 const TICK_MS = 150;
@@ -74,7 +77,7 @@ const TIPS = [
  * retroalimentación en vivo, dos gestos al azar pedidos por el servidor y envío
  * de los fotogramas. La cámara siempre es en vivo; no se aceptan archivos.
  */
-export default function LivenessCapture({ purpose, onComplete }: LivenessCaptureProps) {
+export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: LivenessCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -95,6 +98,11 @@ export default function LivenessCapture({ purpose, onComplete }: LivenessCapture
   const [done, setDone] = useState(0);
   const [total, setTotal] = useState(3);
   const [error, setError] = useState("");
+
+  const go = (next: Phase) => {
+    setPhase(next);
+    onPhaseChange?.(next);
+  };
 
   const stop = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -140,20 +148,20 @@ export default function LivenessCapture({ purpose, onComplete }: LivenessCapture
 
   const finish = async () => {
     stop();
-    setPhase("sending");
+    go("sending");
     const { session, frames } = run.current;
     try {
       await onComplete({ livenessSessionId: session!.sessionId, frames });
     } catch (err) {
       setError(err instanceof Error ? err.message : "No pudimos verificar tu identidad.");
-      setPhase("error");
+      go("error");
     }
   };
 
   const fail = (message: string) => {
     stop();
     setError(message);
-    setPhase("error");
+    go("error");
   };
 
   const tick = async (api: FaceApi) => {
@@ -199,7 +207,7 @@ export default function LivenessCapture({ purpose, onComplete }: LivenessCapture
           state.challengeStartedAt = Date.now();
           setDone(1);
           setChallenge(state.session!.challenges[0]);
-          setPhase("challenge");
+          go("challenge");
         }
         return;
       }
@@ -238,7 +246,7 @@ export default function LivenessCapture({ purpose, onComplete }: LivenessCapture
   const begin = async () => {
     stop();
     setError("");
-    setPhase("starting");
+    go("starting");
     setChallenge(null);
     setDone(0);
     setGuidance("Ubica tu rostro dentro del óvalo");
@@ -272,7 +280,7 @@ export default function LivenessCapture({ purpose, onComplete }: LivenessCapture
       streamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
       setTotal(1 + session.challenges.length);
-      setPhase("positioning");
+      go("positioning");
       timerRef.current = setInterval(() => void tick(api), TICK_MS);
     } catch (err) {
       fail(err instanceof Error ? err.message : "No pudimos iniciar la verificación");

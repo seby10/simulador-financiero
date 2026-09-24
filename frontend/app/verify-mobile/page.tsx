@@ -1,365 +1,225 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import {
-  Camera,
-  CheckCircle2,
-  XCircle,
-  ShieldCheck,
-  RefreshCw,
-  AlertCircle,
-  User,
-  Check,
-  ArrowRight,
-  ScanFace,
-} from "lucide-react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle2, Clock, Lock, Monitor, ShieldCheck } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import {
-  analyzeImageQuality,
-  runSimulatedVerification,
-  BiometricResult,
-} from "@/lib/face-analysis";
+import LivenessCapture, { type LivenessPhase } from "@/components/liveness-capture";
+import { API_URL, errorMessage, readApiError } from "@/lib/api";
+import type { LiveCapture, LivenessPurpose } from "@/lib/liveness";
 
-export default function VerifyMobilePage() {
-  const [cameraActive, setCameraActive] = useState<boolean>(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [isVerifying, setIsVerifying] = useState<boolean>(false);
-  const [result, setResult] = useState<BiometricResult | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+interface MobileInfo {
+  purpose: LivenessPurpose;
+  firstName: string | null;
+  completed: boolean;
+  expiresAt: string;
+}
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+type Phase = "loading" | "capture" | "done" | "locked" | "expired";
+type MobileStage = "CONNECTED" | "CAPTURING" | "VERIFYING";
 
-  // Load face-api models silently on mount
+/** Latido para que la computadora sepa que el celular sigue en la página. */
+const HEARTBEAT_MS = 2000;
+
+const handoffUrl = (token: string) => `${API_URL}/biometrics/handoff/mobile/${encodeURIComponent(token)}`;
+
+/** Avisa a la computadora en qué paso va el celular (sin esperar respuesta). */
+function sendStage(token: string, stage: MobileStage) {
+  void fetch(`${handoffUrl(token)}/heartbeat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage }),
+    keepalive: true,
+  }).catch(() => undefined);
+}
+
+const TITLES: Record<LivenessPurpose, { title: string; subtitle: string; done: string }> = {
+  IDENTITY: {
+    title: "Confirma tu identidad",
+    subtitle: "Comprobaremos que eres una persona real y el titular de la cédula que cargaste.",
+    done: "Tu identidad quedó confirmada. Vuelve a tu computadora: continuará automáticamente.",
+  },
+  PASSWORD_RESET: {
+    title: "Recupera tu contraseña",
+    subtitle: "Antes de cambiar tu clave necesitamos confirmar que eres el titular de la cuenta.",
+    done: "Verificamos tu rostro. Vuelve a tu computadora para crear tu nueva contraseña.",
+  },
+  APPLICATION: {
+    title: "Verifica tu solicitud",
+    subtitle: "Compararemos tu rostro con la cédula de tu solicitud de inversión.",
+    done: "Verificación completada. Vuelve a tu computadora para finalizar tu solicitud.",
+  },
+};
+
+async function fetchInfo(token: string): Promise<MobileInfo | null> {
+  const res = await fetch(handoffUrl(token));
+  if (res.status === 410) return null;
+  if (!res.ok) throw new Error(await readApiError(res, "No pudimos abrir la verificación"));
+  return res.json();
+}
+
+/**
+ * Verificación facial en el celular, abierta desde el QR de la computadora. El
+ * resultado lo guarda el servidor y la computadora continúa sola al detectarlo.
+ */
+function VerifyMobileContent() {
+  const token = useSearchParams().get("t") ?? "";
+  const [info, setInfo] = useState<MobileInfo | null>(null);
+  const [phase, setPhase] = useState<Phase>("loading");
+  const [error, setError] = useState("");
+  const stage = useRef<MobileStage>("CONNECTED");
+
+  // Mientras se verifica: latidos periódicos y aviso inmediato si se cierra la
+  // página (pagehide también cubre cambiar de app en iOS y cerrar la pestaña).
   useEffect(() => {
-    const loadModels = async () => {
-      try {
-        const faceapi = await import("face-api.js");
-        await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
-        await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
-      } catch (err) {
-        console.error("Error loading face models:", err);
-      }
+    if (phase !== "capture" || !token) return;
+    const beat = setInterval(() => sendStage(token, stage.current), HEARTBEAT_MS);
+    const leave = () => navigator.sendBeacon(`${handoffUrl(token)}/leave`);
+    const back = (event: PageTransitionEvent) => {
+      if (event.persisted) sendStage(token, stage.current);
     };
-    loadModels();
-  }, []);
-
-  const startCamera = async () => {
-    setCapturedImage(null);
-    setResult(null);
-
-    try {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: facingMode,
-        },
-      });
-
-      mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraActive(true);
-    } catch (err) {
-      setCameraActive(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-      mediaStreamRef.current = null;
-    }
-    setCameraActive(false);
-  };
-
-  useEffect(() => {
-    startCamera();
+    window.addEventListener("pagehide", leave);
+    window.addEventListener("pageshow", back);
     return () => {
-      stopCamera();
+      clearInterval(beat);
+      window.removeEventListener("pagehide", leave);
+      window.removeEventListener("pageshow", back);
     };
-  }, [facingMode]);
+  }, [phase, token]);
 
-  const toggleCamera = () => {
-    setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+  /** Cada fase de la captura se refleja al instante en la computadora. */
+  const reportPhase = (next: LivenessPhase) => {
+    const mapped: MobileStage = next === "intro" ? "CONNECTED" : next === "sending" ? "VERIFYING" : "CAPTURING";
+    if (mapped === stage.current) return;
+    stage.current = mapped;
+    sendStage(token, mapped);
   };
 
-  const handleCaptureClick = () => {
-    if (cameraActive && videoRef.current) {
-      const video = videoRef.current;
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-        setCapturedImage(dataUrl);
-        stopCamera();
-        return;
-      }
-    }
+  useEffect(() => {
+    if (!token) return;
+    fetchInfo(token)
+      .then((data) => {
+        if (!data) {
+          setPhase("expired");
+          return;
+        }
+        setInfo(data);
+        setPhase(data.completed ? "done" : "capture");
+      })
+      .catch((err: unknown) => setError(errorMessage(err)));
+  }, [token]);
 
-    fileInputRef.current?.click();
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setErrorMessage("Por favor selecciona un archivo de imagen válido (JPG o PNG).");
+  /** Si no pasa, lanza con el motivo: LivenessCapture lo muestra y permite reintentar. */
+  const submit = async (capture: LiveCapture) => {
+    const res = await fetch(`${handoffUrl(token)}/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(capture),
+    });
+    if (res.status === 410) {
+      setPhase("expired");
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setCapturedImage(reader.result as string);
-      stopCamera();
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const resetCapture = () => {
-    setCapturedImage(null);
-    setResult(null);
-    setErrorMessage(null);
-    startCamera();
-  };
-
-  const handleVerify = async () => {
-    if (!capturedImage) return;
-
-    setIsVerifying(true);
-    setErrorMessage(null);
-    setResult(null);
-
-    const analysis = await analyzeImageQuality(capturedImage);
-    const res = runSimulatedVerification(analysis);
-    setResult(res);
-    setIsVerifying(false);
-
-    if (!res.passed) {
-      setErrorMessage(
-        res.failureReason ||
-          "No fue posible confirmar tu rostro. Por favor mantén la cabeza recta y sin objetos en la cara."
-      );
+    if (res.status === 429) {
+      setPhase("locked");
+      return;
+    }
+    if (!res.ok) throw new Error(await readApiError(res, "No pudimos verificar tu identidad"));
+    const result: { passed: boolean; failureReason: string | null; remainingAttempts: number | null; locked: boolean } =
+      await res.json();
+    if (result.passed) {
+      setPhase("done");
+    } else if (result.locked) {
+      setPhase("locked");
+    } else {
+      const attempts = result.remainingAttempts === null ? "" : ` Te quedan ${result.remainingAttempts} intento(s).`;
+      throw new Error(`${result.failureReason ?? "No pudimos confirmar tu identidad"}.${attempts}`);
     }
   };
 
+  const copy = info ? TITLES[info.purpose] : null;
+
   return (
-    <div className="min-h-screen bg-transparent flex flex-col font-sans text-slate-800 relative">
+    <div className="min-h-screen flex flex-col font-sans text-slate-800">
       <Navbar />
+      <main className="flex-1 w-full max-w-md mx-auto p-4 space-y-4 relative z-10">
+        {!token && (
+          <Notice icon={Monitor} title="Abre este enlace desde el código QR">
+            Inicia la verificación en tu computadora y elige “Continuar en mi celular” para obtener el código.
+          </Notice>
+        )}
 
-      {/* Hidden Native File Capture Input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="user"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
+        {error && <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-4">{error}</p>}
 
-      <main className="flex-1 flex items-start justify-center p-4 pt-1 sm:pt-4 pb-10 relative z-10">
-        <div className="w-full max-w-lg bg-white rounded-[32px] shadow-2xl shadow-amber-900/10 overflow-hidden border border-amber-200/50 my-0 animate-in fade-in zoom-in-95 duration-300">
-            
-            {/* Card Header Banner */}
-            <div className="bg-gradient-to-b from-[#f7e6c5] to-[#f4dfb7] p-8 sm:p-9 text-center flex flex-col items-center justify-center relative overflow-hidden border-b border-[#e2c999]">
-              <div className="w-16 h-16 bg-white/80 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 shadow-md shadow-amber-900/5 backdrop-blur-md">
-                <ScanFace className="w-8 h-8 text-[#df6951]" />
-              </div>
-              <h1 className="text-2xl sm:text-[28px] font-bold font-serif-title tracking-tight text-[#181e2b] mb-1.5">
-                Validación de Rostro
-              </h1>
-              <p className="text-[#5e6282] text-xs sm:text-sm max-w-xs font-normal leading-relaxed">
-                Captura tu fotografía clara de frente para validar tu identidad digital.
-              </p>
+        {token && phase === "loading" && !error && <p className="text-center text-sm text-slate-500 py-16">Cargando...</p>}
 
-              {/* Security Pill Badge */}
-              <div className="flex bg-white/70 p-2 rounded-full mt-5 border border-amber-200/80 backdrop-blur-md shadow-sm items-center gap-2 px-4 text-xs font-bold text-[#df6951]">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Canal Biométrico Seguro</span>
-              </div>
+        {phase === "capture" && copy && info && (
+          <>
+            <div className="pt-2">
+              {info.firstName && <p className="text-sm text-slate-500">Hola, {info.firstName}</p>}
+              <h1 className="text-2xl font-black font-serif-title text-[#14183e]">{copy.title}</h1>
+              <p className="text-sm text-slate-500 mt-1">{copy.subtitle}</p>
             </div>
-
-            {/* Card Body */}
-            <div className="p-7 sm:p-10 space-y-6">
-              
-              {/* Camera / Capture Frame */}
-              <div className="relative aspect-[3/4] w-full bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-200 shadow-inner flex items-center justify-center">
-                {capturedImage ? (
-                  <div className="relative w-full h-full flex items-center justify-center bg-black">
-                    <img
-                      src={capturedImage}
-                      alt="Foto tomada"
-                      className="w-full h-full object-cover"
-                    />
-
-                    {isVerifying && (
-                      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white">
-                        <div className="w-10 h-10 border-3 border-[#f1a501] border-t-transparent rounded-full animate-spin mb-3" />
-                        <p className="text-xs font-semibold">Validando fotografía...</p>
-                        <p className="text-[11px] text-slate-300 mt-1">
-                          Verificando parámetros biométricos en vivo.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : cameraActive ? (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className={`w-full h-full object-cover ${
-                        facingMode === "user" ? "transform -scale-x-100" : ""
-                      }`}
-                    />
-
-                    {/* Oval Framing Guide */}
-                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
-                      <div className="w-44 h-60 rounded-[50%] border-2 border-dashed border-[#f1a501] shadow-[0_0_0_9999px_rgba(15,23,42,0.45)] animate-pulse flex items-center justify-center" />
-                      <span className="mt-3 px-3.5 py-1 rounded-full bg-slate-900/80 text-white text-[11px] font-medium backdrop-blur-sm border border-slate-700">
-                        Centra tu rostro en el óvalo
-                      </span>
-                    </div>
-
-                    {/* Toggle camera button */}
-                    <button
-                      type="button"
-                      onClick={toggleCamera}
-                      className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/70 text-white hover:bg-slate-800 backdrop-blur-sm border border-slate-700 transition-colors"
-                      title="Girar cámara"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-6 text-center text-slate-300">
-                    <div className="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-3 text-slate-400">
-                      <User className="w-10 h-10" />
-                    </div>
-                    <p className="text-xs font-medium text-slate-200">
-                      Cámara lista para captura
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">
-                      Presiona el botón a continuación para tomar tu foto.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Verification Results Card */}
-              {result ? (
-                <div className="space-y-4 animate-in slide-in-from-top-2">
-                  <div
-                    className={`p-4 rounded-2xl border ${
-                      result.passed
-                        ? "bg-emerald-50 border-emerald-200 text-emerald-950"
-                        : "bg-red-50 border-red-200 text-red-950"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {result.passed ? (
-                        <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                      ) : (
-                        <XCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
-                      )}
-                      <div>
-                        <h3 className="font-bold text-xs sm:text-sm">
-                          {result.passed
-                            ? "Verificación de Identidad Aprobada"
-                            : "Verificación No Completada"}
-                        </h3>
-                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                          {result.passed
-                            ? "Tu rostro ha sido validado exitosamente. Ya puedes continuar con tu solicitud."
-                            : result.failureReason}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {result.passed ? (
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-center space-y-2 shadow-sm">
-                      <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-1">
-                        <Check className="w-6 h-6" />
-                      </div>
-                      <p className="text-sm font-bold text-slate-800">
-                        ¡Proceso Biométrico Finalizado!
-                      </p>
-                      <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                        Puedes cerrar esta pestaña y regresar a la pantalla principal.
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={resetCapture}
-                      className="w-full py-4 rounded-full bg-[#df6951] hover:bg-[#c85640] text-white font-bold text-sm shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 hover:scale-[1.01] transition-all"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Intentar Nuevamente
-                    </button>
-                  )}
-                </div>
-              ) : errorMessage ? (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5 animate-in slide-in-from-top-2">
-                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <span>{errorMessage}</span>
-                </div>
-              ) : null}
-
-              {/* Single Main Action Button */}
-              {!result && (
-                <div className="pt-1">
-                  {capturedImage ? (
-                    <div className="flex gap-3">
-                      <button
-                        onClick={resetCapture}
-                        disabled={isVerifying}
-                        className="px-5 py-3.5 rounded-full font-bold border border-slate-200 text-[#5e6282] hover:bg-slate-100 text-xs flex items-center gap-1.5 transition-all"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        Repetir
-                      </button>
-                      <button
-                        onClick={handleVerify}
-                        disabled={isVerifying}
-                        className="flex-1 py-4 rounded-full bg-[#df6951] hover:bg-[#c85640] text-white font-bold text-sm shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01] transition-all"
-                      >
-                        <ShieldCheck className="w-5 h-5 text-[#f1a501]" />
-                        {isVerifying ? "Validando..." : "Confirmar y Validar"}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleCaptureClick}
-                      className="w-full bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-sm sm:text-base shadow-xl shadow-orange-500/25 hover:shadow-2xl hover:shadow-orange-500/35 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
-                    >
-                      <Camera className="w-5 h-5" />
-                      Tomar Fotografía
-                    </button>
-                  )}
-                </div>
-              )}
+            <div className="bg-white rounded-[28px] shadow-xl shadow-slate-900/5 border border-slate-100 p-4">
+              <LivenessCapture purpose={info.purpose} onComplete={submit} onPhaseChange={reportPhase} />
             </div>
-          </div>
-        </main>
+            <p className="text-[11px] text-center text-slate-400 flex items-center justify-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" /> Código de un solo uso, válido por 10 minutos.
+            </p>
+          </>
+        )}
 
-      {/* Footer */}
+        {phase === "done" && (
+          <Notice icon={CheckCircle2} title="¡Listo!" tone="success">
+            {copy?.done ?? "La verificación ya se completó. Puedes volver a tu computadora."}
+          </Notice>
+        )}
+
+        {phase === "locked" && (
+          <Notice icon={Lock} title="Verificación en revisión" tone="warning">
+            Se agotaron los intentos de verificación facial. Un asesor revisará tu caso; vuelve a tu computadora para
+            ver el estado.
+          </Notice>
+        )}
+
+        {phase === "expired" && (
+          <Notice icon={Clock} title="El código venció" tone="warning">
+            Por seguridad cada código dura 10 minutos y sirve para una sola verificación. Genera uno nuevo desde tu
+            computadora.
+          </Notice>
+        )}
+      </main>
       <Footer />
     </div>
+  );
+}
+
+function Notice({
+  icon: Icon,
+  title,
+  tone = "info",
+  children,
+}: {
+  icon: typeof Monitor;
+  title: string;
+  tone?: "info" | "success" | "warning";
+  children: React.ReactNode;
+}) {
+  const color = tone === "success" ? "text-emerald-500" : tone === "warning" ? "text-[#df6951]" : "text-[#14183e]";
+  return (
+    <div className="bg-white rounded-[28px] shadow-xl shadow-slate-900/5 border border-slate-100 p-8 text-center space-y-3 mt-6">
+      <Icon className={`w-14 h-14 mx-auto ${color}`} />
+      <h1 className="text-xl font-black text-[#14183e]">{title}</h1>
+      <p className="text-sm text-slate-500">{children}</p>
+    </div>
+  );
+}
+
+export default function VerifyMobilePage() {
+  return (
+    <Suspense>
+      <VerifyMobileContent />
+    </Suspense>
   );
 }

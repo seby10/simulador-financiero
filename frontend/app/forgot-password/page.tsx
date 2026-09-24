@@ -15,6 +15,7 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import LivenessCapture from "@/components/liveness-capture";
+import ContinueOnPhone, { createHandoff } from "@/components/continue-on-phone";
 import type { LiveCapture } from "@/lib/liveness";
 
 type Step = 1 | 2 | 3 | 4;
@@ -190,6 +191,18 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <LivenessCapture purpose="PASSWORD_RESET" onComplete={handleBiometricVerify} />
+                <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <span className="h-px flex-1 bg-slate-200" /> ¿Sin cámara en esta computadora? <span className="h-px flex-1 bg-slate-200" />
+                </div>
+                <ContinueOnPhone
+                  create={() => createHandoff("/biometrics/handoff/password-reset", { email })}
+                  onCompleted={(result) => {
+                    // El token para cambiar la clave llega solo aquí, nunca al celular.
+                    setResetToken(String(result.resetToken ?? ""));
+                    setBiometricScore(String(result.matchScore ?? ""));
+                    setStep(3);
+                  }}
+                />
               </div>
             )}
 

@@ -14,6 +14,7 @@ import {
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import LivenessCapture from "@/components/liveness-capture";
+import ContinueOnPhone, { createHandoff } from "@/components/continue-on-phone";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import { IDENTITY_PATH, needsIdentity, type IdentityStatus, type SessionUser } from "@/lib/identity";
 import type { LiveCapture } from "@/lib/liveness";
@@ -247,6 +248,13 @@ function VerifyIdentityContent() {
                   {identity?.remainingAttempts}.
                 </p>
                 <LivenessCapture purpose="IDENTITY" onComplete={submitFace} />
+                <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <span className="h-px flex-1 bg-slate-200" /> ¿Sin cámara en esta computadora? <span className="h-px flex-1 bg-slate-200" />
+                </div>
+                <ContinueOnPhone
+                  create={() => createHandoff("/biometrics/handoff", { purpose: "IDENTITY", consent })}
+                  onCompleted={(result) => setStep(result.passed ? "done" : "locked")}
+                />
                 <button
                   type="button"
                   onClick={() => setStep("document")}
