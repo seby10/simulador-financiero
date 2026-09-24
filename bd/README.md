@@ -38,21 +38,25 @@ Son los valores por defecto de `docker-compose.yml`. Para cambiarlos crea un `bd
 ## 🛠️ Comandos Útiles
 
 - **Ver el estado del contenedor**:
+
   ```bash
   docker compose ps
   ```
 
 - **Ver los logs de la base de datos**:
+
   ```bash
   docker compose logs -f
   ```
 
 - **Detener la base de datos**:
+
   ```bash
   docker compose down
   ```
 
 - **Detener y eliminar los datos de la base de datos (Reset)**:
+
   ```bash
   docker compose down -v
   ```
