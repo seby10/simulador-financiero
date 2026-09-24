@@ -23,32 +23,58 @@ const MODEL_DIR = join(
   'model',
 );
 
-/** Lado mayor con el que se analiza una imagen: más grande solo gasta memoria. */
+/** Lado mayor con el que se buscan rostros: más grande solo gasta memoria. */
 const MAX_SIDE = 1280;
+/** Lado mayor con el que se decodifica la cédula para recortar el retrato con detalle. */
+const REFERENCE_MAX_SIDE = 4096;
+/** Tamaño del recorte del retrato de la cédula antes de sacar su descriptor. */
+const PORTRAIT_SIDE = 512;
 const MIN_DETECTION_CONFIDENCE = 0.5;
 
 /**
- * Distancia euclidiana entre descriptores que vale 75 puntos (el umbral por
- * defecto de BIOMETRIC_MATCH_MIN). Calibrada con las fotos de muestra del
- * paquete: la misma persona quedó entre 0.05 y 0.35 y personas distintas desde
- * 0.47 hacia arriba. Es más estricta que el 0.6 habitual para no aceptar a otra
- * persona; si fotos reales de cédula la superan, subir el umbral por entorno.
+ * Un segundo rostro solo invalida la captura si es claro (confianza alta) y de
+ * tamaño comparable al principal: una persona pasando al fondo, un cuadro o un
+ * falso positivo pequeño no deben tumbar la verificación.
  */
-const DISTANCE_AT_THRESHOLD = 0.45;
+const EXTRA_FACE_CONFIDENCE = 0.7;
+const EXTRA_FACE_AREA_RATIO = 0.25;
 
 /**
- * Entre fotogramas de la misma sesión (misma cámara, segundos de diferencia) el
- * rostro debe ser el mismo; se tolera algo más que contra la cédula porque el
- * giro de cabeza cambia el descriptor.
+ * Distancia euclidiana entre descriptores que vale 75 puntos (el umbral por
+ * defecto de BIOMETRIC_MATCH_MIN). Con las fotos de muestra del paquete la
+ * misma persona quedó entre 0.05 y 0.35 y personas distintas desde 0.47, pero
+ * una cédula real (impresa, con hologramas, foto de años atrás) aleja más al
+ * titular de su selfie; 0.5 lo acepta sin llegar al 0.6 habitual de face-api.
+ * Se calibra por entorno con FACE_MATCH_DISTANCE.
  */
-const SAME_SESSION_DISTANCE = 0.55;
+const distanceAtThreshold = () => {
+  const raw = Number(process.env.FACE_MATCH_DISTANCE);
+  return raw > 0 && raw < 1 ? raw : 0.5;
+};
+
+/** Los dos fotogramas de frente (inicio y cierre) deben ser claramente la misma cara. */
+const FRONTAL_CONTINUITY_DISTANCE = 0.5;
+/**
+ * Un giro de cabeza cambia mucho el descriptor: aquí solo se descarta que otra
+ * persona haya hecho el gesto. La continuidad fuerte la dan los dos frontales.
+ */
+const GESTURE_CONTINUITY_DISTANCE = 0.68;
 
 const clamp = (value: number) => Math.min(100, Math.max(0, value));
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
-/** 0 → 100 puntos, DISTANCE_AT_THRESHOLD → 75, y baja linealmente desde ahí. */
+/** 0 → 100 puntos, el umbral de distancia → 75, y baja linealmente desde ahí. */
 export const distanceToScore = (distance: number) =>
-  round2(clamp(100 - (distance / DISTANCE_AT_THRESHOLD) * 25));
+  round2(clamp(100 - (distance / distanceAtThreshold()) * 25));
+
+/** Promedio de descriptores: dos tomas de frente dan una muestra más estable que una. */
+const meanDescriptor = (descriptors: Float32Array[]) => {
+  const mean = new Float32Array(descriptors[0].length);
+  for (const descriptor of descriptors) {
+    descriptor.forEach((value, i) => (mean[i] += value / descriptors.length));
+  }
+  return mean;
+};
 
 type FaceResult = faceapi.WithFaceDescriptor<
   faceapi.WithFaceLandmarks<
@@ -79,8 +105,8 @@ function loadEngine() {
   return engine;
 }
 
-/** JPEG/PNG → tensor RGB [alto, ancho, 3], reducido a MAX_SIDE. */
-function toTensor(buffer: Buffer): tf.Tensor3D {
+/** JPEG/PNG → tensor RGB [alto, ancho, 3], reducido a `maxSide`. */
+function toTensor(buffer: Buffer, maxSide = MAX_SIDE): tf.Tensor3D {
   const kind = detectFileKind(buffer);
   let width: number;
   let height: number;
@@ -89,7 +115,7 @@ function toTensor(buffer: Buffer): tf.Tensor3D {
     const image = jpeg.decode(buffer, {
       useTArray: true,
       formatAsRGBA: false,
-      maxMemoryUsageInMB: 256,
+      maxMemoryUsageInMB: 512,
     });
     ({ width, height } = image);
     rgb = image.data;
@@ -106,21 +132,64 @@ function toTensor(buffer: Buffer): tf.Tensor3D {
     throw new BadRequestException('La imagen debe ser JPEG o PNG');
   }
 
-  const scale = MAX_SIDE / Math.max(width, height);
-  return tf.tidy(() => {
-    const tensor = tf.tensor3d(rgb, [height, width, 3], 'int32');
-    if (scale >= 1) return tensor;
-    const resized = tf.image.resizeBilinear(tensor, [
-      Math.round(height * scale),
-      Math.round(width * scale),
-    ]);
-    return tf.cast(resized, 'int32');
-  });
+  const tensor = tf.tensor3d(rgb, [height, width, 3], 'int32');
+  const { small } = downscale(tensor, maxSide);
+  if (small !== tensor) tensor.dispose();
+  return small;
+}
+
+/** Reduce el tensor para que su lado mayor no pase de `maxSide`; devuelve la escala aplicada. */
+function downscale(tensor: tf.Tensor3D, maxSide: number) {
+  const [height, width] = tensor.shape;
+  const scale = Math.min(1, maxSide / Math.max(width, height));
+  if (scale === 1) return { small: tensor, scale };
+  const small = tf.tidy(() =>
+    tf.cast(
+      tf.image.resizeBilinear(tensor, [
+        Math.round(height * scale),
+        Math.round(width * scale),
+      ]),
+      'int32',
+    ),
+  ) as tf.Tensor3D;
+  return { small, scale };
 }
 
 /** Gira 90° a la derecha: fotos de celular con la orientación solo en EXIF. */
 const rotate90 = (tensor: tf.Tensor3D) =>
   tf.tidy(() => tf.reverse(tf.transpose(tensor, [1, 0, 2]), 1));
+
+/**
+ * Recorta el rostro de la imagen a resolución completa (con margen para que el
+ * detector vea la cabeza entera) y lo lleva a PORTRAIT_SIDE. En una cédula
+ * fotografiada el retrato ocupa poco: buscarlo en la imagen reducida y sacar
+ * el descriptor del recorte grande conserva mucho más detalle del rostro.
+ */
+function cropPortrait(full: tf.Tensor3D, box: faceapi.Box, scale: number) {
+  const [height, width] = full.shape;
+  const margin = 0.45;
+  const x = (box.x - box.width * margin) / scale;
+  const y = (box.y - box.height * margin) / scale;
+  const w = (box.width * (1 + 2 * margin)) / scale;
+  const h = (box.height * (1 + 2 * margin)) / scale;
+  const x0 = Math.max(0, Math.floor(x));
+  const y0 = Math.max(0, Math.floor(y));
+  const x1 = Math.min(width, Math.ceil(x + w));
+  const y1 = Math.min(height, Math.ceil(y + h));
+  const factor = PORTRAIT_SIDE / Math.max(y1 - y0, x1 - x0);
+  return tf.tidy(() =>
+    tf.cast(
+      tf.image.resizeBilinear(
+        tf.slice(full, [y0, x0, 0], [y1 - y0, x1 - x0, 3]),
+        [
+          Math.max(1, Math.round((y1 - y0) * factor)),
+          Math.max(1, Math.round((x1 - x0) * factor)),
+        ],
+      ),
+      'int32',
+    ),
+  ) as tf.Tensor3D;
+}
 
 async function detectFaces(tensor: tf.Tensor3D): Promise<FaceResult[]> {
   const faces = await faceapi
@@ -138,16 +207,39 @@ async function detectFaces(tensor: tf.Tensor3D): Promise<FaceResult[]> {
 }
 
 /**
+ * Deja fuera los rostros que no deberían contar como "otra persona": poco
+ * seguros o mucho más pequeños que el principal (ver EXTRA_FACE_*).
+ */
+export function relevantFaces<
+  T extends { detection: { score: number; box: { area: number } } },
+>(faces: T[]): T[] {
+  const [main, ...rest] = faces;
+  if (!main) return faces;
+  return [
+    main,
+    ...rest.filter(
+      (face) =>
+        face.detection.score >= EXTRA_FACE_CONFIDENCE &&
+        face.detection.box.area >=
+          main.detection.box.area * EXTRA_FACE_AREA_RATIO,
+    ),
+  ];
+}
+
+/**
  * Comparación facial real con face-api (SSD MobileNet + landmarks + descriptor
  * de 128 dimensiones), en WASM: no requiere binarios nativos ni GPU.
  *
- * La captura debe tener exactamente un rostro. En la referencia (cédula) se usa
- * el rostro más grande, porque la cédula ecuatoriana trae además un retrato
- * fantasma pequeño; si no aparece ninguno se prueba girando la imagen.
+ * Cada fotograma debe tener un solo rostro relevante. En la referencia (cédula)
+ * se usa el rostro más grande, porque la cédula ecuatoriana trae además un
+ * retrato fantasma pequeño; si no aparece ninguno se prueba girando la imagen,
+ * y el descriptor sale de un recorte del retrato a resolución completa.
  *
- * Prueba de vida activa: el primer fotograma debe ser de frente y cada uno de
- * los siguientes debe mostrar el gesto pedido, siempre con la misma persona.
- * Esto detiene una foto impresa o en pantalla (no gira ni sonríe a pedido); no
+ * Prueba de vida activa: el primer fotograma debe ser de frente, cada uno de
+ * los siguientes debe mostrar el gesto pedido y, si llega, el último vuelve a
+ * ser de frente. Los dos frontales se comparan entre sí (misma persona de
+ * principio a fin) y su promedio es lo que se contrasta con la cédula. Esto
+ * detiene una foto impresa o en pantalla (no gira ni sonríe a pedido); no
  * sustituye a un detector pasivo certificado (ISO/IEC 30107-3) contra máscaras
  * o deepfakes en tiempo real.
  */
@@ -163,23 +255,27 @@ export class FaceApiBiometricProvider implements BiometricProvider {
     await loadEngine();
     const faces: FaceResult[] = [];
     for (const frame of frames) faces.push(await this.singleFace(frame));
-    const [referenceFace] = await this.facesIn(reference, true);
-    if (!referenceFace) {
-      throw new BadRequestException(
-        'No se detectó un rostro en la foto de la cédula. Carga una foto nítida y completa del lado frontal.',
-      );
-    }
+    const referenceFace = await this.referenceFace(reference);
 
-    const [neutral, ...gestures] = faces;
+    const [neutral, ...rest] = faces;
+    const gestures = rest.slice(0, challenges.length);
+    const closing = rest[challenges.length] ?? null;
+    const frontal = closing ? [neutral, closing] : [neutral];
     const distance = faceapi.euclideanDistance(
-      neutral.descriptor,
+      meanDescriptor(frontal.map((face) => face.descriptor)),
       referenceFace.descriptor,
     );
     return {
       provider: this.name,
-      ...this.liveness(neutral, gestures, challenges),
+      ...this.liveness(neutral, gestures, closing, challenges),
       matchScore: distanceToScore(distance),
     };
+  }
+
+  /** Falla con un mensaje claro si la foto de la cédula no sirve de referencia. */
+  async inspectReference(reference: Buffer) {
+    await loadEngine();
+    await this.referenceFace(reference);
   }
 
   /**
@@ -189,19 +285,29 @@ export class FaceApiBiometricProvider implements BiometricProvider {
   private liveness(
     neutral: FaceResult,
     gestures: FaceResult[],
+    closing: FaceResult | null,
     challenges: BiometricCapture['challenges'],
   ) {
     const points = (face: FaceResult) => face.landmarks.positions;
+    const distanceToNeutral = (face: FaceResult) =>
+      faceapi.euclideanDistance(face.descriptor, neutral.descriptor);
     const checks: [boolean, string][] = [
       [
         isFrontal(points(neutral)),
         'La primera captura debe ser mirando de frente a la cámara',
       ],
+      ...(closing
+        ? [
+            [
+              isFrontal(points(closing)) &&
+                distanceToNeutral(closing) <= FRONTAL_CONTINUITY_DISTANCE,
+              'Al final debes volver a mirar de frente a la cámara',
+            ] as [boolean, string],
+          ]
+        : []),
       [
         gestures.every(
-          (face) =>
-            faceapi.euclideanDistance(face.descriptor, neutral.descriptor) <=
-            SAME_SESSION_DISTANCE,
+          (face) => distanceToNeutral(face) <= GESTURE_CONTINUITY_DISTANCE,
         ),
         'Las capturas no corresponden a la misma persona',
       ],
@@ -213,8 +319,9 @@ export class FaceApiBiometricProvider implements BiometricProvider {
     const failed = checks.find(([ok]) => !ok);
     if (!failed) {
       const sharpness = Math.min(
-        neutral.detection.score,
-        ...gestures.map((face) => face.detection.score),
+        ...[neutral, ...gestures, ...(closing ? [closing] : [])].map(
+          (face) => face.detection.score,
+        ),
       );
       return {
         livenessScore: round2(90 + sharpness * 10),
@@ -228,9 +335,48 @@ export class FaceApiBiometricProvider implements BiometricProvider {
     };
   }
 
-  /** Exactamente un rostro por fotograma; si no, el problema es de la toma. */
+  /**
+   * Rostro de la cédula: se busca en la imagen reducida (probando giros) y el
+   * descriptor sale del retrato recortado a resolución completa.
+   */
+  private async referenceFace(reference: Buffer) {
+    const full = toTensor(reference, REFERENCE_MAX_SIDE);
+    let oriented = full;
+    try {
+      for (let turn = 0; turn < 4; turn++) {
+        if (turn > 0) {
+          const rotated = rotate90(oriented);
+          if (oriented !== full) oriented.dispose();
+          oriented = rotated;
+        }
+        const { small, scale } = downscale(oriented, MAX_SIDE);
+        let found: FaceResult | undefined;
+        try {
+          [found] = await detectFaces(small);
+        } finally {
+          if (small !== oriented) small.dispose();
+        }
+        if (!found) continue;
+        const portrait = cropPortrait(oriented, found.detection.box, scale);
+        try {
+          const [sharper] = await detectFaces(portrait);
+          return sharper ?? found;
+        } finally {
+          portrait.dispose();
+        }
+      }
+    } finally {
+      if (oriented !== full) oriented.dispose();
+      full.dispose();
+    }
+    throw new BadRequestException(
+      'No encontramos el retrato en la foto de tu cédula. Toma la foto de frente, con toda la cédula dentro del marco, bien enfocada y sin reflejos.',
+    );
+  }
+
+  /** Un solo rostro relevante por fotograma; si no, el problema es de la toma. */
   private async singleFace(frame: Buffer) {
-    const faces = await this.facesIn(frame, false);
+    const faces = relevantFaces(await this.facesIn(frame));
     if (faces.length === 0) {
       throw new BadRequestException(
         'No se detectó un rostro en la captura. Ubícate de frente, con buena luz y sin cubrirte la cara.',
@@ -238,26 +384,17 @@ export class FaceApiBiometricProvider implements BiometricProvider {
     }
     if (faces.length > 1) {
       throw new BadRequestException(
-        'La captura tiene más de un rostro. Asegúrate de estar solo frente a la cámara.',
+        'Detectamos a otra persona junto a ti. Haz la verificación solo frente a la cámara.',
       );
     }
     return faces[0];
   }
 
-  /** Rostros de la imagen; con `tryRotations` prueba 90°, 180° y 270° si no halla ninguno. */
-  private async facesIn(buffer: Buffer, tryRotations: boolean) {
-    let tensor = toTensor(buffer);
+  /** Rostros de un fotograma en vivo, el más grande primero. */
+  private async facesIn(buffer: Buffer) {
+    const tensor = toTensor(buffer);
     try {
-      for (let turn = 0; turn < (tryRotations ? 4 : 1); turn++) {
-        if (turn > 0) {
-          const rotated = rotate90(tensor);
-          tensor.dispose();
-          tensor = rotated;
-        }
-        const faces = await detectFaces(tensor);
-        if (faces.length) return faces;
-      }
-      return [];
+      return await detectFaces(tensor);
     } finally {
       tensor.dispose();
     }

@@ -7,6 +7,7 @@ import { PNG } from 'pngjs';
 import {
   distanceToScore,
   FaceApiBiometricProvider,
+  relevantFaces,
 } from './face-api.provider.js';
 
 /**
@@ -61,7 +62,7 @@ const asPng = (raw: ReturnType<typeof crop>) => {
 describe('distanceToScore', () => {
   it('vale 100 en distancia 0 y 75 en el umbral calibrado', () => {
     expect(distanceToScore(0)).toBe(100);
-    expect(distanceToScore(0.45)).toBe(75);
+    expect(distanceToScore(0.5)).toBe(75);
   });
 
   it('no baja de 0 con distancias grandes', () => {
@@ -70,6 +71,19 @@ describe('distanceToScore', () => {
 });
 
 // Carga modelos reales (WASM): más lenta que el resto de pruebas unitarias.
+describe('relevantFaces', () => {
+  const face = (score: number, area: number) => ({ detection: { score, box: { area } } });
+
+  it('ignora falsos positivos pequeños o poco seguros', () => {
+    const main = face(0.95, 10_000);
+    expect(relevantFaces([main, face(0.9, 1_000), face(0.55, 8_000)])).toEqual([main]);
+  });
+
+  it('cuenta a otra persona clara y de tamaño comparable', () => {
+    expect(relevantFaces([face(0.95, 10_000), face(0.9, 6_000)])).toHaveLength(2);
+  });
+});
+
 describe('FaceApiBiometricProvider', { timeout: 60_000 }, () => {
   const provider = new FaceApiBiometricProvider();
   const selfieA = asJpeg(crop(PERSON_A, 0.5, 90));
@@ -95,7 +109,7 @@ describe('FaceApiBiometricProvider', { timeout: 60_000 }, () => {
   });
 
   it('rechaza una captura con más de un rostro', async () => {
-    await expect(match(group, selfieA)).rejects.toThrow(/más de un rostro/);
+    await expect(match(group, selfieA)).rejects.toThrow(/otra persona/);
   });
 
   it('rechaza una captura sin rostro', async () => {
@@ -106,6 +120,14 @@ describe('FaceApiBiometricProvider', { timeout: 60_000 }, () => {
     await expect(match(blinds, selfieA)).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+
+  it('revisa la cédula al cargarla', async () => {
+    const blinds = asJpeg(
+      crop({ x: 450, y: 20, width: 200, height: 200 }, 0, 90),
+    );
+    await expect(provider.inspectReference(blinds)).rejects.toThrow(/cédula/);
+    await expect(provider.inspectReference(selfieA)).resolves.toBeUndefined();
   });
 
   it('rechaza una referencia sin rostro', async () => {
@@ -136,6 +158,25 @@ describe('FaceApiBiometricProvider', { timeout: 60_000 }, () => {
       });
       expect(result.livenessFailure).toMatch(/girar la cabeza a la izquierda/);
       expect(result.livenessScore).toBeLessThan(60);
+    });
+
+    it('acepta el fotograma de cierre de frente de la misma persona', async () => {
+      const result = await provider.assess({
+        frames: [selfieC, asJpeg(crop(PERSON_C, 0.45, 70))],
+        challenges: [],
+        reference: selfieC,
+      });
+      expect(result.livenessFailure).toBeNull();
+      expect(result.matchScore).toBeGreaterThanOrEqual(75);
+    });
+
+    it('exige que el cierre sea de frente y de la misma persona', async () => {
+      const result = await provider.assess({
+        frames: [selfieC, selfieA],
+        challenges: [],
+        reference: selfieC,
+      });
+      expect(result.livenessFailure).toMatch(/volver a mirar de frente/);
     });
 
     it('detecta que otra persona hizo el gesto', async () => {

@@ -159,7 +159,7 @@ function InvestmentRequestContent() {
     if (data.biometricStatus === "FAILED") {
       setManualReview(true);
     } else if (!data.passed) {
-      throw new Error(`${data.failureReason || "Verificación fallida"}. Te quedan ${data.remainingAttempts} intento(s).`);
+      throw new Error(`${(data.failureReason || "Verificación fallida").replace(/\.$/, "")}. Te quedan ${data.remainingAttempts} intento(s).`);
     }
   };
 

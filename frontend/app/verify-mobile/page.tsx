@@ -134,7 +134,7 @@ function VerifyMobileContent() {
       setPhase("locked");
     } else {
       const attempts = result.remainingAttempts === null ? "" : ` Te quedan ${result.remainingAttempts} intento(s).`;
-      throw new Error(`${result.failureReason ?? "No pudimos confirmar tu identidad"}.${attempts}`);
+      throw new Error(`${(result.failureReason ?? "No pudimos confirmar tu identidad").replace(/\.$/, "")}.${attempts}`);
     }
   };
 

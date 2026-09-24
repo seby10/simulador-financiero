@@ -7,8 +7,9 @@ export const BIOMETRIC_PROVIDER = Symbol('BIOMETRIC_PROVIDER');
 
 export interface BiometricCapture {
   /**
-   * Fotogramas en vivo: el primero de frente (se compara con la referencia) y
-   * luego uno por cada gesto de `challenges`, en el mismo orden.
+   * Fotogramas en vivo: el primero de frente (se compara con la referencia),
+   * luego uno por cada gesto de `challenges` en el mismo orden y, opcionalmente,
+   * uno final de nuevo de frente.
    */
   frames: Buffer[];
   /** Gestos que pidió el servidor en la sesión de prueba de vida. */
@@ -29,6 +30,8 @@ export interface BiometricAssessment {
 
 export interface BiometricProvider {
   assess(capture: BiometricCapture): Promise<BiometricAssessment>;
+  /** Rechaza (400) una referencia en la que no se puede encontrar el rostro. */
+  inspectReference?(reference: Buffer): Promise<void>;
 }
 
 /** Rango de puntajes que devuelve la simulación. */

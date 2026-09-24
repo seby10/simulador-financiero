@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
+  Camera,
   CheckCircle2,
   IdCard,
   Lock,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import IdCardGuide, { IdCardSilhouette } from "@/components/id-card-guide";
 import LivenessCapture from "@/components/liveness-capture";
 import ContinueOnPhone, { createHandoff } from "@/components/continue-on-phone";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
@@ -50,6 +52,7 @@ function VerifyIdentityContent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadState()
@@ -138,7 +141,7 @@ function VerifyIdentityContent() {
       setStep("locked");
     } else {
       throw new Error(
-        `${result.failureReason ?? "No pudimos confirmar que eres el titular de la cédula"}. Te quedan ${result.remainingAttempts} intento(s).`,
+        `${(result.failureReason ?? "No pudimos confirmar que eres el titular de la cédula").replace(/\.$/, "")}. Te quedan ${result.remainingAttempts} intento(s).`,
       );
     }
   };
@@ -190,28 +193,57 @@ function VerifyIdentityContent() {
                     <IdCard className="w-5 h-5 text-[#df6951]" /> Foto del lado frontal de tu cédula
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
-                    Nítida, completa y sin reflejos. Se usa solo para comparar tu rostro.
+                    Se usa solo para comparar tu rostro. Revisamos la foto apenas la cargas.
                   </p>
                 </div>
+                {!preview && <IdCardGuide />}
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="w-full border-2 border-dashed border-slate-300 hover:border-[#df6951] rounded-[24px] p-5 text-center transition-colors"
+                  className="group w-full border-2 border-dashed border-slate-300 hover:border-[#df6951] rounded-[24px] p-4 text-center transition-colors"
                 >
                   {preview ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- object URL local
-                    <img src={preview} alt="Cédula" className="max-h-48 mx-auto rounded-xl object-contain" />
+                    <span className="block">
+                      <span className="relative block mx-auto w-full max-w-sm aspect-[1.586] rounded-2xl overflow-hidden bg-slate-100">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- object URL local */}
+                        <img src={preview} alt="Foto de tu cédula" className="absolute inset-0 w-full h-full object-contain" />
+                      </span>
+                      <span className="block text-xs text-slate-500 mt-3 group-hover:text-[#df6951]">Toca para elegir otra foto</span>
+                    </span>
                   ) : (
-                    <span className="text-slate-500 text-sm flex flex-col items-center gap-2">
-                      <Upload className="w-6 h-6" />
-                      {identity?.hasDocument ? "Ya cargaste tu cédula. Toca para reemplazarla." : "Toca para seleccionar la foto (JPG o PNG)"}
+                    <span className="text-slate-500 text-sm flex items-center justify-center gap-4">
+                      <IdCardSilhouette className="w-20 opacity-70" />
+                      <span className="flex flex-col items-start gap-1 text-left">
+                        <span className="font-semibold text-[#14183e] flex items-center gap-1.5">
+                          <Upload className="w-4 h-4" /> Subir foto
+                        </span>
+                        <span className="text-xs">
+                          {identity?.hasDocument ? "Ya cargaste tu cédula. Toca para reemplazarla." : "JPG o PNG, del lado frontal"}
+                        </span>
+                      </span>
                     </span>
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cameraRef.current?.click()}
+                  className="md:hidden w-full py-3 rounded-full border border-[#14183e] text-[#14183e] font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                >
+                  <Camera className="w-4 h-4" /> Tomar foto con la cámara
                 </button>
                 <input
                   ref={fileRef}
                   type="file"
                   accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={(e) => pickDocument(e.target.files?.[0])}
+                />
+                {/* En el celular abre directo la cámara trasera. */}
+                <input
+                  ref={cameraRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  capture="environment"
                   className="hidden"
                   onChange={(e) => pickDocument(e.target.files?.[0])}
                 />
@@ -233,7 +265,7 @@ function VerifyIdentityContent() {
                   disabled={busy}
                   className="w-full py-3 rounded-full bg-[#df6951] hover:bg-[#c85640] text-white font-bold text-sm shadow-lg shadow-orange-500/20 disabled:opacity-60"
                 >
-                  {busy ? "Guardando..." : "Continuar"}
+                  {busy ? "Revisando tu cédula..." : "Continuar"}
                 </button>
               </div>
             )}

@@ -100,6 +100,14 @@ export class BiometricsService {
   }
 
   /**
+   * Revisa al cargarla que en la foto de la cédula se encuentra el retrato, para
+   * pedir otra foto de inmediato y no al final de la verificación facial.
+   */
+  async inspectReference(reference: Buffer) {
+    await this.provider.inspectReference?.(reference);
+  }
+
+  /**
    * Consume la sesión de prueba de vida, contrasta los fotogramas con la
    * referencia y aplica los umbrales. La sesión se gasta aunque la captura
    * falle: cada intento necesita gestos nuevos.
@@ -113,9 +121,14 @@ export class BiometricsService {
       purpose,
       capture.livenessSessionId,
     );
-    if (capture.frames.length !== challenges.length + 1) {
+    // Uno de frente, uno por gesto y, opcionalmente, uno de cierre otra vez de frente.
+    const expected = challenges.length + 1;
+    if (
+      capture.frames.length !== expected &&
+      capture.frames.length !== expected + 1
+    ) {
       throw new BadRequestException(
-        `Se esperaban ${challenges.length + 1} fotogramas: uno de frente y uno por cada gesto`,
+        `Se esperaban ${expected} o ${expected + 1} fotogramas: uno de frente, uno por cada gesto y uno de cierre opcional`,
       );
     }
     const frames = capture.frames.map((frame, i) =>
@@ -282,7 +295,8 @@ export class BiometricsService {
     }
     const match = matchMin();
     if (matchScore < match) {
-      return `La selfie no coincide con el documento (${matchScore.toFixed(2)} < ${match})`;
+      // El puntaje queda guardado para el asesor; a la persona se le dice qué hacer.
+      return 'Tu rostro no coincide lo suficiente con la foto de tu cédula. Busca buena luz de frente, quítate gafas o gorra y, si la foto de la cédula salió borrosa o con reflejos, vuelve a cargarla.';
     }
     return null;
   }

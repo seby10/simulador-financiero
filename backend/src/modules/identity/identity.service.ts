@@ -70,6 +70,7 @@ export class IdentityService {
     this.assertPending(user.identityStatus);
     // La cédula es la referencia facial: tiene que ser una foto, no un PDF.
     assertFileKind(file.buffer, ['png', 'jpg'], ID_FRONT);
+    await this.biometrics.inspectReference(file.buffer);
     await saveFile(userDocumentPath(userId, ID_FRONT), file.buffer);
     return this.describe(user);
   }
