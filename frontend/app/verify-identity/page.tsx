@@ -13,9 +13,10 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import FaceCapture from "@/components/face-capture";
+import LivenessCapture from "@/components/liveness-capture";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import { IDENTITY_PATH, needsIdentity, type IdentityStatus, type SessionUser } from "@/lib/identity";
+import type { LiveCapture } from "@/lib/liveness";
 
 interface IdentityState {
   status: IdentityStatus;
@@ -45,7 +46,6 @@ function VerifyIdentityContent() {
   const [consent, setConsent] = useState(false);
   const [document, setDocument] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [selfie, setSelfie] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -86,6 +86,7 @@ function VerifyIdentityContent() {
       setError("Debes aceptar el tratamiento de tus datos biométricos para continuar.");
       return;
     }
+    setError("");
     if (!document) {
       if (identity?.hasDocument) {
         setStep("face");
@@ -114,38 +115,30 @@ function VerifyIdentityContent() {
     }
   };
 
-  const submitFace = async () => {
-    if (!selfie) return;
-    setBusy(true);
+  /** Si no pasa, lanza con el motivo: LivenessCapture lo muestra y ofrece reintentar. */
+  const submitFace = async (capture: LiveCapture) => {
     setError("");
-    try {
-      const res = await fetch(`${API_URL}/identity/verify`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selfieBase64: selfie, consent }),
-      });
-      if (res.status === 429) {
-        setStep("locked");
-        return;
-      }
-      if (!res.ok) throw new Error(await readApiError(res, "No pudimos verificar tu identidad"));
-      const result: IdentityState & { passed: boolean } = await res.json();
-      setIdentity(result);
-      if (result.passed) {
-        setStep("done");
-      } else if (result.status === "LOCKED") {
-        setStep("locked");
-      } else {
-        setSelfie(null);
-        setError(
-          `Tu rostro no coincide con la foto de la cédula. Te quedan ${result.remainingAttempts} intento(s). Busca buena luz y mira de frente a la cámara.`,
-        );
-      }
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setBusy(false);
+    const res = await fetch(`${API_URL}/identity/verify`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...capture, consent }),
+    });
+    if (res.status === 429) {
+      setStep("locked");
+      return;
+    }
+    if (!res.ok) throw new Error(await readApiError(res, "No pudimos verificar tu identidad"));
+    const result: IdentityState & { passed: boolean; failureReason: string | null } = await res.json();
+    setIdentity(result);
+    if (result.passed) {
+      setStep("done");
+    } else if (result.status === "LOCKED") {
+      setStep("locked");
+    } else {
+      throw new Error(
+        `${result.failureReason ?? "No pudimos confirmar que eres el titular de la cédula"}. Te quedan ${result.remainingAttempts} intento(s).`,
+      );
     }
   };
 
@@ -154,7 +147,7 @@ function VerifyIdentityContent() {
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-800">
       <Navbar />
-      <main className="flex-1 flex items-start justify-center p-4 pb-12">
+      <main className="flex-1 flex items-start justify-center p-4 pb-12 relative z-10">
         <div className="w-full max-w-xl bg-white rounded-[32px] shadow-2xl shadow-amber-900/10 border border-amber-200/50 overflow-hidden">
           <div className="bg-[#14183e] text-white px-7 py-6">
             <p className="text-xs font-bold uppercase tracking-widest text-[#f1a501]">Acción necesaria</p>
@@ -247,22 +240,16 @@ function VerifyIdentityContent() {
             {step === "face" && (
               <div className="space-y-4">
                 <p className="font-bold text-[#14183e] flex items-center gap-2">
-                  <ScanFace className="w-5 h-5 text-[#df6951]" /> Tómate una foto en vivo
+                  <ScanFace className="w-5 h-5 text-[#df6951]" /> Verificación facial en vivo
                 </p>
                 <p className="text-xs text-slate-500">
-                  Sin gafas oscuras, gorra ni mascarilla, con buena luz. Intentos disponibles: {identity?.remainingAttempts}.
+                  Comprobaremos que eres una persona real y el titular de la cédula. Intentos disponibles:{" "}
+                  {identity?.remainingAttempts}.
                 </p>
-                <FaceCapture
-                  onCapture={setSelfie}
-                  captured={selfie}
-                  onRetake={() => setSelfie(null)}
-                  busy={busy}
-                  submitLabel="Verificar mi identidad"
-                  onSubmit={submitFace}
-                />
+                <LivenessCapture purpose="IDENTITY" onComplete={submitFace} />
                 <button
                   type="button"
-                  onClick={() => { setSelfie(null); setStep("document"); }}
+                  onClick={() => setStep("document")}
                   className="text-xs font-semibold text-slate-500 hover:text-[#df6951]"
                 >
                   Cambiar la foto de la cédula

@@ -50,11 +50,11 @@ export default function NavLinks() {
       {currentUser && needsIdentity(currentUser) && pathname !== IDENTITY_PATH && (
         <Link
           href={IDENTITY_PATH}
-          className="flex items-center gap-2 text-xs font-bold text-white bg-[#df6951] hover:bg-[#c85640] px-4 py-2 rounded-full shadow-md animate-pulse"
+          className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-white bg-[#df6951] hover:bg-[#c85640] px-3.5 py-2 rounded-full shadow-md animate-pulse"
           title="Confirma tu identidad para habilitar tu cuenta"
         >
           <ShieldAlert className="w-4 h-4" />
-          Acción necesaria: confirma tu identidad
+          Acción necesaria
         </Link>
       )}
 

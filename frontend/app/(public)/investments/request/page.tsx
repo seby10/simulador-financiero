@@ -6,6 +6,8 @@ import Link from "next/link";
 import Navbar from "@/components/navbar";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import { identityUrl, needsIdentity } from "@/lib/identity";
+import type { LiveCapture } from "@/lib/liveness";
+import LivenessCapture from "@/components/liveness-capture";
 import Modal from "@/components/ui/modal";
 import {
   User,
@@ -14,10 +16,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Upload,
-  Camera,
-  RefreshCw,
-  FileCheck,
-  XCircle,
   Check,
   AlertCircle,
 } from "lucide-react";
@@ -121,18 +119,10 @@ function InvestmentRequestContent() {
   const [docIdBack, setDocIdBack] = useState<File | null>(null);
   const [docUtilityBill, setDocUtilityBill] = useState<File | null>(null);
 
-  const [cameraActive, setCameraActive] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [inputMode, setInputMode] = useState<"camera" | "file">("camera");
-  const [isVerifying, setIsVerifying] = useState(false);
   const [biometricPassed, setBiometricPassed] = useState(false);
   const [biometricScore, setBiometricScore] = useState<number | null>(null);
   const [manualReview, setManualReview] = useState(false);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const bioFileRef = useRef<HTMLInputElement | null>(null);
 
   const [modal, setModal] = useState<{ isOpen: boolean; title: string; message: string; type: "success" | "error" | "info" }>({
     isOpen: false, title: "", message: "", type: "info",
@@ -140,88 +130,35 @@ function InvestmentRequestContent() {
   const [saving, setSaving] = useState(false);
   const [stepError, setStepError] = useState("");
 
-  useEffect(() => () => mediaStreamRef.current?.getTracks().forEach((t) => t.stop()), []);
-
-  const startCamera = async () => {
-    setCameraError(null);
-    setCapturedImage(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
-      });
-      mediaStreamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setCameraActive(true);
-    } catch {
-      setCameraError("No fue posible activar la cámara. Puedes cargar una fotografía.");
-      setCameraActive(false);
-    }
-  };
-
-  const stopCamera = () => {
-    mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
-    mediaStreamRef.current = null;
-    setCameraActive(false);
-  };
-
-  const capturePhoto = () => {
-    if (!videoRef.current) return;
-    const v = videoRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = v.videoWidth || 640;
-    canvas.height = v.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-      setCapturedImage(canvas.toDataURL("image/jpeg", 0.9));
-      stopCamera();
-    }
-  };
-
-  const handleBioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setCapturedImage(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const executeBiometric = async () => {
-    if (!capturedImage || !applicationId) return;
-    setIsVerifying(true);
+  /** Si no pasa, lanza con el motivo: LivenessCapture lo muestra y ofrece reintentar. */
+  const executeBiometric = async (capture: LiveCapture) => {
+    if (!applicationId) return;
     setStepError("");
-    try {
-      const res = await fetch(`${API_URL}/biometrics/applications/${applicationId}/verify`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selfieBase64: capturedImage }),
-      });
-      if (res.status === 429) {
-        setManualReview(true);
-        throw new Error("Se agotaron los intentos. Un asesor revisará tu identidad con los documentos cargados.");
-      }
-      if (!res.ok) throw new Error(await readApiError(res, "Error al validar la identidad"));
-      const data: {
-        passed: boolean;
-        matchScore: string;
-        biometricStatus: "PENDING" | "VERIFIED" | "FAILED";
-        remainingAttempts: number;
-        failureReason: string | null;
-      } = await res.json();
-      setBiometricPassed(data.passed);
-      setBiometricScore(Math.round(Number(data.matchScore)));
-      setRemainingAttempts(data.remainingAttempts);
-      if (data.biometricStatus === "FAILED") {
-        setManualReview(true);
-        setStepError("No fue posible verificar tu rostro y se agotaron los intentos. Un asesor revisará tu identidad con los documentos cargados.");
-      } else if (!data.passed) {
-        setStepError(`${data.failureReason || "Verificación fallida."} Te quedan ${data.remainingAttempts} intento(s).`);
-      }
-    } catch (err) {
-      setStepError(errorMessage(err));
-    } finally {
-      setIsVerifying(false);
+    const res = await fetch(`${API_URL}/biometrics/applications/${applicationId}/verify`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(capture),
+    });
+    if (res.status === 429) {
+      setManualReview(true);
+      return;
+    }
+    if (!res.ok) throw new Error(await readApiError(res, "Error al validar la identidad"));
+    const data: {
+      passed: boolean;
+      matchScore: string;
+      biometricStatus: "PENDING" | "VERIFIED" | "FAILED";
+      remainingAttempts: number;
+      failureReason: string | null;
+    } = await res.json();
+    setBiometricPassed(data.passed);
+    setBiometricScore(Math.round(Number(data.matchScore)));
+    setRemainingAttempts(data.remainingAttempts);
+    if (data.biometricStatus === "FAILED") {
+      setManualReview(true);
+    } else if (!data.passed) {
+      throw new Error(`${data.failureReason || "Verificación fallida"}. Te quedan ${data.remainingAttempts} intento(s).`);
     }
   };
 
@@ -477,96 +414,20 @@ function InvestmentRequestContent() {
                   <ShieldCheck className="w-6 h-6 shrink-0 text-[#f1a501] mt-0.5" />
                   <div>
                     <p className="font-extrabold font-serif-title text-base mb-1">Verificación de Identidad Biométrica</p>
-                    <p className="text-xs text-slate-600 leading-relaxed">Toma una foto clara de tu rostro sin gafas ni mascarilla. Nuestro algoritmo de Inteligencia Artificial comparará tu captura en vivo contra tu documento de identidad.</p>
+                    <p className="text-xs text-slate-600 leading-relaxed">Sigue las instrucciones en pantalla: comprobaremos que eres una persona real y compararemos tu rostro con la cédula que cargaste.</p>
                   </div>
                 </div>
 
-                <div className="flex border-b border-slate-200 text-xs font-bold uppercase tracking-wider">
-                  <button onClick={() => { setInputMode("camera"); if (!capturedImage) startCamera(); }}
-                    className={`pb-3 px-5 flex items-center gap-2 border-b-2 transition-all ${inputMode === "camera" ? "border-[#f1a501] text-[#14183e]" : "border-transparent text-slate-400 hover:text-slate-700"}`}>
-                    <Camera className="w-4 h-4 text-[#f1a501]" /> Cámara Web
-                  </button>
-                  <button onClick={() => { setInputMode("file"); stopCamera(); }}
-                    className={`pb-3 px-5 flex items-center gap-2 border-b-2 transition-all ${inputMode === "file" ? "border-[#f1a501] text-[#14183e]" : "border-transparent text-slate-400 hover:text-slate-700"}`}>
-                    <Upload className="w-4 h-4 text-[#f1a501]" /> Cargar Foto
-                  </button>
-                </div>
+                {!biometricPassed && !manualReview && (
+                  <LivenessCapture purpose="APPLICATION" onComplete={executeBiometric} />
+                )}
 
-                <div className="relative aspect-[4/3] w-full bg-[#14183e] rounded-[24px] overflow-hidden border border-slate-200 flex items-center justify-center shadow-inner">
-                  {capturedImage ? (
-                    <div className="relative w-full h-full flex items-center justify-center bg-black">
-                      <img src={capturedImage} alt="Rostro capturado" className="w-full h-full object-contain" />
-                      {isVerifying && (
-                        <div className="absolute inset-0 bg-[#14183e]/85 backdrop-blur-sm flex flex-col items-center justify-center text-white text-center p-4">
-                          <div className="w-10 h-10 border-4 border-[#f1a501] border-t-transparent rounded-full animate-spin mb-3" />
-                          <p className="text-sm font-bold font-serif-title">Validando tu Rostro...</p>
-                        </div>
-                      )}
-                      {biometricPassed && !isVerifying && (
-                        <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-white">
-                          <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-2" />
-                          <p className="font-extrabold font-serif-title text-xl">¡Identidad Verificada!</p>
-                          <p className="text-xs text-emerald-300 font-mono mt-1">Match Biométrico: {biometricScore}%</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : inputMode === "camera" ? (
-                    <div className="relative w-full h-full flex items-center justify-center">
-                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                      {!cameraActive && (
-                        <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center text-white">
-                          {cameraError ? (
-                            <div className="text-sm text-rose-400 flex flex-col items-center gap-2">
-                              <XCircle className="w-10 h-10" /><p>{cameraError}</p>
-                            </div>
-                          ) : (
-                            <div className="text-slate-400 space-y-2">
-                              <Camera className="w-12 h-12 mx-auto mb-2 text-[#f1a501]" />
-                              <p className="text-sm font-semibold text-white">Presiona el botón para activar la cámara web</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {cameraActive && (
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                          <div className="w-52 h-64 rounded-[50%] border-2 border-[#f1a501] shadow-[0_0_0_9999px_rgba(20,24,62,0.6)]" />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 w-full h-full">
-                      <Upload className="w-12 h-12 text-[#f1a501] mb-2" />
-                      <p className="text-base font-bold text-[#14183e] mb-1">Selecciona una foto nítida de tu rostro</p>
-                      <p className="text-xs text-slate-400 mb-4">Formatos permitidos: JPG, PNG</p>
-                      <button onClick={() => bioFileRef.current?.click()} className="px-6 py-2.5 rounded-full bg-white border border-slate-300 hover:bg-slate-100 text-[#14183e] font-bold text-xs shadow-sm transition-all">
-                        Buscar Fotografía
-                      </button>
-                      <input ref={bioFileRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleBioFileUpload} />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {manualReview ? null : capturedImage && !biometricPassed ? (
-                    <>
-                      <button onClick={() => { setCapturedImage(null); setBiometricPassed(false); if (inputMode === "camera") startCamera(); }} disabled={isVerifying}
-                        className="px-5 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-[#14183e] font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-50">
-                        <RefreshCw className="w-4 h-4" /> Repetir Foto
-                      </button>
-                      <button onClick={executeBiometric} disabled={isVerifying}
-                        className="flex-1 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50">
-                        <FileCheck className="w-4 h-4" />
-                        {isVerifying ? "Validando..." : "Confirmar y Validar Biometría"}
-                      </button>
-                    </>
-                  ) : !capturedImage && inputMode === "camera" ? (
-                    <button onClick={() => cameraActive ? capturePhoto() : startCamera()}
-                      className="flex-1 py-3.5 rounded-full bg-[#14183e] hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all">
-                      <Camera className="w-4 h-4 text-[#f1a501]" />
-                      {cameraActive ? "Capturar Fotografía" : "Iniciar Cámara"}
-                    </button>
-                  ) : null}
-                </div>
+                {manualReview && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-900 text-sm">
+                    Se agotaron los intentos de verificación facial. Un asesor revisará tu identidad con los documentos
+                    cargados antes de decidir. Puedes finalizar la solicitud.
+                  </div>
+                )}
 
                 {biometricPassed && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-sm font-semibold flex items-center gap-3">
@@ -580,7 +441,7 @@ function InvestmentRequestContent() {
                 )}
 
                 <div className="flex justify-between pt-4 border-t border-slate-100">
-                  <button onClick={() => { setStepError(""); setStep(2); stopCamera(); }}
+                  <button onClick={() => { setStepError(""); setStep(2); }}
                     className="px-6 py-3 rounded-full font-bold text-[#14183e] bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
                     Atrás
                   </button>

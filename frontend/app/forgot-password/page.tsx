@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Lock,
   Mail,
-  ShieldCheck,
-  Camera,
-  RefreshCw,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
@@ -17,7 +14,8 @@ import {
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
-import { analyzeImageQuality } from "@/lib/face-analysis";
+import LivenessCapture from "@/components/liveness-capture";
+import type { LiveCapture } from "@/lib/liveness";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -34,98 +32,28 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [biometricScore, setBiometricScore] = useState<string | null>(null);
 
-  // Camera states
-  const [cameraActive, setCameraActive] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    import("face-api.js")
-      .then((faceapi) => {
-        faceapi.nets.tinyFaceDetector.loadFromUri("/models");
-        faceapi.nets.faceLandmark68Net.loadFromUri("/models");
-      })
-      .catch(() => {});
-  }, []);
-
-  const startCamera = async () => {
-    setCameraError(null);
-    setCapturedImage(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
-      });
-      mediaStreamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setCameraActive(true);
-    } catch {
-      setCameraError("No se pudo acceder a la cámara web. Asegúrate de otorgar permisos.");
-      setCameraActive(false);
-    }
-  };
-
-  const stopCamera = () => {
-    mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
-    mediaStreamRef.current = null;
-    setCameraActive(false);
-  };
-
-  useEffect(() => () => mediaStreamRef.current?.getTracks().forEach((t) => t.stop()), []);
-
-  const capturePhoto = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth || 640;
-    canvas.height = videoRef.current.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-    setCapturedImage(dataUrl);
-    stopCamera();
-  };
-
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setStep(2);
-    startCamera();
   };
 
-  const handleBiometricVerify = async () => {
-    if (!capturedImage) {
-      setError("Captura tu rostro en vivo antes de continuar.");
-      return;
-    }
-
-    setLoading(true);
+  /**
+   * Como en un banco, el rostro va primero: si no coincide con el de la cuenta,
+   * lanza y LivenessCapture ofrece reintentar con gestos nuevos.
+   */
+  const handleBiometricVerify = async (capture: LiveCapture) => {
     setError("");
-
-    try {
-      const quality = await analyzeImageQuality(capturedImage);
-      if (!quality.hasCenteredFace && !quality.hasFace) {
-        throw new Error(quality.reason || "No se detectó un rostro claro en la imagen. Por favor intenta de nuevo.");
-      }
-
-      const res = await fetch(`${API_URL}/auth/biometric-reset/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, selfieBase64: capturedImage }),
-      });
-
-      if (!res.ok) throw new Error(await readApiError(res, "La verificación biométrica no fue exitosa"));
-
-      const result = await res.json();
-      setResetToken(result.resetToken);
-      setBiometricScore(result.matchScore);
-      setStep(3);
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch(`${API_URL}/auth/biometric-reset/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, ...capture }),
+    });
+    if (!res.ok) throw new Error(await readApiError(res, "La verificación biométrica no fue exitosa"));
+    const result = await res.json();
+    setResetToken(result.resetToken);
+    setBiometricScore(result.matchScore);
+    setStep(3);
   };
 
   const handleStep3Submit = async (e: React.FormEvent) => {
@@ -256,90 +184,12 @@ export default function ForgotPasswordPage() {
                 <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200/60 text-xs text-slate-700">
                   <p className="font-bold text-[#14183e] text-sm mb-1">Cuenta: {email}</p>
                   <p className="text-[#5e6282] leading-relaxed">
-                    Ubica tu rostro frente a la cámara dentro del óvalo guía. Se comparará con la foto que
-                    verificó tu identidad en tu registro.
+                    Antes de cambiar tu contraseña confirmaremos que eres el titular: sigue las instrucciones en
+                    pantalla. Tu rostro se comparará con el que verificó tu identidad al registrarte.
                   </p>
                 </div>
 
-                {/* Camera Container */}
-                <div className="relative w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center border-2 border-slate-200 shadow-inner">
-                  {!capturedImage && (
-                    <>
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className={`w-full h-full object-cover ${cameraActive ? "block" : "hidden"}`}
-                      />
-
-                      {cameraActive && (
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                          <div className="w-44 h-60 border-2 border-dashed border-[#f1a501] rounded-full opacity-80 animate-pulse shadow-lg" />
-                        </div>
-                      )}
-
-                      {!cameraActive && (
-                        <div className="text-center text-white p-6 space-y-3">
-                          <Camera className="w-12 h-12 mx-auto text-slate-400" />
-                          <p className="text-xs text-slate-300">Presiona el botón para encender la cámara web.</p>
-                          <button
-                            type="button"
-                            onClick={startCamera}
-                            className="bg-[#f1a501] hover:bg-amber-600 text-white px-6 py-2.5 rounded-full text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] transition-all"
-                          >
-                            Activar Cámara
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {capturedImage && (
-                    <div className="relative w-full h-full">
-                      <img src={capturedImage} alt="Selfie" className="w-full h-full object-cover" />
-                      <span className="absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Captura Realizada
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {cameraError && <p className="text-xs text-red-600 font-semibold">{cameraError}</p>}
-
-                {/* Camera Actions */}
-                <div className="flex gap-3">
-                  {cameraActive && !capturedImage && (
-                    <button
-                      type="button"
-                      onClick={capturePhoto}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-full font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition-all"
-                    >
-                      <Camera className="w-5 h-5" /> Tomar Foto Facial
-                    </button>
-                  )}
-
-                  {capturedImage && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => { setCapturedImage(null); startCamera(); }}
-                        className="px-5 py-3.5 rounded-full font-bold border border-slate-200 text-[#5e6282] hover:bg-slate-100 text-xs flex items-center gap-1.5 transition-all"
-                      >
-                        <RefreshCw className="w-4 h-4" /> Repetir
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleBiometricVerify}
-                        disabled={loading}
-                        className="flex-1 bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-sm shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 disabled:opacity-70 hover:scale-[1.01] transition-all"
-                      >
-                        {loading ? "Validando Biometría..." : "Validar e Ingresar Clave"}
-                        {!loading && <ShieldCheck className="w-5 h-5 text-[#f1a501]" />}
-                      </button>
-                    </>
-                  )}
-                </div>
+                <LivenessCapture purpose="PASSWORD_RESET" onComplete={handleBiometricVerify} />
               </div>
             )}
 
