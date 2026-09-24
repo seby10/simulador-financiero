@@ -355,6 +355,7 @@ export class AuthService {
    */
   async updateUserRole(actorId: string | null, userId: string, role: UserRole) {
     assertNotSelf(actorId, userId, 'cambiar tu propio rol');
+    if (role !== UserRole.ADMIN) await this.assertKeepsAnAdmin(userId);
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { role },
@@ -369,12 +370,31 @@ export class AuthService {
     isActive: boolean,
   ) {
     assertNotSelf(actorId, userId, 'desactivar tu propia cuenta');
+    if (!isActive) await this.assertKeepsAnAdmin(userId);
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive },
     });
     if (!isActive) await this.logoutAll(userId);
     return toPublicUser(user);
+  }
+
+  /**
+   * Quitarle el rol o desactivar a un administrador activo exige que quede otro.
+   * Cubre también la cabecera x-admin-key, que no tiene cuenta propia que proteger.
+   */
+  private async assertKeepsAnAdmin(userId: string) {
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, isActive: true },
+    });
+    if (target?.role !== UserRole.ADMIN || !target.isActive) return;
+    const others = await this.prisma.user.count({
+      where: { role: UserRole.ADMIN, isActive: true, id: { not: userId } },
+    });
+    if (others === 0) {
+      throw new ConflictException('Debe quedar al menos un administrador activo');
+    }
   }
 
   /** Alta desde el panel administrativo, con el rol indicado (CUSTOMER por defecto). */

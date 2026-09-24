@@ -21,7 +21,6 @@ import {
   Navigation
 } from "lucide-react";
 import Navbar from "@/components/navbar";
-import NewsletterForm from "@/components/newsletter-form";
 import Footer from "@/components/footer";
 import { API_URL } from "@/lib/api";
 
@@ -43,8 +42,7 @@ export default async function Home() {
     console.error("Failed to fetch config for home page", err);
   }
 
-  const institutionName = config?.institutionName || "FinanzApp Institucional";
-  const heroImage = config?.heroImageUrl || "https://images.unsplash.com/photo-1573164713988-8665fc963095?q=80&w=2069&auto=format&fit=crop";
+  const heroImage = config?.heroImageUrl || "/assets/hero/hero-person.png";
   const heroTitle = config?.heroTitle || "Simula, invierte y alcanza tu libertad financiera";
   const heroSubtitle = config?.heroSubtitle || "Transparencia total. Calcula tus cuotas de crédito (Sistema Francés y Alemán), haz crecer tus ahorros en DPF y solicita en 3 minutos con verificación facial en vivo.";
 
@@ -63,7 +61,7 @@ export default async function Home() {
                 {/* Decorative Plane 3 (Floating near left text area) */}
                 <img
                   src="/assets/hero/plane.png"
-                  alt="Plane 3"
+                  alt=""
                   className="hidden sm:block absolute -top-8 -left-12 lg:-left-16 w-14 lg:w-18 rotate-[-15deg] z-10 animate-float opacity-75"
                 />
 
@@ -73,21 +71,13 @@ export default async function Home() {
                 </p>
 
                 {/* Hero Title */}
-                <h1 className="text-4xl sm:text-6xl lg:text-[76px] xl:text-[84px] font-bold text-[#181e2b] leading-[1.05] font-serif-title tracking-tight max-w-3xl">
-                  Calcula,{" "}
-                  <span className="relative inline-block text-[#181e2b]">
-                    invierte
-                    {/* Orange Underline Brush Stroke Accent */}
-                    <svg className="absolute -bottom-1.5 left-0 w-full h-4 text-[#df6951] pointer-events-none" viewBox="0 0 285 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M4 28C64 12 180 4 281 12" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
-                    </svg>
-                  </span>{" "}
-                  y fía tus sueños.
+                <h1 className="text-4xl sm:text-6xl lg:text-[76px] xl:text-[84px] font-bold text-[#181e2b] leading-[1.05] font-serif-title tracking-tight max-w-3xl whitespace-pre-line">
+                  {heroTitle}
                 </h1>
 
                 {/* Hero Subtitle */}
                 <p className="text-sm sm:text-base text-[#5e6282] max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
-                  Transparencia total para tus decisiones. Simula tus cuotas de crédito en minutos con los Sistemas Francés y Alemán, haz crecer tu capital a plazo fijo y solicita con verificación facial en vivo.
+                  {heroSubtitle}
                 </p>
 
                 {/* Action Buttons */}
@@ -119,28 +109,28 @@ export default async function Home() {
                   {/* Decorative Plane 1 (Top Left of Person) */}
                   <img
                     src="/assets/hero/plane.png"
-                    alt="Plane 1"
+                    alt=""
                     className="absolute -top-4 -left-4 lg:-left-8 w-12 lg:w-16 rotate-[15deg] z-20 animate-float"
                   />
 
                   {/* Decorative Plane 2 (Top Right near screen edge) */}
                   <img
                     src="/assets/hero/plane.png"
-                    alt="Plane 2"
+                    alt=""
                     className="absolute top-2 -right-4 lg:-right-8 w-10 lg:w-14 rotate-[35deg] z-20 animate-float-slow opacity-95"
                   />
 
                   {/* Decorative Plane 4 (Background depth plane) */}
                   <img
                     src="/assets/hero/plane.png"
-                    alt="Plane 4"
+                    alt=""
                     className="absolute bottom-8 right-4 w-8 lg:w-10 rotate-[55deg] z-0 opacity-50 animate-float"
                   />
 
                   {/* Main Hero Person Image */}
                   <img
-                    src="/assets/hero/hero-person.png"
-                    alt="Hero Person"
+                    src={heroImage}
+                    alt=""
                     className="w-full max-h-[520px] sm:max-h-[560px] lg:max-h-[580px] object-contain relative z-10 drop-shadow-xl"
                   />
 
@@ -295,7 +285,7 @@ export default async function Home() {
               {/* Decorative Spiral Asset on Right side of 3rd Card */}
               <img
                 src="/assets/hero/spiral.png"
-                alt="Spiral decore"
+                alt=""
                 className="hidden xl:block absolute -right-10 top-1/2 -translate-y-1/2 w-32 opacity-70 pointer-events-none z-0"
               />
 
@@ -487,14 +477,27 @@ export default async function Home() {
                 </div>
 
                 <h2 className="text-2xl sm:text-4xl font-extrabold font-serif-title leading-tight">
-                  Recibe asesoría financiera personalizada y las mejores promociones
+                  Empieza hoy: simula tu crédito o abre tu inversión a plazo fijo
                 </h2>
 
                 <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto">
-                  Déjanos tu correo electrónico y un asesor certificado se pondrá en contacto contigo para guiarte en tu solicitud.
+                  Calcula tus cuotas sin compromiso o solicita tu póliza en minutos con verificación facial en vivo.
                 </p>
 
-                <NewsletterForm />
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+                  <Link
+                    href="/simulator"
+                    className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#f1a501] hover:bg-amber-500 text-white font-bold text-sm shadow-lg shadow-amber-500/30 transition-all text-center"
+                  >
+                    Simular crédito
+                  </Link>
+                  <Link
+                    href="/investments/request"
+                    className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/30 transition-all text-center"
+                  >
+                    Solicitar inversión
+                  </Link>
+                </div>
               </div>
 
             </div>

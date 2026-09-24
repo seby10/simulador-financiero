@@ -132,7 +132,7 @@ export default async function AdminLayout({
         {/* Background Decore Asset */}
         <img
           src="/assets/hero/decore-shape.png"
-          alt="Decore shape"
+          alt=""
           className="absolute top-0 right-0 z-0 pointer-events-none w-[420px] sm:w-[520px] lg:w-[620px] h-auto opacity-70"
         />
 
