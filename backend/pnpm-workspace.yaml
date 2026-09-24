@@ -11,9 +11,11 @@ overrides:
 # pnpm 10+ bloquea los scripts de instalación salvo los que se aprueben aquí.
 # Prisma genera su cliente en postinstall y esbuild descarga su binario: sin
 # estos, `prisma generate` y vitest no funcionan.
-# Telemetría de Scarf: se deja sin ejecutar a propósito.
+# Telemetría de Scarf y el aviso de donaciones de core-js (lo trae tfjs): se
+# dejan sin ejecutar a propósito.
 allowBuilds:
   '@prisma/engines': true
   '@scarf/scarf': false
+  core-js: false
   esbuild: true
   prisma: true

@@ -47,6 +47,8 @@ describe('API (e2e)', () => {
     } catch {
       // CI: variables provistas por el entorno
     }
+    // Puntajes deterministas: las capturas de prueba no son rostros reales.
+    process.env.BIOMETRIC_PROVIDER = 'simulated';
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

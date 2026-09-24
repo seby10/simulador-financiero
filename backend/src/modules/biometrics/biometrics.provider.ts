@@ -31,13 +31,10 @@ const round2 = (value: number) => Math.round(value * 100) / 100;
 const scale = (raw: number) => round2(FLOOR + (raw / 0x10000) * (100 - FLOOR));
 
 /**
- * ponytail: sin proveedor biométrico real. Los puntajes se derivan del SHA-256
- * de las imágenes en lugar de ser aleatorios, así la misma captura da siempre el
- * mismo resultado: las pruebas son reproducibles y en una demo se puede enseñar
- * tanto una verificación que pasa como una que falla.
- *
- * Al enchufar un SDK real (liveness + matching) basta con implementar esta misma
- * interfaz y sustituir el proveedor en BiometricsModule.
+ * Doble de pruebas (BIOMETRIC_PROVIDER=simulated): no mira rostros. Los puntajes
+ * se derivan del SHA-256 de las imágenes en lugar de ser aleatorios, así la misma
+ * captura da siempre el mismo resultado y las pruebas e2e son reproducibles sin
+ * fotos reales. La comparación real está en FaceApiBiometricProvider.
  */
 @Injectable()
 export class SimulatedBiometricProvider implements BiometricProvider {
