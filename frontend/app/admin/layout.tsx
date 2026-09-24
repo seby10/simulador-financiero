@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Building2, LayoutDashboard, CreditCard, PieChart, Building, Users, LogOut, ClipboardList } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import BrandImage from "@/components/brand-image";
 
 async function verifySession() {
   const cookieStore = await cookies();
@@ -67,13 +68,16 @@ export default async function AdminLayout({
         {/* Brand Header */}
         <div className="h-20 flex items-center px-6 border-b border-slate-800/80">
           <Link href="/admin" className="flex items-center gap-3 group">
-            {config?.logoUrl ? (
-              <img src={`${API_URL?.replace('/api', '') || ''}${config.logoUrl}`} alt="Logo" className="h-9 w-auto object-contain bg-white/10 rounded-lg p-1" />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-[#df6951] flex items-center justify-center text-white font-serif-title text-xl font-bold shadow-md">
-                F
-              </div>
-            )}
+            <BrandImage
+              url={config?.logoUrl}
+              alt="Logo"
+              className="h-9 w-auto object-contain bg-white/10 rounded-lg p-1"
+              fallback={
+                <div className="w-10 h-10 rounded-xl bg-[#df6951] flex items-center justify-center text-white font-serif-title text-xl font-bold shadow-md">
+                  F
+                </div>
+              }
+            />
             <div className="flex flex-col">
               <span className="font-serif-title font-extrabold text-lg leading-none text-white">
                 Fiado<span className="text-[#df6951]">.</span>

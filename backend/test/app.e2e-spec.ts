@@ -36,6 +36,8 @@ const pdf = Buffer.from('%PDF-1.4');
 const selfie = (suffix: string) =>
   `data:image/png;base64,${Buffer.concat([png, Buffer.from(suffix)]).toString('base64')}`;
 
+type Purpose = 'IDENTITY' | 'PASSWORD_RESET' | 'APPLICATION';
+
 // Requiere DATABASE_URL con migraciones y seed aplicados.
 describe('API (e2e)', () => {
   let app: INestApplication;
@@ -47,6 +49,8 @@ describe('API (e2e)', () => {
     } catch {
       // CI: variables provistas por el entorno
     }
+    // Puntajes deterministas: las capturas de prueba no son rostros reales.
+    process.env.BIOMETRIC_PROVIDER = 'simulated';
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -73,8 +77,39 @@ describe('API (e2e)', () => {
 
   // ───────────────────────── Ayudantes ─────────────────────────
 
-  /** Crea un cliente nuevo en cada llamada y devuelve sus cookies de sesión. */
-  const registerUser = async () => {
+  /**
+   * Abre una sesión de prueba de vida y arma la captura: el fotograma de frente
+   * (el que compara el proveedor simulado) y uno por cada gesto pedido.
+   */
+  const live = async (purpose: Purpose, suffix: string) => {
+    const { body } = await request(app.getHttpServer())
+      .post('/api/biometrics/liveness-sessions')
+      .send({ purpose })
+      .expect(201);
+    return {
+      livenessSessionId: body.sessionId as string,
+      frames: [
+        selfie(suffix),
+        ...(body.challenges as string[]).map((c) => selfie(`gesto-${c}`)),
+      ],
+    };
+  };
+
+  /** Envía una captura en vivo y permite seguir encadenando `.expect(status)`. */
+  const liveRequest = (
+    purpose: Purpose,
+    suffix: string,
+    send: (capture: Awaited<ReturnType<typeof live>>) => request.Test,
+  ) => ({
+    expect: async (status: number) =>
+      send(await live(purpose, suffix)).expect(status),
+  });
+
+  /**
+   * Crea un cliente nuevo en cada llamada y devuelve sus cookies de sesión. Por
+   * defecto completa la confirmación de identidad (sin ella no puede operar).
+   */
+  const registerUser = async ({ verified = true } = {}) => {
     const email = `e2e-${randomUUID()}@example.com`;
     const idNumber = randomCedula();
     createdEmails.push(email);
@@ -89,12 +124,21 @@ describe('API (e2e)', () => {
         password: 'contrasena-larga-de-prueba',
       })
       .expect(201);
-    return {
-      cookies: response.get('Set-Cookie')!,
-      body: response.body,
-      email,
-      idNumber,
-    };
+    const cookies = response.get('Set-Cookie')!;
+    if (verified) {
+      await request(app.getHttpServer())
+        .post('/api/identity/document')
+        .set('Cookie', cookies)
+        .attach('idFront', png, 'cedula.png')
+        .expect(200);
+      const { body } = await request(app.getHttpServer())
+        .post('/api/identity/verify')
+        .set('Cookie', cookies)
+        .send({ ...(await live('IDENTITY', 's0')), consent: true })
+        .expect(200);
+      expect(body.status).toBe('VERIFIED');
+    }
+    return { cookies, body: response.body, email, idNumber };
   };
 
   type Customer = Awaited<ReturnType<typeof registerUser>>;
@@ -142,10 +186,12 @@ describe('API (e2e)', () => {
   };
 
   const verify = (customer: Customer, id: string, suffix: string) =>
-    request(app.getHttpServer())
-      .post(`/api/biometrics/applications/${id}/verify`)
-      .set('Cookie', customer.cookies)
-      .send({ selfieBase64: selfie(suffix) });
+    liveRequest('APPLICATION', suffix, (capture) =>
+      request(app.getHttpServer())
+        .post(`/api/biometrics/applications/${id}/verify`)
+        .set('Cookie', customer.cookies)
+        .send(capture),
+    );
 
   const adminGet = (id: string) =>
     request(app.getHttpServer())
@@ -421,7 +467,7 @@ describe('API (e2e)', () => {
       try {
         await request(app.getHttpServer())
           .post(`/api/biometrics/applications/${id}/verify`)
-          .send({ selfieBase64: selfie('s0') })
+          .send(await live('APPLICATION', 's0'))
           .expect(401);
         await verify(intruder, id, 's0').expect(404);
       } finally {
@@ -446,7 +492,10 @@ describe('API (e2e)', () => {
           .post(`/api/biometrics/applications/${id}/verify`)
           .set('Cookie', customer.cookies)
           .send({
-            selfieBase64: Buffer.from('esto no es un png').toString('base64'),
+            ...(await live('APPLICATION', 's0')),
+            frames: ['esto no es un png', 'tampoco', 'ni esto'].map((t) =>
+              Buffer.from(t).toString('base64'),
+            ),
           })
           .expect(400);
       } finally {
@@ -562,6 +611,67 @@ describe('API (e2e)', () => {
         .send(base)
         .expect(200);
       expect(body.primaryColor).toBe(current.primaryColor);
+    });
+
+    it('guarda el logo en la base y lo sirve a cualquier instancia', async () => {
+      const server = app.getHttpServer();
+      const prisma = app.get(PrismaService);
+      const before = await prisma.institutionConfig.findUniqueOrThrow({
+        where: { id: 1 },
+      });
+      const previousAsset = await prisma.institutionAsset.findUnique({
+        where: { kind: 'logo' },
+      });
+      // PNG de 1×1 píxel.
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      );
+      try {
+        await request(server)
+          .post('/api/institution/logo')
+          .attach('logo', png, 'logo.png')
+          .expect(401);
+        const { body } = await request(server)
+          .post('/api/institution/logo')
+          .set('x-admin-key', process.env.ADMIN_API_KEY!)
+          .attach('logo', png, 'logo.png')
+          .expect(201);
+        expect(body.logoUrl).toMatch(/^\/api\/institution\/logo\?v=\d+$/);
+
+        const served = await request(server).get(body.logoUrl).expect(200);
+        expect(served.headers['content-type']).toBe('image/png');
+        expect(Buffer.compare(served.body as Buffer, png)).toBe(0);
+
+        // El formulario del panel reenvía la URL tal cual: debe aceptarse.
+        await request(server)
+          .put('/api/institution')
+          .set('x-admin-key', process.env.ADMIN_API_KEY!)
+          .send({
+            institutionName: before.institutionName,
+            ruc: before.ruc,
+            legalRepresentative: before.legalRepresentative,
+            address: before.address,
+            phone: before.phone,
+            email: before.email,
+            disclaimerText: before.disclaimerText,
+            heroImageUrl: body.logoUrl.replace('logo', 'hero'),
+          })
+          .expect(200);
+      } finally {
+        await prisma.institutionConfig.update({
+          where: { id: 1 },
+          data: { logoUrl: before.logoUrl, heroImageUrl: before.heroImageUrl },
+        });
+        if (previousAsset) {
+          await prisma.institutionAsset.update({
+            where: { kind: 'logo' },
+            data: previousAsset,
+          });
+        } else {
+          await prisma.institutionAsset.delete({ where: { kind: 'logo' } });
+        }
+      }
     });
   });
 
@@ -778,16 +888,322 @@ describe('API (e2e)', () => {
     });
   });
 
+  // ───────────────────────── Prueba de vida ─────────────────────────
+
+  describe('sesiones de prueba de vida', () => {
+    it('sortea dos gestos distintos y vence en minutos', async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/api/biometrics/liveness-sessions')
+        .send({ purpose: 'IDENTITY' })
+        .expect(201);
+      expect(body.challenges).toHaveLength(2);
+      expect(new Set(body.challenges).size).toBe(2);
+      expect(new Date(body.expiresAt).getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('una sesión sirve una sola vez y solo para su flujo', async () => {
+      const customer = await registerUser({ verified: false });
+      await request(app.getHttpServer())
+        .post('/api/identity/document')
+        .set('Cookie', customer.cookies)
+        .attach('idFront', png, 'cedula.png')
+        .expect(200);
+      const send = (capture: object) =>
+        request(app.getHttpServer())
+          .post('/api/identity/verify')
+          .set('Cookie', customer.cookies)
+          .send({ ...capture, consent: true });
+
+      // Sesión de otro flujo: no sirve.
+      await send(await live('PASSWORD_RESET', 's2')).expect(400);
+      // Fotogramas de más o de menos: no sirve.
+      const short = await live('IDENTITY', 's2');
+      await send({ ...short, frames: short.frames.slice(0, 2) }).expect(400);
+      // Una sesión válida se consume aunque la verificación falle.
+      const capture = await live('IDENTITY', 's2');
+      await send(capture).expect(200);
+      await send(capture).expect(400);
+    });
+  });
+
+  // ───────────────────────── Confirmación de identidad ─────────────────────────
+
+  describe('confirmación de identidad del registro', () => {
+    const identity = (cookies: string[]) => ({
+      status: () =>
+        request(app.getHttpServer())
+          .get('/api/identity')
+          .set('Cookie', cookies),
+      document: (file: Buffer) =>
+        request(app.getHttpServer())
+          .post('/api/identity/document')
+          .set('Cookie', cookies)
+          .attach('idFront', file, 'cedula.png'),
+      verify: (suffix: string, consent: unknown = true) =>
+        liveRequest('IDENTITY', suffix, (capture) =>
+          request(app.getHttpServer())
+            .post('/api/identity/verify')
+            .set('Cookie', cookies)
+            .send({ ...capture, consent }),
+        ),
+    });
+
+    it('una cuenta nueva queda pendiente y no puede operar', async () => {
+      const customer = await registerUser({ verified: false });
+      expect(customer.body.user.identityStatus).toBe('PENDING');
+      const { body } = await identity(customer.cookies).status().expect(200);
+      expect(body).toMatchObject({
+        status: 'PENDING',
+        hasDocument: false,
+        remainingAttempts: 5,
+      });
+      const { body: denied } = await request(app.getHttpServer())
+        .post('/api/onboarding/apply')
+        .set('Cookie', customer.cookies)
+        .send({})
+        .expect(403);
+      expect(denied.error).toBe('IDENTITY_REQUIRED');
+    });
+
+    it('exige cédula en foto y consentimiento', async () => {
+      const { cookies } = await registerUser({ verified: false });
+      const id = identity(cookies);
+      await id.verify('s0').expect(400);
+      await id.document(pdf).expect(400);
+      await id.document(png).expect(200);
+      await id.verify('s0', false).expect(400);
+    });
+
+    it('verifica con un rostro que coincide y habilita la cuenta', async () => {
+      const customer = await registerUser({ verified: false });
+      const id = identity(customer.cookies);
+      await id.document(png).expect(200);
+      const { body: failed } = await id.verify('s2').expect(200);
+      expect(failed).toMatchObject({
+        passed: false,
+        status: 'PENDING',
+        remainingAttempts: 4,
+      });
+      const { body } = await id.verify('s0').expect(200);
+      expect(body).toMatchObject({ passed: true, status: 'VERIFIED' });
+
+      const { body: me } = await request(app.getHttpServer())
+        .get('/api/auth/me')
+        .set('Cookie', customer.cookies)
+        .expect(200);
+      expect(me.identityStatus).toBe('VERIFIED');
+      await id.verify('s0').expect(409);
+      await id.document(png).expect(409);
+      // Ya puede solicitar.
+      const applicationId = await apply(customer);
+      await cleanUp(applicationId);
+    });
+
+    it('bloquea al agotar los intentos y un administrador la desbloquea', async () => {
+      const customer = await registerUser({ verified: false });
+      const id = identity(customer.cookies);
+      await id.document(png).expect(200);
+      for (const suffix of ['s2', 's6', 's10', 's2', 's6']) {
+        await id.verify(suffix).expect(200);
+      }
+      const { body } = await id.status().expect(200);
+      expect(body).toMatchObject({ status: 'LOCKED', remainingAttempts: 0 });
+      await id.verify('s0').expect(429);
+
+      await request(app.getHttpServer())
+        .patch(`/api/auth/users/${customer.body.user.id}/identity/unlock`)
+        .set('x-admin-key', process.env.ADMIN_API_KEY!)
+        .expect(200);
+      const { body: unlocked } = await id.verify('s0').expect(200);
+      expect(unlocked).toMatchObject({ status: 'VERIFIED', passed: true });
+    });
+
+    it('exige sesión', () =>
+      request(app.getHttpServer()).get('/api/identity').expect(401));
+  });
+
+  // ───────────────────────── Continuar en el celular ─────────────────────────
+
+  describe('continuar en el celular (QR)', () => {
+    const server = () => app.getHttpServer();
+    const mobile = (token: string) => `/api/biometrics/handoff/mobile/${token}`;
+    const poll = (handoff: { handoffId: string; pollToken: string }) =>
+      request(server())
+        .post(`/api/biometrics/handoff/${handoff.handoffId}/status`)
+        .send({ pollToken: handoff.pollToken });
+
+    it('confirma la identidad desde el celular y la computadora se entera', async () => {
+      const customer = await registerUser({ verified: false });
+      // Sin cédula cargada no se puede continuar en el celular.
+      await request(server())
+        .post('/api/biometrics/handoff')
+        .set('Cookie', customer.cookies)
+        .send({ purpose: 'IDENTITY', consent: true })
+        .expect(400);
+      await request(server())
+        .post('/api/identity/document')
+        .set('Cookie', customer.cookies)
+        .attach('idFront', png, 'cedula.png')
+        .expect(200);
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff')
+        .set('Cookie', customer.cookies)
+        .send({ purpose: 'IDENTITY', consent: true })
+        .expect(201);
+
+      const { body: info } = await request(server())
+        .get(mobile(handoff.mobileToken))
+        .expect(200);
+      expect(info).toMatchObject({
+        purpose: 'IDENTITY',
+        firstName: 'Prueba',
+        completed: false,
+      });
+      // Abrir el enlace en el celular ya se refleja en la computadora.
+      expect((await poll(handoff).expect(200)).body.status).toBe('CONNECTED');
+
+      const { body: failed } = await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('IDENTITY', 's2'))
+        .expect(200);
+      expect(failed).toMatchObject({ passed: false, locked: false });
+      const { body: passed } = await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('IDENTITY', 's0'))
+        .expect(200);
+      expect(passed.passed).toBe(true);
+
+      expect((await poll(handoff).expect(200)).body.status).toBe('COMPLETED');
+      const { body: me } = await request(server())
+        .get('/api/auth/me')
+        .set('Cookie', customer.cookies)
+        .expect(200);
+      expect(me.identityStatus).toBe('VERIFIED');
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('IDENTITY', 's0'))
+        .expect(400);
+    });
+
+    it('en recuperación el token de clave solo llega a la computadora, una vez', async () => {
+      const customer = await registerUser();
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff/password-reset')
+        .send({ email: customer.email })
+        .expect(201);
+
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('PASSWORD_RESET', 'r7'))
+        .expect(401);
+      const { body: fromPhone } = await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('PASSWORD_RESET', 'r0'))
+        .expect(200);
+      expect(fromPhone.passed).toBe(true);
+      expect(JSON.stringify(fromPhone)).not.toContain('resetToken');
+
+      const { body: first } = await poll(handoff).expect(200);
+      expect(first.result.resetToken).toEqual(expect.any(String));
+      const { body: second } = await poll(handoff).expect(200);
+      expect(second.result.resetToken).toBeUndefined();
+
+      await request(server())
+        .post('/api/auth/biometric-reset/confirm')
+        .send({
+          resetToken: first.result.resetToken,
+          newPassword: 'clave-desde-celular',
+        })
+        .expect(204);
+    });
+
+    it('la computadora ve en vivo el paso del celular y si abandona', async () => {
+      const customer = await registerUser();
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff/password-reset')
+        .send({ email: customer.email })
+        .expect(201);
+      expect((await poll(handoff).expect(200)).body.status).toBe('WAITING');
+
+      await request(server()).get(mobile(handoff.mobileToken)).expect(200);
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/heartbeat`)
+        .send({ stage: 'CAPTURING' })
+        .expect(204);
+      expect((await poll(handoff).expect(200)).body.status).toBe('CAPTURING');
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/heartbeat`)
+        .send({ stage: 'DANCING' })
+        .expect(400);
+
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/leave`)
+        .expect(204);
+      expect((await poll(handoff).expect(200)).body.status).toBe('INTERRUPTED');
+      // Volver a abrir el enlace retoma el proceso.
+      await request(server()).get(mobile(handoff.mobileToken)).expect(200);
+      expect((await poll(handoff).expect(200)).body.status).toBe('CONNECTED');
+
+      // Al completarse, el canal de eventos envía COMPLETED y se cierra.
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('PASSWORD_RESET', 'r0'))
+        .expect(200);
+      const events = await request(server())
+        .get(`/api/biometrics/handoff/${handoff.handoffId}/events`)
+        .query({ pollToken: handoff.pollToken })
+        .buffer(true)
+        .parse((res, done) => {
+          let text = '';
+          res.on('data', (chunk: Buffer) => (text += chunk.toString()));
+          res.on('end', () => done(null, text));
+        })
+        .expect(200)
+        .expect('Content-Type', /text\/event-stream/);
+      expect(String(events.body)).toContain('"status":"COMPLETED"');
+      await request(server())
+        .get(`/api/biometrics/handoff/${handoff.handoffId}/events`)
+        .query({ pollToken: 'otro' })
+        .expect(404);
+    });
+
+    it('rechaza códigos inválidos, secretos ajenos y solicitudes de otra cuenta', async () => {
+      await request(server()).get(mobile('no-existe')).expect(410);
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff/password-reset')
+        .send({ email: `nadie-${randomUUID()}@example.com` })
+        .expect(201);
+      await request(server())
+        .post(`/api/biometrics/handoff/${handoff.handoffId}/status`)
+        .send({ pollToken: 'otro-secreto' })
+        .expect(404);
+
+      const { id } = await applicationWithDocuments();
+      const intruder = await registerUser();
+      try {
+        await request(server())
+          .post('/api/biometrics/handoff')
+          .set('Cookie', intruder.cookies)
+          .send({ purpose: 'APPLICATION', applicationId: id })
+          .expect(404);
+      } finally {
+        await cleanUp(id);
+      }
+    });
+  });
+
   // ───────────────────────── Recuperación biométrica ─────────────────────────
 
   describe('recuperación de clave por biometría', () => {
     const resetVerify = (email: string, suffix: string) =>
-      request(app.getHttpServer())
-        .post('/api/auth/biometric-reset/verify')
-        .send({ email, selfieBase64: selfie(suffix) });
+      liveRequest('PASSWORD_RESET', suffix, (capture) =>
+        request(app.getHttpServer())
+          .post('/api/auth/biometric-reset/verify')
+          .send({ email, ...capture }),
+      );
 
-    it('responde igual sin cuenta o sin verificación previa', async () => {
-      const { email } = await registerUser();
+    it('responde igual sin cuenta o sin identidad verificada', async () => {
+      const { email } = await registerUser({ verified: false });
       const noAccount = await resetVerify(
         `nadie-${randomUUID()}@example.com`,
         'r0',
@@ -797,10 +1213,9 @@ describe('API (e2e)', () => {
     });
 
     it('cambia la clave con un rostro que coincide y el token sirve una vez', async () => {
-      const { customer, id } = await applicationWithDocuments();
-      try {
-        await verify(customer, id, 's0').expect(200);
-
+      // La selfie del registro (s0) es la referencia facial de la cuenta.
+      const customer = await registerUser();
+      {
         await resetVerify(customer.email, 'r7').expect(401);
         const { body } = await resetVerify(customer.email, 'r0').expect(200);
         expect(body.resetToken).toEqual(expect.any(String));
@@ -824,8 +1239,6 @@ describe('API (e2e)', () => {
           .post('/api/auth/login')
           .send({ email: customer.email, password: 'clave-nueva-123' })
           .expect(200);
-      } finally {
-        await cleanUp(id);
       }
     });
 

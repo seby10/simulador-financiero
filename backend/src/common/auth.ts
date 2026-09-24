@@ -18,7 +18,8 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { UserRole } from '../generated/prisma/enums.js';
+import { PrismaService } from '../database/prisma.service.js';
+import { IdentityStatus, UserRole } from '../generated/prisma/enums.js';
 import { AccessTokenClaims, verifyAccessToken } from './tokens.js';
 
 export const ADMIN_KEY_HEADER = 'x-admin-key';
@@ -102,6 +103,50 @@ export class AdminGuard implements CanActivate {
     return true;
   }
 }
+
+/** Código que el frontend usa para llevar al cliente a confirmar su identidad. */
+export const IDENTITY_REQUIRED = 'IDENTITY_REQUIRED';
+
+/**
+ * Un cliente cuya identidad no está verificada por biometría existe, pero aún no
+ * puede operar: igual que en un banco, la cuenta queda a medias hasta confirmar
+ * el rostro. El personal administrativo no pasa por esta verificación.
+ * Consulta la base en cada petición: el access token puede ser anterior a la verificación.
+ */
+@Injectable()
+export class IdentityVerifiedGuard implements CanActivate {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const claims = await authenticate(httpRequest(context));
+    if (claims.role === UserRole.ADMIN) return true;
+    const user = await this.prisma.user.findUnique({
+      where: { id: claims.sub },
+      select: { identityStatus: true },
+    });
+    if (user?.identityStatus !== IdentityStatus.VERIFIED) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: IDENTITY_REQUIRED,
+        message: 'Confirma tu identidad con verificación facial para continuar',
+      });
+    }
+    return true;
+  }
+}
+
+/** Sesión válida y, si es cliente, con la identidad ya verificada. */
+export const VerifiedIdentity = () =>
+  applyDecorators(
+    UseGuards(IdentityVerifiedGuard),
+    ApiCookieAuth(SESSION_SECURITY),
+    ApiUnauthorizedResponse({
+      description: 'Sesión ausente, inválida o expirada',
+    }),
+    ApiForbiddenResponse({
+      description: `Identidad sin verificar (error: ${IDENTITY_REQUIRED})`,
+    }),
+  );
 
 /** Restringe la ruta a sesiones autenticadas y la documenta en OpenAPI. */
 export const Authenticated = () =>

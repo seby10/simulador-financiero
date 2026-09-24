@@ -12,7 +12,8 @@ import {
   MinLength,
 } from 'class-validator';
 import { IsCedula } from '../../common/validation/cedula.js';
-import { UserRole } from '../../generated/prisma/enums.js';
+import { LiveCaptureDto } from '../biometrics/biometrics.dto.js';
+import { IdentityStatus, UserRole } from '../../generated/prisma/enums.js';
 
 /** El correo identifica al usuario: se normaliza para que `A@X.com` y `a@x.com` sean el mismo. */
 const NormalizedEmail = () =>
@@ -69,11 +70,9 @@ export class ChangePasswordDto {
   newPassword: string;
 }
 
-export class BiometricResetVerifyDto {
+export class BiometricResetVerifyDto extends LiveCaptureDto {
   /** @example "maria.andrade@example.com" */
   @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
-  /** Captura facial JPEG/PNG en base64 (con o sin prefijo data URL). */
-  @IsString() @IsNotEmpty() @MaxLength(7_000_000) selfieBase64: string;
 }
 
 export class BiometricResetConfirmDto {
@@ -123,6 +122,10 @@ export class UserResponse {
   @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
   role: UserRole;
   isActive: boolean;
+  /** Mientras no sea VERIFIED el cliente debe confirmar su identidad para operar. */
+  @ApiProperty({ enum: IdentityStatus, enumName: 'IdentityStatus' })
+  identityStatus: IdentityStatus;
+  identityVerifiedAt: Date | null;
   createdAt: Date;
 }
 

@@ -25,7 +25,12 @@ import {
   ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
-import { AdminOnly, Authenticated, CurrentUser } from '../../common/auth.js';
+import {
+  AdminOnly,
+  Authenticated,
+  CurrentUser,
+  VerifiedIdentity,
+} from '../../common/auth.js';
 import { MAX_UPLOAD_BYTES } from '../../common/http.js';
 import { SELFIE_DOCUMENT } from '../biometrics/biometrics.service.js';
 import { DOCUMENT_KINDS } from '../investment/investment.dto.js';
@@ -55,7 +60,7 @@ export class OnboardingController {
 
   /** Registra una solicitud de inversión de la cuenta autenticada (PENDING_REVIEW). */
   @Post('apply')
-  @Authenticated()
+  @VerifiedIdentity()
   @ApiCreatedResponse({ type: InvestmentApplicationWithPlanResponse })
   @ApiBadRequestResponse({
     description:
@@ -71,7 +76,7 @@ export class OnboardingController {
    * ser JPEG/PNG porque es la referencia facial. Se puede repetir hasta verificar.
    */
   @Post(':id/documents')
-  @Authenticated()
+  @VerifiedIdentity()
   @UseInterceptors(
     FileFieldsInterceptor(
       DOCUMENT_KINDS.map((name) => ({ name, maxCount: 1 })),

@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
-import { User, LogOut, Menu, X } from "lucide-react";
-
-type CurrentUser = { role: string; firstName?: string | null; fullName?: string | null };
+import { IDENTITY_PATH, needsIdentity, type SessionUser } from "@/lib/identity";
+import { User, LogOut, Menu, ShieldAlert, X } from "lucide-react";
 
 const LINKS = [
   { href: "/simulator", label: "Créditos" },
@@ -15,7 +14,7 @@ const LINKS = [
 
 export default function NavLinks() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -36,6 +35,9 @@ export default function NavLinks() {
     : LINKS;
   const firstName = currentUser?.firstName || currentUser?.fullName?.split(" ")[0] || "Cliente";
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // En la confirmación misma (computadora o celular) el aviso sobra.
+  const identityPending =
+    currentUser && needsIdentity(currentUser) && pathname !== IDENTITY_PATH && pathname !== "/verify-mobile";
 
   return (
     <>
@@ -51,6 +53,17 @@ export default function NavLinks() {
             {label}
           </Link>
         ))}
+
+        {identityPending && (
+          <Link
+            href={IDENTITY_PATH}
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-white bg-[#df6951] hover:bg-[#c85640] px-3.5 py-2 rounded-full shadow-md animate-pulse"
+            title="Confirma tu identidad para habilitar tu cuenta"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Acción necesaria
+          </Link>
+        )}
 
         {currentUser ? (
           <div className="flex items-center gap-4 ml-2">
@@ -77,17 +90,28 @@ export default function NavLinks() {
         )}
       </nav>
 
-      {/* Menú móvil */}
-      <button
-        type="button"
-        onClick={() => setMenuOpen((open) => !open)}
-        className="md:hidden w-11 h-11 -mr-2 rounded-xl flex items-center justify-center text-[#181e2b] hover:bg-slate-900/5 transition-colors"
-        aria-expanded={menuOpen}
-        aria-controls="mobile-menu"
-        aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-      >
-        {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* Celular: el aviso de identidad queda visible junto al botón del menú. */}
+      <div className="md:hidden flex items-center gap-2">
+        {identityPending && (
+          <Link
+            href={IDENTITY_PATH}
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-white bg-[#df6951] px-3.5 py-2 rounded-full shadow-md animate-pulse"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Confirma tu identidad
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          className="w-11 h-11 -mr-2 rounded-xl flex items-center justify-center text-[#181e2b] hover:bg-slate-900/5 transition-colors"
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+        >
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
 
       <div
         id="mobile-menu"
@@ -110,6 +134,18 @@ export default function NavLinks() {
               </Link>
             </li>
           ))}
+          {identityPending && (
+            <li>
+              <Link
+                href={IDENTITY_PATH}
+                onClick={() => setMenuOpen(false)}
+                tabIndex={menuOpen ? 0 : -1}
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-base font-semibold text-[#df6951] bg-orange-50"
+              >
+                <ShieldAlert className="w-5 h-5" /> Confirmar mi identidad
+              </Link>
+            </li>
+          )}
         </ul>
         <div className="mt-2 pt-3 border-t border-slate-100">
           {currentUser ? (

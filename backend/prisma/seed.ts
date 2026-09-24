@@ -144,6 +144,9 @@ async function seedAdmin() {
       fullName: process.env.ADMIN_SEED_NAME ?? 'Administrador',
       passwordHash: await hashPassword(password),
       role: 'ADMIN',
+      // El personal administrativo no pasa por la verificación biométrica.
+      identityStatus: 'VERIFIED',
+      identityVerifiedAt: new Date(),
     },
   });
   console.log(`Administrador listo: ${email}`);

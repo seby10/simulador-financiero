@@ -7,6 +7,7 @@ import { Lock, Mail, AlertCircle, ArrowRight, UserCheck } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
+import { identityUrl, needsIdentity } from "@/lib/identity";
 
 function LoginContent() {
   const router = useRouter();
@@ -48,7 +49,10 @@ function LoginContent() {
       if (!res.ok) throw new Error(await readApiError(res, "Credenciales incorrectas"));
 
       const session = await res.json();
-      if (session.user.role === "ADMIN" && !searchParams.get("redirect")) {
+      if (needsIdentity(session.user)) {
+        // Registro a medias: la identidad sigue pendiente, se retoma ahí.
+        router.push(identityUrl(redirectUrl));
+      } else if (session.user.role === "ADMIN" && !searchParams.get("redirect")) {
         router.push("/admin");
       } else {
         router.push(redirectUrl);
@@ -101,8 +105,8 @@ function LoginContent() {
 
       if (!res.ok) throw new Error(await readApiError(res, "Error al crear la cuenta"));
 
-      // Automatically logged in by backend cookie
-      router.push(redirectUrl);
+      // La sesión ya quedó abierta; la cuenta se habilita al confirmar la identidad.
+      router.push(identityUrl(redirectUrl));
     } catch (err) {
       setError(errorMessage(err));
     } finally {

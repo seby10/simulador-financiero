@@ -17,25 +17,106 @@ enum UserRole {
 }
 
 model User {
-  id             String                   @id @default(uuid())
+  id                    String                   @id @default(uuid())
   /// Normalizado a minúsculas antes de guardar.
-  email          String                   @unique
+  email                 String                   @unique
   /// scrypt$N$r$p$salt$hash — nunca la contraseña en claro.
-  passwordHash   String
-  fullName       String
+  passwordHash          String
+  fullName              String
   /// Cédula. Opcional solo para cuentas creadas por el seed (administradores).
-  idNumber       String?                  @unique @db.VarChar(10)
-  firstName      String?
-  lastName       String?
-  phone          String?
-  address        String?
-  role           UserRole                 @default(CUSTOMER)
-  isActive       Boolean                  @default(true)
-  sessions       AuthSession[]
-  applications   InvestmentApplication[]
-  passwordResets BiometricPasswordReset[]
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
+  idNumber              String?                  @unique @db.VarChar(10)
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  address               String?
+  role                  UserRole                 @default(CUSTOMER)
+  isActive              Boolean                  @default(true)
+  /// Un cliente sin identidad verificada no puede operar (solicitar, cargar documentos).
+  identityStatus        IdentityStatus           @default(PENDING)
+  identityVerifiedAt    DateTime?
+  /// Coincidencia facial (0–100) del intento que verificó la identidad.
+  identityScore         Decimal?                 @db.Decimal(5, 2)
+  /// Aceptación del tratamiento de datos biométricos (LOPDP).
+  biometricConsentAt    DateTime?
+  /// Solo cuentan los intentos posteriores: lo fija un administrador al desbloquear.
+  identityUnlockedAt    DateTime?
+  identityVerifications IdentityVerification[]
+  sessions              AuthSession[]
+  applications          InvestmentApplication[]
+  passwordResets        BiometricPasswordReset[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+}
+
+/// Confirmación de identidad del registro: selfie en vivo contra la cédula frontal.
+enum IdentityStatus {
+  PENDING
+  VERIFIED
+  /// Se agotaron los intentos: un administrador revisa y desbloquea.
+  LOCKED
+}
+
+/// Para qué se abrió una sesión de prueba de vida: una sesión no sirve en otro flujo.
+enum LivenessPurpose {
+  IDENTITY
+  PASSWORD_RESET
+  APPLICATION
+}
+
+/// Reto de prueba de vida emitido por el servidor. Se consume en el primer uso y
+/// vence a los pocos minutos: una captura grabada no se puede volver a presentar.
+model LivenessSession {
+  id         String          @id @default(uuid())
+  purpose    LivenessPurpose
+  /// Gestos pedidos, en orden (TURN_LEFT, TURN_RIGHT, SMILE).
+  challenges String[]
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@index([expiresAt])
+}
+
+/// Verificación facial que empieza en la computadora y se hace desde el celular
+/// (código QR). El QR lleva el token móvil; la computadora consulta el resultado
+/// con otro secreto que nunca sale de ella. Ambos se guardan como SHA-256.
+model BiometricHandoff {
+  id              String          @id @default(uuid())
+  purpose         LivenessPurpose
+  mobileTokenHash String          @unique
+  pollTokenHash   String
+  /// Registro y solicitudes: la cuenta que abrió el traspaso.
+  userId          String?
+  applicationId   String?
+  /// Recuperación de clave: el correo que se escribió en la computadora.
+  email           String?
+  /// Qué está haciendo el celular (CONNECTED, CAPTURING, VERIFYING, LEFT) y
+  /// su último latido: sin latidos recientes el proceso se da por interrumpido.
+  mobileStage     String?
+  mobileSeenAt    DateTime?
+  /// Resultado para la computadora (en recuperación, el token de un solo uso
+  /// hasta que la computadora lo retira).
+  result          Json?
+  completedAt     DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime        @default(now())
+
+  @@index([expiresAt])
+}
+
+/// Cada intento de confirmar la identidad de una cuenta, pase o no.
+model IdentityVerification {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  livenessScore Decimal  @db.Decimal(5, 2)
+  matchScore    Decimal  @db.Decimal(5, 2)
+  passed        Boolean
+  failureReason String?
+  provider      String
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 /// Cada intento de recuperar la clave por biometría, pase o no. El token en claro
@@ -104,6 +185,16 @@ model InstitutionConfig {
   heroSubtitle        String   @default("Crecemos junto a ti. Solicita tu crédito hoy mismo y simula tus pagos de forma transparente.")
   disclaimerText      String
   updatedAt           DateTime @updatedAt
+}
+
+/// Imágenes de marca (logo, portada) guardadas en la base: todas las instancias que
+/// comparten la BD las ven, sin depender del disco de quien las subió.
+model InstitutionAsset {
+  /// "logo" o "hero".
+  kind      String   @id @db.VarChar(16)
+  mimeType  String   @db.VarChar(32)
+  data      Bytes
+  updatedAt DateTime @updatedAt
 }
 
 model CreditType {

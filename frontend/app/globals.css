@@ -190,6 +190,16 @@
   border-radius: 999px;
   z-index: -1;
 }
+/* Prueba de vida: la flecha "empuja" hacia el lado al que hay que girar. */
+@keyframes nudge-left {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-6px); }
+}
+@keyframes nudge-right {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+
 /* ───────── Animaciones de la portada ───────── */
 
 /* Subrayado de pincel que se dibuja al cargar. */

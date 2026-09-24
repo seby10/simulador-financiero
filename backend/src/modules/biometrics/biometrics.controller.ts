@@ -10,18 +10,21 @@ import {
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { AdminOnly, Authenticated, CurrentUser } from '../../common/auth.js';
+import { AdminOnly, CurrentUser, VerifiedIdentity } from '../../common/auth.js';
 import { STRICT } from '../../common/throttle.js';
 import {
   BiometricAttemptResponse,
   BiometricsDto,
   BiometricsResponse,
+  CreateLivenessSessionDto,
+  LivenessSessionResponse,
 } from './biometrics.dto.js';
 import { BiometricsService } from './biometrics.service.js';
 
@@ -33,12 +36,24 @@ export class BiometricsController {
   constructor(private readonly biometrics: BiometricsService) {}
 
   /**
+   * Abre una sesión de prueba de vida: devuelve los gestos que la persona debe
+   * hacer frente a la cámara. Pública porque la recuperación de clave ocurre sin
+   * sesión; cada sesión sirve una sola vez, para un solo flujo, por 3 minutos.
+   */
+  @Post('liveness-sessions')
+  @Throttle(STRICT)
+  @ApiCreatedResponse({ type: LivenessSessionResponse })
+  createLivenessSession(@Body() dto: CreateLivenessSessionDto) {
+    return this.biometrics.createLivenessSession(dto.purpose);
+  }
+
+  /**
    * Verifica prueba de vida y coincidencia facial contra la cédula cargada.
    * Si ambos puntajes superan su umbral la identidad queda verificada; aprobar
    * la inversión sigue siendo decisión de un administrador.
    */
   @Post('applications/:id/verify')
-  @Authenticated()
+  @VerifiedIdentity()
   @Throttle(STRICT)
   @HttpCode(200)
   @ApiOkResponse({ type: BiometricsResponse })

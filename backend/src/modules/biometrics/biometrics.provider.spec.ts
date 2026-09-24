@@ -3,7 +3,8 @@ import { SimulatedBiometricProvider } from './biometrics.provider.js';
 describe('SimulatedBiometricProvider', () => {
   const provider = new SimulatedBiometricProvider();
   const capture = {
-    selfie: Buffer.from('una selfie'),
+    frames: [Buffer.from('una selfie'), Buffer.from('un gesto')],
+    challenges: ['SMILE' as const],
     reference: Buffer.from('una cédula'),
   };
 
@@ -21,10 +22,10 @@ describe('SimulatedBiometricProvider', () => {
     expect((await provider.assess(capture)).provider).toBe('simulated');
   });
 
-  it('cambia el resultado si cambia la selfie', async () => {
+  it('cambia el resultado si cambia el fotograma de frente', async () => {
     const otra = await provider.assess({
       ...capture,
-      selfie: Buffer.from('otra selfie'),
+      frames: [Buffer.from('otra selfie'), capture.frames[1]],
     });
     expect(otra).not.toEqual(await provider.assess(capture));
   });
@@ -41,7 +42,8 @@ describe('SimulatedBiometricProvider', () => {
     // Muchas entradas distintas: ninguna debe salirse del rango documentado.
     for (let i = 0; i < 200; i++) {
       const { livenessScore, matchScore } = await provider.assess({
-        selfie: Buffer.from(`selfie-${i}`),
+        frames: [Buffer.from(`selfie-${i}`)],
+        challenges: [],
         reference: Buffer.from(`cedula-${i}`),
       });
       for (const score of [livenessScore, matchScore]) {

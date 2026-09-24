@@ -16,7 +16,8 @@ export const IsHexColor = () =>
   );
 
 /**
- * Imagen opcional: URL https externa o ruta de un archivo ya subido (`/uploads/...`).
+ * Imagen opcional: URL https externa, imagen de marca guardada en la base
+ * (`/api/institution/logo|hero?v=...`) o archivo antiguo en disco (`/uploads/...`).
  * Descarta esquemas como `javascript:` o `data:`; la cadena vacía borra la imagen.
  */
 export const IsOptionalImageUrl = () =>
@@ -25,11 +26,15 @@ export const IsOptionalImageUrl = () =>
       type: String,
       required: false,
       nullable: true,
-      example: '/uploads/institution/hero-3f1c.jpg',
+      example: '/api/institution/hero?v=1727222400000',
     }),
     Transform(({ value }: { value: unknown }) => (value === '' ? null : value)),
     IsOptional(),
-    Matches(/^(https:\/\/[^\s"'<>]+|\/uploads\/[\w\-./]+)$/, {
-      message: '$property debe ser una URL https o una ruta /uploads/',
-    }),
+    Matches(
+      /^(https:\/\/[^\s"'<>]+|\/api\/institution\/(logo|hero)\?v=\d+|\/uploads\/[\w\-./]+)$/,
+      {
+        message:
+          '$property debe ser una URL https, una imagen subida desde el panel o una ruta /uploads/',
+      },
+    ),
   );
