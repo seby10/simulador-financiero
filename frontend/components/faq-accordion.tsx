@@ -16,7 +16,7 @@ export default function FaqAccordion({ items, title = "Preguntas frecuentes" }: 
   };
 
   return (
-    <section className="w-full py-16 bg-transparent relative z-10">
+    <section id="preguntas-frecuentes" className="w-full py-16 bg-transparent relative z-10 scroll-mt-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <h2 className="text-3xl sm:text-4xl font-extrabold text-[#14183e] font-serif-title text-center mb-12">
           {title}
@@ -29,6 +29,9 @@ export default function FaqAccordion({ items, title = "Preguntas frecuentes" }: 
               <div key={index} className="pt-4 first:pt-0">
                 <button
                   type="button"
+                  id={`faq-question-${index}`}
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-answer-${index}`}
                   onClick={() => toggleItem(index)}
                   className="w-full py-4 flex items-center justify-between text-left group focus:outline-none"
                 >
@@ -43,7 +46,12 @@ export default function FaqAccordion({ items, title = "Preguntas frecuentes" }: 
                 </button>
 
                 {isOpen && (
-                  <div className="pb-6 text-slate-600 text-sm sm:text-base leading-relaxed animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div
+                    id={`faq-answer-${index}`}
+                    role="region"
+                    aria-labelledby={`faq-question-${index}`}
+                    className="pb-6 text-slate-600 text-sm sm:text-base leading-relaxed animate-in fade-in slide-in-from-top-2 duration-200"
+                  >
                     <p>{item.answer}</p>
                   </div>
                 )}

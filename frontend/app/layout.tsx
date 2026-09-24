@@ -68,7 +68,7 @@ export default async function RootLayout({
         {/* Global Organic Top-Right Background Decore Shape */}
         <img 
           src="/assets/hero/decore-shape.png" 
-          alt="Organic backdrop shape" 
+          alt="" 
           className="absolute top-0 right-0 w-[420px] sm:w-[520px] lg:w-[640px] xl:w-[700px] pointer-events-none z-0 select-none"
         />
         {children}
