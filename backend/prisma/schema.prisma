@@ -187,6 +187,16 @@ model InstitutionConfig {
   updatedAt           DateTime @updatedAt
 }
 
+/// Imágenes de marca (logo, portada) guardadas en la base: todas las instancias que
+/// comparten la BD las ven, sin depender del disco de quien las subió.
+model InstitutionAsset {
+  /// "logo" o "hero".
+  kind      String   @id @db.VarChar(16)
+  mimeType  String   @db.VarChar(32)
+  data      Bytes
+  updatedAt DateTime @updatedAt
+}
+
 model CreditType {
   id                 Int      @id @default(autoincrement())
   name               String   @unique

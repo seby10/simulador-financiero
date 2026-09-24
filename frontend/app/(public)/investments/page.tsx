@@ -56,7 +56,7 @@ export default function InvestmentsSimulatorPage() {
 
   useEffect(() => {
     fetch(`${API_URL}/investment/plans`)
-      .then(r => r.json())
+      .then(r => (r.ok ? r.json() : []))
       .then((data: InvestmentPlan[]) => {
         setPlans(data);
         if (data.length > 0) setActivePlanId(data[0].id);

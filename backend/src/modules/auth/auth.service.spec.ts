@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import type { PrismaService } from '../../database/prisma.service.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 import type { BiometricsService } from '../biometrics/biometrics.service.js';
+import type { IdentityService } from '../identity/identity.service.js';
 import { AuthService } from './auth.service.js';
 
 describe('AuthService: siempre queda un administrador activo', () => {
@@ -27,6 +28,7 @@ describe('AuthService: siempre queda un administrador activo', () => {
     const service = new AuthService(
       prisma as unknown as PrismaService,
       {} as BiometricsService,
+      {} as IdentityService,
     );
     return { prisma, service };
   };

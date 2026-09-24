@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import BrandImage from "@/components/brand-image";
 import HeroShowcase, { type ShowcaseCredit } from "@/components/landing/hero-showcase";
 import PromoBillboard, { type Promo } from "@/components/landing/promo-billboard";
 import Reveal from "@/components/landing/reveal";
@@ -88,9 +89,6 @@ function splitTitle(title: string) {
   return cut < 0 ? { head: "", last: trimmed } : { head: trimmed.slice(0, cut + 1), last: trimmed.slice(cut + 1) };
 }
 
-const imageSrc = (url: string) =>
-  url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/") ? url : `/${url}`;
-
 export default async function Home() {
   const [config, creditTypes, plans] = await Promise.all([
     getJson<InstitutionConfig>("/institution"),
@@ -99,7 +97,6 @@ export default async function Home() {
   ]);
 
   const institutionName = config?.institutionName || "Tu respaldo financiero";
-  const heroImage = config?.heroImageUrl ? imageSrc(config.heroImageUrl) : null;
   const heroTitle = config?.heroTitle || "Simula, invierte y alcanza tu libertad financiera";
   const heroSubtitle = config?.heroSubtitle || "Transparencia total. Calcula tus cuotas de crédito (Sistema Francés y Alemán), haz crecer tus ahorros en DPF y solicita en minutos con verificación facial en vivo.";
   const { head: titleHead, last: titleLast } = splitTitle(heroTitle);
@@ -246,16 +243,12 @@ export default async function Home() {
               </div>
 
               <div className="lg:col-span-5 relative flex justify-center lg:justify-end items-center px-4 sm:px-0">
-                {heroImage ? (
-                  <img
-                    src={heroImage}
-                    alt=""
-                    className="w-full max-w-[420px] max-h-[560px] object-contain relative z-10 drop-shadow-xl animate-fade-up"
-                    style={{ animationDelay: "250ms" }}
-                  />
-                ) : (
-                  <HeroShowcase credit={showcaseCredit} bestTea={bestTea} />
-                )}
+                <BrandImage
+                  url={config?.heroImageUrl}
+                  alt=""
+                  className="w-full max-w-[420px] max-h-[560px] object-contain relative z-10 drop-shadow-xl animate-fade-up [animation-delay:250ms]"
+                  fallback={<HeroShowcase credit={showcaseCredit} bestTea={bestTea} />}
+                />
               </div>
             </div>
           </div>

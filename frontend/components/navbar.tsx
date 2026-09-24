@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import NavLinks from "./nav-links";
+import BrandImage from "./brand-image";
 import { API_URL } from "@/lib/api";
 import { useEffect, useState } from "react";
 
@@ -13,7 +14,7 @@ export default function Navbar() {
 
   useEffect(() => {
     fetch(`${API_URL}/institution`)
-      .then(res => res.json())
+      .then(res => (res.ok ? res.json() : null))
       .then(data => setInstitution(data))
       .catch(err => console.error("Error fetching institution for navbar", err));
   }, []);
@@ -39,17 +40,16 @@ export default function Navbar() {
       >
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          {institution?.logoUrl ? (
-            <img
-              src={`${API_URL?.replace('/api', '') || ''}${institution.logoUrl}`}
-              alt="Logo"
-              className="h-9 w-auto object-contain"
-            />
-          ) : (
-            <span className="text-3xl font-extrabold text-[#181e2b] tracking-tight font-serif-title flex items-center">
-              Fiado<span className="inline-block w-2.5 h-2.5 rounded-full bg-[#df6951] ml-0.5 transition-transform group-hover:scale-125" />
-            </span>
-          )}
+          <BrandImage
+            url={institution?.logoUrl}
+            alt="Logo"
+            className="h-9 w-auto object-contain"
+            fallback={
+              <span className="text-3xl font-extrabold text-[#181e2b] tracking-tight font-serif-title flex items-center">
+                Fiado<span className="inline-block w-2.5 h-2.5 rounded-full bg-[#df6951] ml-0.5 transition-transform group-hover:scale-125" />
+              </span>
+            }
+          />
         </Link>
 
         {/* Header Links */}

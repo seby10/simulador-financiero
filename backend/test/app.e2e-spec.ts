@@ -612,6 +612,67 @@ describe('API (e2e)', () => {
         .expect(200);
       expect(body.primaryColor).toBe(current.primaryColor);
     });
+
+    it('guarda el logo en la base y lo sirve a cualquier instancia', async () => {
+      const server = app.getHttpServer();
+      const prisma = app.get(PrismaService);
+      const before = await prisma.institutionConfig.findUniqueOrThrow({
+        where: { id: 1 },
+      });
+      const previousAsset = await prisma.institutionAsset.findUnique({
+        where: { kind: 'logo' },
+      });
+      // PNG de 1×1 píxel.
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      );
+      try {
+        await request(server)
+          .post('/api/institution/logo')
+          .attach('logo', png, 'logo.png')
+          .expect(401);
+        const { body } = await request(server)
+          .post('/api/institution/logo')
+          .set('x-admin-key', process.env.ADMIN_API_KEY!)
+          .attach('logo', png, 'logo.png')
+          .expect(201);
+        expect(body.logoUrl).toMatch(/^\/api\/institution\/logo\?v=\d+$/);
+
+        const served = await request(server).get(body.logoUrl).expect(200);
+        expect(served.headers['content-type']).toBe('image/png');
+        expect(Buffer.compare(served.body as Buffer, png)).toBe(0);
+
+        // El formulario del panel reenvía la URL tal cual: debe aceptarse.
+        await request(server)
+          .put('/api/institution')
+          .set('x-admin-key', process.env.ADMIN_API_KEY!)
+          .send({
+            institutionName: before.institutionName,
+            ruc: before.ruc,
+            legalRepresentative: before.legalRepresentative,
+            address: before.address,
+            phone: before.phone,
+            email: before.email,
+            disclaimerText: before.disclaimerText,
+            heroImageUrl: body.logoUrl.replace('logo', 'hero'),
+          })
+          .expect(200);
+      } finally {
+        await prisma.institutionConfig.update({
+          where: { id: 1 },
+          data: { logoUrl: before.logoUrl, heroImageUrl: before.heroImageUrl },
+        });
+        if (previousAsset) {
+          await prisma.institutionAsset.update({
+            where: { kind: 'logo' },
+            data: previousAsset,
+          });
+        } else {
+          await prisma.institutionAsset.delete({ where: { kind: 'logo' } });
+        }
+      }
+    });
   });
 
   // ───────────────────────── Sesiones ─────────────────────────
