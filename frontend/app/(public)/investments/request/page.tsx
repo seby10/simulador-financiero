@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/navbar";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
+import { identityUrl, needsIdentity } from "@/lib/identity";
 import Modal from "@/components/ui/modal";
 import {
   User,
@@ -99,6 +100,10 @@ function InvestmentRequestContent() {
         return res.json();
       })
       .then((user) => {
+        if (user && needsIdentity(user)) {
+          router.push(identityUrl(window.location.pathname + window.location.search));
+          return;
+        }
         if (user) {
           setForm((f) => ({
             ...f,
@@ -235,6 +240,10 @@ function InvestmentRequestContent() {
           termDays: Number(form.termDays),
         }),
       });
+      if (res.status === 403) {
+        router.push(identityUrl(window.location.pathname + window.location.search));
+        return;
+      }
       if (!res.ok) throw new Error(await readApiError(res, "Error al enviar solicitud"));
       const data = await res.json();
       setApplicationId(data.id);

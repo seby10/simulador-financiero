@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
-import { User, LogOut, ChevronDown } from "lucide-react";
+import { IDENTITY_PATH, needsIdentity, type SessionUser } from "@/lib/identity";
+import { User, LogOut, ChevronDown, ShieldAlert } from "lucide-react";
 
 export default function NavLinks() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
 
   useEffect(() => {
     fetch(`${API_URL}/auth/me`, { credentials: "include" })
@@ -43,6 +44,17 @@ export default function NavLinks() {
           className="hover:text-[#df6951] transition-colors py-2 font-medium"
         >
           Mis Solicitudes
+        </Link>
+      )}
+
+      {currentUser && needsIdentity(currentUser) && pathname !== IDENTITY_PATH && (
+        <Link
+          href={IDENTITY_PATH}
+          className="flex items-center gap-2 text-xs font-bold text-white bg-[#df6951] hover:bg-[#c85640] px-4 py-2 rounded-full shadow-md animate-pulse"
+          title="Confirma tu identidad para habilitar tu cuenta"
+        >
+          <ShieldAlert className="w-4 h-4" />
+          Acción necesaria: confirma tu identidad
         </Link>
       )}
 
