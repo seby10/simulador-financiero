@@ -77,6 +77,29 @@ model LivenessSession {
   @@index([expiresAt])
 }
 
+/// Verificación facial que empieza en la computadora y se hace desde el celular
+/// (código QR). El QR lleva el token móvil; la computadora consulta el resultado
+/// con otro secreto que nunca sale de ella. Ambos se guardan como SHA-256.
+model BiometricHandoff {
+  id              String          @id @default(uuid())
+  purpose         LivenessPurpose
+  mobileTokenHash String          @unique
+  pollTokenHash   String
+  /// Registro y solicitudes: la cuenta que abrió el traspaso.
+  userId          String?
+  applicationId   String?
+  /// Recuperación de clave: el correo que se escribió en la computadora.
+  email           String?
+  /// Resultado para la computadora (en recuperación, el token de un solo uso
+  /// hasta que la computadora lo retira).
+  result          Json?
+  completedAt     DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime        @default(now())
+
+  @@index([expiresAt])
+}
+
 /// Cada intento de confirmar la identidad de una cuenta, pase o no.
 model IdentityVerification {
   id            String   @id @default(uuid())

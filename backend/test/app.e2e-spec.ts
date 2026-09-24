@@ -961,6 +961,125 @@ describe('API (e2e)', () => {
       request(app.getHttpServer()).get('/api/identity').expect(401));
   });
 
+  // ───────────────────────── Continuar en el celular ─────────────────────────
+
+  describe('continuar en el celular (QR)', () => {
+    const server = () => app.getHttpServer();
+    const mobile = (token: string) => `/api/biometrics/handoff/mobile/${token}`;
+    const poll = (handoff: { handoffId: string; pollToken: string }) =>
+      request(server())
+        .post(`/api/biometrics/handoff/${handoff.handoffId}/status`)
+        .send({ pollToken: handoff.pollToken });
+
+    it('confirma la identidad desde el celular y la computadora se entera', async () => {
+      const customer = await registerUser({ verified: false });
+      // Sin cédula cargada no se puede continuar en el celular.
+      await request(server())
+        .post('/api/biometrics/handoff')
+        .set('Cookie', customer.cookies)
+        .send({ purpose: 'IDENTITY', consent: true })
+        .expect(400);
+      await request(server())
+        .post('/api/identity/document')
+        .set('Cookie', customer.cookies)
+        .attach('idFront', png, 'cedula.png')
+        .expect(200);
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff')
+        .set('Cookie', customer.cookies)
+        .send({ purpose: 'IDENTITY', consent: true })
+        .expect(201);
+
+      const { body: info } = await request(server())
+        .get(mobile(handoff.mobileToken))
+        .expect(200);
+      expect(info).toMatchObject({
+        purpose: 'IDENTITY',
+        firstName: 'Prueba',
+        completed: false,
+      });
+      expect((await poll(handoff).expect(200)).body.status).toBe('PENDING');
+
+      const { body: failed } = await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('IDENTITY', 's2'))
+        .expect(200);
+      expect(failed).toMatchObject({ passed: false, locked: false });
+      const { body: passed } = await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('IDENTITY', 's0'))
+        .expect(200);
+      expect(passed.passed).toBe(true);
+
+      expect((await poll(handoff).expect(200)).body.status).toBe('COMPLETED');
+      const { body: me } = await request(server())
+        .get('/api/auth/me')
+        .set('Cookie', customer.cookies)
+        .expect(200);
+      expect(me.identityStatus).toBe('VERIFIED');
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('IDENTITY', 's0'))
+        .expect(400);
+    });
+
+    it('en recuperación el token de clave solo llega a la computadora, una vez', async () => {
+      const customer = await registerUser();
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff/password-reset')
+        .send({ email: customer.email })
+        .expect(201);
+
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('PASSWORD_RESET', 'r7'))
+        .expect(401);
+      const { body: fromPhone } = await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('PASSWORD_RESET', 'r0'))
+        .expect(200);
+      expect(fromPhone.passed).toBe(true);
+      expect(JSON.stringify(fromPhone)).not.toContain('resetToken');
+
+      const { body: first } = await poll(handoff).expect(200);
+      expect(first.result.resetToken).toEqual(expect.any(String));
+      const { body: second } = await poll(handoff).expect(200);
+      expect(second.result.resetToken).toBeUndefined();
+
+      await request(server())
+        .post('/api/auth/biometric-reset/confirm')
+        .send({
+          resetToken: first.result.resetToken,
+          newPassword: 'clave-desde-celular',
+        })
+        .expect(204);
+    });
+
+    it('rechaza códigos inválidos, secretos ajenos y solicitudes de otra cuenta', async () => {
+      await request(server()).get(mobile('no-existe')).expect(410);
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff/password-reset')
+        .send({ email: `nadie-${randomUUID()}@example.com` })
+        .expect(201);
+      await request(server())
+        .post(`/api/biometrics/handoff/${handoff.handoffId}/status`)
+        .send({ pollToken: 'otro-secreto' })
+        .expect(404);
+
+      const { id } = await applicationWithDocuments();
+      const intruder = await registerUser();
+      try {
+        await request(server())
+          .post('/api/biometrics/handoff')
+          .set('Cookie', intruder.cookies)
+          .send({ purpose: 'APPLICATION', applicationId: id })
+          .expect(404);
+      } finally {
+        await cleanUp(id);
+      }
+    });
+  });
+
   // ───────────────────────── Recuperación biométrica ─────────────────────────
 
   describe('recuperación de clave por biometría', () => {

@@ -1911,6 +1911,200 @@
         ]
       }
     },
+    "/api/biometrics/handoff": {
+      "post": {
+        "operationId": "HandoffController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHandoffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffCreatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Abre un traspaso para confirmar la identidad o verificar una solicitud propia.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/password-reset": {
+      "post": {
+        "operationId": "HandoffController_createForReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResetHandoffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffCreatedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abre un traspaso para recuperar la clave (sin sesión, con el correo).",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/{id}/status": {
+      "post": {
+        "operationId": "HandoffController_poll",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffPollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Traspaso inexistente o secreto incorrecto"
+          }
+        },
+        "summary": "La computadora consulta si el celular ya terminó.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}": {
+      "get": {
+        "operationId": "HandoffController_mobileInfo",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffMobileInfoResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Código vencido o inválido"
+          }
+        },
+        "summary": "El celular abre el QR: qué flujo es y a quién saludar.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}/verify": {
+      "post": {
+        "operationId": "HandoffController_verify",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveCaptureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Código vencido o inválido"
+          }
+        },
+        "summary": "El celular envía la prueba de vida; el servidor ejecuta el flujo original.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
     "/api/onboarding/my-applications": {
       "get": {
         "operationId": "OnboardingController_myApplications",
@@ -4216,6 +4410,160 @@
           "monthlyPayment",
           "totalToReceive",
           "payoutSchedule"
+        ]
+      },
+      "CreateHandoffDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "enum": [
+              "IDENTITY",
+              "APPLICATION"
+            ],
+            "type": "string"
+          },
+          "applicationId": {
+            "type": "string",
+            "description": "Solicitud a verificar (solo APPLICATION).",
+            "format": "uuid"
+          },
+          "consent": {
+            "type": "boolean",
+            "description": "Aceptación del tratamiento de datos biométricos (solo IDENTITY)."
+          }
+        },
+        "required": [
+          "purpose"
+        ]
+      },
+      "HandoffCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "handoffId": {
+            "type": "string"
+          },
+          "mobileToken": {
+            "type": "string",
+            "description": "Va en el QR: /verify-mobile?t=..."
+          },
+          "pollToken": {
+            "type": "string",
+            "description": "Se queda en la computadora para consultar el resultado."
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handoffId",
+          "mobileToken",
+          "pollToken",
+          "expiresAt"
+        ]
+      },
+      "CreateResetHandoffDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "HandoffPollDto": {
+        "type": "object",
+        "properties": {
+          "pollToken": {
+            "type": "string",
+            "description": "Secreto que devolvió la creación del traspaso; solo lo conoce la computadora.",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "pollToken"
+        ]
+      },
+      "HandoffStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "PENDING mientras el celular no termine; COMPLETED al pasar la verificación.",
+            "enum": [
+              "PENDING",
+              "COMPLETED",
+              "EXPIRED"
+            ]
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Resultado del flujo (en recuperación incluye resetToken una sola vez)."
+          }
+        },
+        "required": [
+          "status",
+          "result"
+        ]
+      },
+      "HandoffMobileInfoResponse": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LivenessPurpose"
+              }
+            ]
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Primer nombre del titular, para saludar (no se envía en recuperación)."
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "purpose",
+          "firstName",
+          "completed",
+          "expiresAt"
+        ]
+      },
+      "LiveCaptureDto": {
+        "type": "object",
+        "properties": {
+          "livenessSessionId": {
+            "type": "string",
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
+          }
+        },
+        "required": [
+          "livenessSessionId",
+          "frames"
         ]
       },
       "ApplicationPlanRefDto": {
