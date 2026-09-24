@@ -36,6 +36,7 @@ interface UserItem {
   address: string | null;
   role: UserRole;
   isActive: boolean;
+  identityStatus: "PENDING" | "VERIFIED" | "LOCKED";
   createdAt: string;
   _count?: {
     applications: number;
@@ -47,6 +48,12 @@ async function fetchUserList(): Promise<UserItem[]> {
   if (!res.ok) throw new Error(await readApiError(res, "Error al obtener la lista de usuarios"));
   return res.json();
 }
+
+const IDENTITY_BADGE: Record<UserItem["identityStatus"], { label: string; className: string }> = {
+  VERIFIED: { label: "Verificada", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  PENDING: { label: "Pendiente", className: "bg-slate-100 text-slate-600 border-slate-200" },
+  LOCKED: { label: "Bloqueada", className: "bg-amber-50 text-amber-700 border-amber-200" },
+};
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -106,6 +113,21 @@ export default function AdminUsersPage() {
       fetchUsers();
     } catch (err) {
       alert(errorMessage(err, "Error al actualizar usuario"));
+    }
+  };
+
+  /** Tras revisar el caso, devuelve los intentos de verificación facial a una cuenta bloqueada. */
+  const handleUnlockIdentity = async (user: UserItem) => {
+    if (!confirm(`¿Habilitar nuevos intentos de verificación facial para ${user.fullName}?`)) return;
+    try {
+      const res = await fetch(`${API_URL}/auth/users/${user.id}/identity/unlock`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(await readApiError(res, "No se pudo desbloquear la verificación"));
+      fetchUsers();
+    } catch (err) {
+      alert(errorMessage(err, "No se pudo desbloquear la verificación"));
     }
   };
 
@@ -329,6 +351,7 @@ export default function AdminUsersPage() {
                   <th className="py-4 px-6">Pólizas DPF</th>
                   <th className="py-4 px-6">Rol</th>
                   <th className="py-4 px-6">Estado</th>
+                  <th className="py-4 px-6">Identidad</th>
                   <th className="py-4 px-6 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -412,8 +435,25 @@ export default function AdminUsersPage() {
                       </span>
                     </td>
 
+                    {/* Identity (biometric) */}
+                    <td className="py-4 px-6">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${IDENTITY_BADGE[u.identityStatus].className}`}
+                      >
+                        {IDENTITY_BADGE[u.identityStatus].label}
+                      </span>
+                    </td>
+
                     {/* Actions */}
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-4 px-6 text-right space-x-2 whitespace-nowrap">
+                      {u.identityStatus === "LOCKED" && (
+                        <button
+                          onClick={() => handleUnlockIdentity(u)}
+                          className="px-4 py-1.5 rounded-full text-xs font-bold transition-all border border-amber-200 text-amber-700 hover:bg-amber-50"
+                        >
+                          Desbloquear verificación
+                        </button>
+                      )}
                       <button
                         onClick={() => handleToggleStatus(u)}
                         className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${

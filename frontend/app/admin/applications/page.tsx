@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
+import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import Modal from "@/components/ui/modal";
-import { Eye, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Eye, CheckCircle2, XCircle, Clock, type LucideIcon } from "lucide-react";
 
 type ApplicationStatus = "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+type BiometricStatus = "PENDING" | "VERIFIED" | "FAILED";
 
 type Application = {
   id: string;
@@ -18,16 +19,24 @@ type Application = {
   termDays: number;
   payoutMethod: "AT_MATURITY" | "MONTHLY";
   status: ApplicationStatus;
+  biometricStatus: BiometricStatus;
   biometricScore: string | null;
   documentUrls: Record<string, string>;
   createdAt: string;
   investmentPlan: { id: number; name: string; tea: string };
 };
 
-const STATUS_LABELS: Record<ApplicationStatus, { label: string; color: string; icon: any }> = {
+const STATUS_LABELS: Record<ApplicationStatus, { label: string; color: string; icon: LucideIcon }> = {
   PENDING_REVIEW: { label: "En Revision", color: "bg-amber-100 text-amber-700", icon: Clock },
   APPROVED:       { label: "Aprobada",    color: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
   REJECTED:       { label: "Rechazada",   color: "bg-red-100 text-red-700", icon: XCircle },
+};
+
+/** La inversión solo se aprueba con la identidad resuelta: verificada o revisada a mano. */
+const BIOMETRIC_LABELS: Record<BiometricStatus, { label: string; color: string }> = {
+  VERIFIED: { label: "Verificada", color: "text-emerald-600" },
+  PENDING: { label: "Pendiente", color: "text-slate-400" },
+  FAILED: { label: "Revisión manual", color: "text-amber-600" },
 };
 
 const DOC_LABELS: Record<string, string> = {
@@ -36,6 +45,12 @@ const DOC_LABELS: Record<string, string> = {
   utilityBill: "Planilla de Servicios",
   selfie: "Foto Biometrica",
 };
+
+async function loadApplications(): Promise<Application[]> {
+  const res = await fetch(`${API_URL}/onboarding/applications`, { credentials: "include" });
+  const data: unknown = await res.json();
+  return Array.isArray(data) ? (data as Application[]) : [];
+}
 
 export default function ApplicationsAdminPage() {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -48,24 +63,19 @@ export default function ApplicationsAdminPage() {
   }>({ isOpen: false, title: "", message: "", type: "info" });
   const [saving, setSaving] = useState(false);
 
-  const fetchApplications = async () => {
-    try {
-      const url = `${API_URL}/onboarding/applications`;
-      const res = await fetch(url, { credentials: "include" });
-      const data = await res.json();
-      setApplications(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  /** El estado se actualiza en los callbacks de la promesa: se puede llamar desde un efecto. */
+  const fetchApplications = useCallback(
+    () =>
+      loadApplications()
+        .then(setApplications)
+        .catch((err: unknown) => console.error(err))
+        .finally(() => setLoading(false)),
+    [],
+  );
 
   useEffect(() => {
-    setLoading(true);
-    fetchApplications();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void fetchApplications();
+  }, [fetchApplications]);
 
   const handleAction = (app: Application, action: "approve" | "reject") => {
     setModal({
@@ -83,12 +93,12 @@ export default function ApplicationsAdminPage() {
             method: "POST",
             credentials: "include",
           });
-          if (!res.ok) throw new Error("Error al procesar");
+          if (!res.ok) throw new Error(await readApiError(res, "Error al procesar"));
           setModal({ isOpen: true, title: "Exito", message: action === "approve" ? "Solicitud aprobada correctamente." : "Solicitud rechazada.", type: "success" });
           setSelectedApp(null);
           await fetchApplications();
-        } catch (err: any) {
-          setModal({ isOpen: true, title: "Error", message: err.message, type: "error" });
+        } catch (err) {
+          setModal({ isOpen: true, title: "Error", message: errorMessage(err), type: "error" });
         } finally {
           setSaving(false);
         }
@@ -157,10 +167,11 @@ export default function ApplicationsAdminPage() {
                       <p className="text-xs text-slate-500">{app.termDays} dias</p>
                     </td>
                     <td className="px-6 py-4">
-                      {app.biometricScore ? (
-                        <span className="text-emerald-600 font-bold">{Number(app.biometricScore).toFixed(1)}%</span>
-                      ) : (
-                        <span className="text-slate-400 text-xs">Pendiente</span>
+                      <span className={"text-xs font-bold " + BIOMETRIC_LABELS[app.biometricStatus].color}>
+                        {BIOMETRIC_LABELS[app.biometricStatus].label}
+                      </span>
+                      {app.biometricScore && (
+                        <p className="text-xs text-slate-500 font-mono">{Number(app.biometricScore).toFixed(1)}%</p>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -184,9 +195,9 @@ export default function ApplicationsAdminPage() {
                         <>
                           <button
                             onClick={() => handleAction(app, "approve")}
-                            disabled={saving}
-                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="Aprobar"
+                            disabled={saving || app.biometricStatus === "PENDING"}
+                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                            title={app.biometricStatus === "PENDING" ? "Esperando la verificación biométrica" : "Aprobar"}
                           >
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
@@ -263,6 +274,7 @@ export default function ApplicationsAdminPage() {
                     ["Monto", "$" + Number(selectedApp.amount).toLocaleString()],
                     ["Plazo", selectedApp.termDays + " dias"],
                     ["Modalidad", selectedApp.payoutMethod === "MONTHLY" ? "Pago Mensual" : "Al Vencimiento"],
+                    ["Verificacion Biometrica", BIOMETRIC_LABELS[selectedApp.biometricStatus].label],
                     ["Puntaje Biometrico", selectedApp.biometricScore ? Number(selectedApp.biometricScore).toFixed(1) + "%" : "Sin datos"],
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between border-b border-slate-100 pb-2">
@@ -302,7 +314,7 @@ export default function ApplicationsAdminPage() {
                             <div className="relative rounded-lg overflow-hidden border border-emerald-200 bg-black/5 max-h-48 flex items-center justify-center">
                               <img src={url} alt="Foto Biometrica" className="object-cover h-44 w-full rounded-lg" />
                               <span className="absolute bottom-2 left-2 bg-emerald-700/90 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
-                                Captura Facial Validada ({selectedApp.biometricScore ? Number(selectedApp.biometricScore).toFixed(1) + "%" : "100%"})
+                                Captura Facial Validada{selectedApp.biometricScore ? ` (${Number(selectedApp.biometricScore).toFixed(1)}%)` : ""}
                               </span>
                             </div>
                           ) : (
@@ -328,7 +340,8 @@ export default function ApplicationsAdminPage() {
                   </button>
                   <button
                     onClick={() => handleAction(selectedApp, "approve")}
-                    disabled={saving}
+                    disabled={saving || selectedApp.biometricStatus === "PENDING"}
+                    title={selectedApp.biometricStatus === "PENDING" ? "Esperando la verificación biométrica" : undefined}
                     className="flex-1 py-3 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow transition-all disabled:opacity-50"
                   >
                     Aprobar

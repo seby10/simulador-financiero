@@ -9,6 +9,8 @@ const MINUTE = 60_000;
 export const throttlerOptions: ThrottlerModuleOptions = {
   throttlers: [{ name: 'default', ttl: MINUTE, limit: 300 }],
   skipIf: () => process.env.NODE_ENV === 'test',
+  errorMessage:
+    'Demasiadas solicitudes en poco tiempo. Espera un momento e intenta de nuevo.',
 };
 
 /**

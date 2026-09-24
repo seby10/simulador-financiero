@@ -24,7 +24,22 @@ export default function NavLinks() {
     window.location.href = "/";
   };
 
+  // En la confirmación misma (computadora o celular) el aviso sobra.
+  const identityPending =
+    currentUser && needsIdentity(currentUser) && pathname !== IDENTITY_PATH && pathname !== "/verify-mobile";
+
   return (
+    <>
+    {/* En celulares la navegación se oculta: el aviso tiene que seguir visible. */}
+    {identityPending && (
+      <Link
+        href={IDENTITY_PATH}
+        className="md:hidden flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-white bg-[#df6951] px-3.5 py-2 rounded-full shadow-md animate-pulse"
+      >
+        <ShieldAlert className="w-4 h-4" />
+        Confirma tu identidad
+      </Link>
+    )}
     <nav className="hidden md:flex items-center gap-10 text-sm font-normal text-[#212832]">
       <Link
         href="/simulator"
@@ -47,7 +62,7 @@ export default function NavLinks() {
         </Link>
       )}
 
-      {currentUser && needsIdentity(currentUser) && pathname !== IDENTITY_PATH && (
+      {identityPending && (
         <Link
           href={IDENTITY_PATH}
           className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-white bg-[#df6951] hover:bg-[#c85640] px-3.5 py-2 rounded-full shadow-md animate-pulse"
@@ -89,6 +104,7 @@ export default function NavLinks() {
         <ChevronDown className="w-4 h-4 text-[#212832]" />
       </div>
     </nav>
+    </>
   );
 }
 

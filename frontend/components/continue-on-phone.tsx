@@ -55,6 +55,9 @@ const pollStatus = async (handoff: Handoff) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pollToken: handoff.pollToken }),
   });
+  if (res.status === 404 || res.status === 410) {
+    return { status: "EXPIRED" as LiveStatus, result: null };
+  }
   if (!res.ok) throw new Error(await readApiError(res, "No pudimos consultar el estado"));
   return (await res.json()) as { status: LiveStatus; result: Record<string, unknown> | null };
 };

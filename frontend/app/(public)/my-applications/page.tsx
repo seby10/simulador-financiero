@@ -35,6 +35,7 @@ interface InvestmentApplication {
   termDays: number;
   payoutMethod: "MONTHLY" | "AT_MATURITY";
   status: "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+  biometricStatus: "PENDING" | "VERIFIED" | "FAILED";
   biometricScore: string | null;
   documentUrls?: Record<string, string>;
   createdAt: string;
@@ -47,6 +48,13 @@ interface InvestmentApplication {
 }
 
 import Footer from "@/components/footer";
+
+/** Estado real de la verificación facial de la solicitud (nunca se da por hecha). */
+const BIOMETRIC_COPY: Record<"PENDING" | "VERIFIED" | "FAILED", { badge: string; detail: string }> = {
+  VERIFIED: { badge: "Verificada", detail: "Comprobación biométrica en vivo realizada con éxito" },
+  PENDING: { badge: "Pendiente", detail: "Aún no completas la verificación facial de esta solicitud" },
+  FAILED: { badge: "En revisión", detail: "Un asesor revisará tu identidad con los documentos cargados" },
+};
 
 export default function MyApplicationsPage() {
   const router = useRouter();
@@ -482,11 +490,13 @@ export default function MyApplicationsPage() {
                     </div>
                     <div>
                       <p className="font-bold text-[#14183e]">Validación Facial de Identidad</p>
-                      <p className="text-xs text-slate-500">Comprobación biométrica en vivo realizada con éxito</p>
+                      <p className="text-xs text-slate-500">{BIOMETRIC_COPY[selectedApp.biometricStatus].detail}</p>
                     </div>
                   </div>
                   <span className="font-black text-[#14183e] font-mono text-base px-3 py-1 bg-white rounded-xl shadow-sm border border-amber-200">
-                    {selectedApp.biometricScore ? `${Number(selectedApp.biometricScore).toFixed(1)}% Match` : "100% Validado"}
+                    {selectedApp.biometricStatus === "VERIFIED" && selectedApp.biometricScore
+                      ? `${Number(selectedApp.biometricScore).toFixed(1)}% Match`
+                      : BIOMETRIC_COPY[selectedApp.biometricStatus].badge}
                   </span>
                 </div>
               </div>

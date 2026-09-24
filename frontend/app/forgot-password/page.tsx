@@ -191,18 +191,21 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <LivenessCapture purpose="PASSWORD_RESET" onComplete={handleBiometricVerify} />
-                <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  <span className="h-px flex-1 bg-slate-200" /> ¿Sin cámara en esta computadora? <span className="h-px flex-1 bg-slate-200" />
+                {/* Ofrecer el celular solo en pantallas grandes: en un teléfono ya se está en él. */}
+                <div className="hidden md:block space-y-4">
+                  <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="h-px flex-1 bg-slate-200" /> ¿Sin cámara en esta computadora? <span className="h-px flex-1 bg-slate-200" />
+                  </div>
+                  <ContinueOnPhone
+                    create={() => createHandoff("/biometrics/handoff/password-reset", { email })}
+                    onCompleted={(result) => {
+                      // El token para cambiar la clave llega solo aquí, nunca al celular.
+                      setResetToken(String(result.resetToken ?? ""));
+                      setBiometricScore(String(result.matchScore ?? ""));
+                      setStep(3);
+                    }}
+                  />
                 </div>
-                <ContinueOnPhone
-                  create={() => createHandoff("/biometrics/handoff/password-reset", { email })}
-                  onCompleted={(result) => {
-                    // El token para cambiar la clave llega solo aquí, nunca al celular.
-                    setResetToken(String(result.resetToken ?? ""));
-                    setBiometricScore(String(result.matchScore ?? ""));
-                    setStep(3);
-                  }}
-                />
               </div>
             )}
 
