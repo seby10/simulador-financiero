@@ -30,31 +30,33 @@ const STEPS = [
   { id: 4, label: "Confirmacion", icon: CheckCircle2 },
 ];
 
+import Footer from "@/components/footer";
+
 function FileUploadBox({
-  label, file, onFile, accept = "image/jpeg,image/png,application/pdf", hint = "JPG, PNG o PDF - max 5 MB", required = false,
+  label, file, onFile, accept = "image/jpeg,image/png,application/pdf", hint = "JPG, PNG o PDF - máx 5 MB", required = false,
 }: { label: string; file: File | null; onFile: (f: File) => void; accept?: string; hint?: string; required?: boolean }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
     <div>
-      <label className="block text-sm font-semibold text-slate-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+        {label} {required && <span className="text-[#df6951]">*</span>}
       </label>
       <div
         onClick={() => ref.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-4 cursor-pointer text-center transition-colors ${
-          file ? "border-emerald-400 bg-emerald-50" : "border-slate-300 hover:border-brand-secondary hover:bg-slate-50"
+        className={`border-2 border-dashed rounded-[24px] p-6 cursor-pointer text-center transition-all ${
+          file ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-[#f1a501] hover:bg-amber-50/30"
         }`}
       >
         {file ? (
-          <div className="flex items-center justify-center gap-2 text-emerald-700">
-            <CheckCircle2 className="w-5 h-5" />
-            <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+          <div className="flex items-center justify-center gap-2 text-emerald-700 font-semibold">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <span className="text-sm truncate max-w-[220px]">{file.name}</span>
           </div>
         ) : (
-          <div className="text-slate-400">
-            <Upload className="w-6 h-6 mx-auto mb-1" />
-            <p className="text-xs">Haz clic para seleccionar archivo</p>
-            <p className="text-xs text-slate-400 mt-0.5">{hint}</p>
+          <div className="text-slate-400 space-y-1">
+            <Upload className="w-7 h-7 mx-auto mb-2 text-[#f1a501]" />
+            <p className="text-xs font-bold text-[#14183e]">Haz clic para seleccionar archivo</p>
+            <p className="text-xs text-slate-400">{hint}</p>
           </div>
         )}
       </div>
@@ -120,7 +122,6 @@ function InvestmentRequestContent() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [biometricPassed, setBiometricPassed] = useState(false);
   const [biometricScore, setBiometricScore] = useState<number | null>(null);
-  /** Se agotaron los intentos: la solicitud sigue, con revision manual de identidad. */
   const [manualReview, setManualReview] = useState(false);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -134,7 +135,6 @@ function InvestmentRequestContent() {
   const [saving, setSaving] = useState(false);
   const [stepError, setStepError] = useState("");
 
-  // Al salir de la pagina se libera la camara (solo toca el stream, no el estado).
   useEffect(() => () => mediaStreamRef.current?.getTracks().forEach((t) => t.stop()), []);
 
   const startCamera = async () => {
@@ -148,7 +148,7 @@ function InvestmentRequestContent() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraActive(true);
     } catch {
-      setCameraError("No fue posible activar la camara. Puedes cargar una fotografia.");
+      setCameraError("No fue posible activar la cámara. Puedes cargar una fotografía.");
       setCameraActive(false);
     }
   };
@@ -194,7 +194,7 @@ function InvestmentRequestContent() {
       });
       if (res.status === 429) {
         setManualReview(true);
-        throw new Error("Se agotaron los intentos. Un asesor revisara tu identidad con los documentos cargados.");
+        throw new Error("Se agotaron los intentos. Un asesor revisará tu identidad con los documentos cargados.");
       }
       if (!res.ok) throw new Error(await readApiError(res, "Error al validar la identidad"));
       const data: {
@@ -209,9 +209,9 @@ function InvestmentRequestContent() {
       setRemainingAttempts(data.remainingAttempts);
       if (data.biometricStatus === "FAILED") {
         setManualReview(true);
-        setStepError("No fue posible verificar tu rostro y se agotaron los intentos. Un asesor revisara tu identidad con los documentos cargados.");
+        setStepError("No fue posible verificar tu rostro y se agotaron los intentos. Un asesor revisará tu identidad con los documentos cargados.");
       } else if (!data.passed) {
-        setStepError(`${data.failureReason || "Verificacion fallida."} Te quedan ${data.remainingAttempts} intento(s).`);
+        setStepError(`${data.failureReason || "Verificación fallida."} Te quedan ${data.remainingAttempts} intento(s).`);
       }
     } catch (err) {
       setStepError(errorMessage(err));
@@ -250,7 +250,7 @@ function InvestmentRequestContent() {
     e.preventDefault();
     setStepError("");
     if (!docIdFront || !docIdBack) {
-      setStepError("Debes subir la cedula (frontal y reverso).");
+      setStepError("Debes subir la cédula (frontal y reverso).");
       return;
     }
     setSaving(true);
@@ -275,7 +275,7 @@ function InvestmentRequestContent() {
 
   const handleStep3Finish = () => {
     if (!biometricPassed && !manualReview) {
-      setStepError("La verificacion biometrica no fue exitosa. Intenta de nuevo.");
+      setStepError("La verificación biométrica no fue exitosa. Intenta de nuevo.");
       return;
     }
     setStepError("");
@@ -283,19 +283,26 @@ function InvestmentRequestContent() {
   };
 
   return (
-    <div className="min-h-screen font-sans flex flex-col transition-colors" style={{ backgroundColor: "var(--brand-page-bg, #f8fafc)" }}>
+    <div className="min-h-screen font-sans text-slate-800 flex flex-col bg-transparent relative">
       <Navbar />
       <Modal isOpen={modal.isOpen} onClose={() => setModal({ ...modal, isOpen: false })} title={modal.title} message={modal.message} type={modal.type} />
 
-      <div className="bg-brand-primary text-white pt-10 pb-20 px-4 text-center">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">Solicitud de Inversion</h1>
-        <p className="text-blue-200 max-w-xl mx-auto text-sm">
-          Completa los pasos a continuacion para formalizar tu poliza de inversion.
+      {/* Header Banner */}
+      <div className="pt-10 pb-8 text-center max-w-3xl mx-auto px-4 relative z-10">
+        <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#f1a501] mb-2">
+          SOLICITUD DE INVERSIÓN
+        </p>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#14183e] font-serif-title leading-tight mb-4">
+          Formaliza tu Póliza DPF
+        </h1>
+        <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl mx-auto">
+          Completa los 4 sencillos pasos a continuación para aperturar tu certificado de depósito a plazo fijo de forma 100% digital.
         </p>
       </div>
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 -mt-12 pb-16">
-        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-4 mb-6">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pb-20 relative z-10">
+        {/* Step Wizard Header */}
+        <div className="bg-white rounded-[24px] shadow-lg border border-slate-100 p-4 sm:p-6 mb-8">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
@@ -303,18 +310,26 @@ function InvestmentRequestContent() {
               const active = step === s.id;
               return (
                 <div key={s.id} className="flex items-center flex-1">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      done ? "bg-emerald-500 text-white" : active ? "bg-brand-primary text-white shadow-md" : "bg-slate-100 text-slate-400"
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
+                      done
+                        ? "bg-emerald-500 text-white"
+                        : active
+                        ? "bg-[#14183e] text-white ring-4 ring-amber-100"
+                        : "bg-slate-100 text-slate-400"
                     }`}>
-                      {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                      {done ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                     </div>
-                    <span className={`text-xs font-semibold hidden sm:block ${active ? "text-brand-primary" : done ? "text-emerald-600" : "text-slate-400"}`}>
+                    <span className={`text-xs sm:text-sm font-bold hidden md:block ${
+                      active ? "text-[#14183e]" : done ? "text-emerald-600" : "text-slate-400"
+                    }`}>
                       {s.label}
                     </span>
                   </div>
                   {i < STEPS.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-3 transition-colors ${done ? "bg-emerald-400" : "bg-slate-200"}`} />
+                    <div className={`flex-1 h-1 mx-3 sm:mx-4 rounded-full transition-colors ${
+                      done ? "bg-emerald-400" : "bg-slate-100"
+                    }`} />
                   )}
                 </div>
               );
@@ -322,146 +337,167 @@ function InvestmentRequestContent() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-          <div className="bg-brand-primary px-6 py-4 text-white">
-            <h2 className="font-bold text-lg">{STEPS[step - 1]?.label}</h2>
-            <p className="text-blue-200 text-sm">Paso {step} de {STEPS.length}</p>
+        {/* Step Content Card */}
+        <div className="bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
+          <div className="bg-[#14183e] px-6 py-5 text-white flex items-center justify-between">
+            <div>
+              <h2 className="font-extrabold text-xl font-serif-title">{STEPS[step - 1]?.label}</h2>
+              <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Paso {step} de {STEPS.length}</p>
+            </div>
+            <span className="w-3 h-3 rounded-full bg-[#f1a501] animate-pulse" />
           </div>
 
-          <div className="p-6 md:p-8">
+          <div className="p-6 sm:p-10">
             {stepError && (
-              <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
+              <div className="mb-6 flex items-start gap-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm font-semibold">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                 <p>{stepError}</p>
               </div>
             )}
 
+            {/* STEP 1 */}
             {step === 1 && (
-              <form onSubmit={handleStep1Submit} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <form onSubmit={handleStep1Submit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Nombre Completo <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                      Nombre Completo <span className="text-[#df6951]">*</span>
+                    </label>
                     <input required value={form.applicantFullName} onChange={e => setForm({ ...form, applicantFullName: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-sm"
-                      placeholder="Ej: Maria Jose Andrade" />
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
+                      placeholder="Ej: María José Andrade" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Cedula de Identidad <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                      Cédula de Identidad <span className="text-[#df6951]">*</span>
+                    </label>
                     <input required value={form.applicantIdNumber} onChange={e => setForm({ ...form, applicantIdNumber: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-sm"
-                      placeholder="10 digitos" maxLength={10} />
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-mono font-medium text-[#14183e]"
+                      placeholder="10 dígitos" maxLength={10} />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Telefono <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                      Teléfono Móvil <span className="text-[#df6951]">*</span>
+                    </label>
                     <input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-sm"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
                       placeholder="0991234567" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                      Correo Electrónico <span className="text-[#df6951]">*</span>
+                    </label>
                     <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-sm"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
                       placeholder="ejemplo@correo.com" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Origen de los Fondos <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                      Origen de los Fondos <span className="text-[#df6951]">*</span>
+                    </label>
                     <input required value={form.sourceOfFunds} onChange={e => setForm({ ...form, sourceOfFunds: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-sm"
-                      placeholder="Ej: Ahorros de relacion de dependencia" />
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
+                      placeholder="Ej: Ahorros personales de relación de dependencia" />
                   </div>
                   {!planId && (
                     <>
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Monto a Invertir (USD) <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                          Monto a Invertir (USD) <span className="text-[#df6951]">*</span>
+                        </label>
                         <input required type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}
-                          className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-sm" />
+                          className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]" />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Plazo (Dias) <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                          Plazo (Días) <span className="text-[#df6951]">*</span>
+                        </label>
                         <input required type="number" value={form.termDays} onChange={e => setForm({ ...form, termDays: Number(e.target.value) })}
-                          className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-sm" />
+                          className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]" />
                       </div>
                     </>
                   )}
                   {planId && (
-                    <div className="md:col-span-2 bg-slate-50 rounded-xl p-4 text-sm text-slate-600 border border-slate-200">
-                      <p className="font-semibold text-slate-800 mb-2">Datos de tu Simulacion</p>
-                      <div className="flex flex-wrap gap-4">
-                        <span>Monto: <strong>${Number(amount).toLocaleString()}</strong></span>
-                        <span>Plazo: <strong>{termDays} dias</strong></span>
+                    <div className="md:col-span-2 bg-amber-50/60 rounded-2xl p-5 text-sm border border-amber-200/80">
+                      <p className="font-extrabold text-[#14183e] font-serif-title text-base mb-2">Datos de tu Simulación</p>
+                      <div className="flex flex-wrap gap-6 text-[#14183e]">
+                        <span>Monto: <strong className="font-mono text-base">${Number(amount).toLocaleString()}</strong></span>
+                        <span>Plazo: <strong>{termDays} días</strong></span>
                         <span>Modalidad: <strong>{payoutMethod === "MONTHLY" ? "Pago Mensual" : "Al Vencimiento"}</strong></span>
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="flex justify-end pt-2">
+                <div className="flex justify-end pt-4">
                   <button type="submit" disabled={saving}
-                    className="bg-brand-secondary hover:bg-brand-secondary/90 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow transition-all disabled:opacity-70">
-                    {saving ? "Enviando..." : "Continuar"} <ChevronRight className="w-5 h-5" />
+                    className="bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-70">
+                    {saving ? "Enviando..." : "Continuar Paso 2"} <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </form>
             )}
 
+            {/* STEP 2 */}
             {step === 2 && (
-              <form onSubmit={handleStep2Submit} className="space-y-5">
-                <p className="text-sm text-slate-500 mb-2">Sube los documentos requeridos. Los archivos son confidenciales y encriptados.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FileUploadBox label="Cedula - Parte Frontal" file={docIdFront} onFile={setDocIdFront} accept="image/jpeg,image/png" hint="Foto JPG o PNG (se compara con tu rostro) - max 5 MB" required />
-                  <FileUploadBox label="Cedula - Parte Reverso" file={docIdBack} onFile={setDocIdBack} required />
+              <form onSubmit={handleStep2Submit} className="space-y-6">
+                <p className="text-sm text-slate-600 mb-2">Sube los documentos requeridos. Los archivos son estrictamente confidenciales y encriptados.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FileUploadBox label="Cédula - Parte Frontal" file={docIdFront} onFile={setDocIdFront} accept="image/jpeg,image/png" hint="Fotografía JPG o PNG (utilizada para biometría facial) - máx 5 MB" required />
+                  <FileUploadBox label="Cédula - Parte Reverso" file={docIdBack} onFile={setDocIdBack} required />
                   <div className="md:col-span-2">
-                    <FileUploadBox label="Planilla de Servicio Basico (Opcional)" file={docUtilityBill} onFile={setDocUtilityBill} />
+                    <FileUploadBox label="Planilla de Servicio Básico (Opcional)" file={docUtilityBill} onFile={setDocUtilityBill} />
                   </div>
                 </div>
-                <div className="flex justify-between pt-2">
+                <div className="flex justify-between pt-4">
                   <button type="button" onClick={() => { setStepError(""); setStep(1); }}
-                    className="px-6 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-sm">
-                    Atras
+                    className="px-6 py-3 rounded-full font-bold text-[#14183e] bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
+                    Atrás
                   </button>
                   <button type="submit" disabled={saving}
-                    className="bg-brand-secondary hover:bg-brand-secondary/90 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow transition-all disabled:opacity-70">
-                    {saving ? "Subiendo..." : "Continuar"} <ChevronRight className="w-5 h-5" />
+                    className="bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-70">
+                    {saving ? "Subiendo..." : "Continuar Paso 3"} <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </form>
             )}
 
+            {/* STEP 3 */}
             {step === 3 && (
-              <div className="space-y-5">
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800 flex items-start gap-3">
-                  <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5 text-blue-600" />
+              <div className="space-y-6">
+                <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-5 text-sm text-[#14183e] flex items-start gap-4">
+                  <ShieldCheck className="w-6 h-6 shrink-0 text-[#f1a501] mt-0.5" />
                   <div>
-                    <p className="font-semibold mb-1">Verificacion de identidad biometrica</p>
-                    <p className="text-xs text-blue-700">Toma una foto clara de tu rostro sin gafas ni mascarilla. El sistema comparara tu fotografia con los documentos subidos.</p>
+                    <p className="font-extrabold font-serif-title text-base mb-1">Verificación de Identidad Biométrica</p>
+                    <p className="text-xs text-slate-600 leading-relaxed">Toma una foto clara de tu rostro sin gafas ni mascarilla. Nuestro algoritmo de Inteligencia Artificial comparará tu captura en vivo contra tu documento de identidad.</p>
                   </div>
                 </div>
 
-                <div className="flex border-b border-slate-200 text-xs font-medium">
+                <div className="flex border-b border-slate-200 text-xs font-bold uppercase tracking-wider">
                   <button onClick={() => { setInputMode("camera"); if (!capturedImage) startCamera(); }}
-                    className={`pb-2.5 px-4 flex items-center gap-2 border-b-2 transition-all ${inputMode === "camera" ? "border-brand-primary text-brand-primary font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}>
-                    <Camera className="w-4 h-4" /> Camara Web
+                    className={`pb-3 px-5 flex items-center gap-2 border-b-2 transition-all ${inputMode === "camera" ? "border-[#f1a501] text-[#14183e]" : "border-transparent text-slate-400 hover:text-slate-700"}`}>
+                    <Camera className="w-4 h-4 text-[#f1a501]" /> Cámara Web
                   </button>
                   <button onClick={() => { setInputMode("file"); stopCamera(); }}
-                    className={`pb-2.5 px-4 flex items-center gap-2 border-b-2 transition-all ${inputMode === "file" ? "border-brand-primary text-brand-primary font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}>
-                    <Upload className="w-4 h-4" /> Cargar Foto
+                    className={`pb-3 px-5 flex items-center gap-2 border-b-2 transition-all ${inputMode === "file" ? "border-[#f1a501] text-[#14183e]" : "border-transparent text-slate-400 hover:text-slate-700"}`}>
+                    <Upload className="w-4 h-4 text-[#f1a501]" /> Cargar Foto
                   </button>
                 </div>
 
-                <div className="relative aspect-[4/3] w-full bg-slate-900 rounded-xl overflow-hidden border border-slate-300 flex items-center justify-center">
+                <div className="relative aspect-[4/3] w-full bg-[#14183e] rounded-[24px] overflow-hidden border border-slate-200 flex items-center justify-center shadow-inner">
                   {capturedImage ? (
                     <div className="relative w-full h-full flex items-center justify-center bg-black">
                       <img src={capturedImage} alt="Rostro capturado" className="w-full h-full object-contain" />
                       {isVerifying && (
-                        <div className="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center text-white text-center p-4">
-                          <div className="w-9 h-9 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-3" />
-                          <p className="text-xs font-semibold">Validando identidad...</p>
+                        <div className="absolute inset-0 bg-[#14183e]/85 backdrop-blur-sm flex flex-col items-center justify-center text-white text-center p-4">
+                          <div className="w-10 h-10 border-4 border-[#f1a501] border-t-transparent rounded-full animate-spin mb-3" />
+                          <p className="text-sm font-bold font-serif-title">Validando tu Rostro...</p>
                         </div>
                       )}
                       {biometricPassed && !isVerifying && (
-                        <div className="absolute inset-0 bg-emerald-900/70 flex flex-col items-center justify-center text-white">
+                        <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-white">
                           <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-2" />
-                          <p className="font-bold">Identidad Verificada</p>
-                          <p className="text-xs text-emerald-200">Puntaje: {biometricScore}%</p>
+                          <p className="font-extrabold font-serif-title text-xl">¡Identidad Verificada!</p>
+                          <p className="text-xs text-emerald-300 font-mono mt-1">Match Biométrico: {biometricScore}%</p>
                         </div>
                       )}
                     </div>
@@ -469,32 +505,32 @@ function InvestmentRequestContent() {
                     <div className="relative w-full h-full flex items-center justify-center">
                       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
                       {!cameraActive && (
-                        <div className="absolute inset-0 bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+                        <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center text-white">
                           {cameraError ? (
-                            <div className="text-sm text-red-600 flex flex-col items-center gap-2">
-                              <XCircle className="w-8 h-8" /><p>{cameraError}</p>
+                            <div className="text-sm text-rose-400 flex flex-col items-center gap-2">
+                              <XCircle className="w-10 h-10" /><p>{cameraError}</p>
                             </div>
                           ) : (
-                            <div className="text-slate-400">
-                              <Camera className="w-10 h-10 mx-auto mb-2" />
-                              <p className="text-sm">Presiona el boton para activar la camara</p>
+                            <div className="text-slate-400 space-y-2">
+                              <Camera className="w-12 h-12 mx-auto mb-2 text-[#f1a501]" />
+                              <p className="text-sm font-semibold text-white">Presiona el botón para activar la cámara web</p>
                             </div>
                           )}
                         </div>
                       )}
                       {cameraActive && (
                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                          <div className="w-48 h-60 rounded-[50%] border-2 border-brand-secondary shadow-[0_0_0_9999px_rgba(15,23,42,0.4)]" />
+                          <div className="w-52 h-64 rounded-[50%] border-2 border-[#f1a501] shadow-[0_0_0_9999px_rgba(20,24,62,0.6)]" />
                         </div>
                       )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 w-full h-full">
-                      <Upload className="w-10 h-10 text-slate-400 mb-2" />
-                      <p className="text-sm font-semibold text-slate-700 mb-1">Selecciona una foto de tu rostro</p>
-                      <p className="text-xs text-slate-400 mb-4">Formatos: JPG, PNG</p>
-                      <button onClick={() => bioFileRef.current?.click()} className="px-4 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium text-xs shadow-sm">
-                        Buscar Fotografia
+                      <Upload className="w-12 h-12 text-[#f1a501] mb-2" />
+                      <p className="text-base font-bold text-[#14183e] mb-1">Selecciona una foto nítida de tu rostro</p>
+                      <p className="text-xs text-slate-400 mb-4">Formatos permitidos: JPG, PNG</p>
+                      <button onClick={() => bioFileRef.current?.click()} className="px-6 py-2.5 rounded-full bg-white border border-slate-300 hover:bg-slate-100 text-[#14183e] font-bold text-xs shadow-sm transition-all">
+                        Buscar Fotografía
                       </button>
                       <input ref={bioFileRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleBioFileUpload} />
                     </div>
@@ -505,76 +541,77 @@ function InvestmentRequestContent() {
                   {manualReview ? null : capturedImage && !biometricPassed ? (
                     <>
                       <button onClick={() => { setCapturedImage(null); setBiometricPassed(false); if (inputMode === "camera") startCamera(); }} disabled={isVerifying}
-                        className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm flex items-center gap-1.5 transition-all disabled:opacity-50">
+                        className="px-5 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-[#14183e] font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-50">
                         <RefreshCw className="w-4 h-4" /> Repetir Foto
                       </button>
                       <button onClick={executeBiometric} disabled={isVerifying}
-                        className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow transition-all disabled:opacity-50">
+                        className="flex-1 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50">
                         <FileCheck className="w-4 h-4" />
-                        {isVerifying ? "Validando..." : "Confirmar y Validar"}
+                        {isVerifying ? "Validando..." : "Confirmar y Validar Biometría"}
                       </button>
                     </>
                   ) : !capturedImage && inputMode === "camera" ? (
                     <button onClick={() => cameraActive ? capturePhoto() : startCamera()}
-                      className="flex-1 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary/90 text-white font-bold text-sm flex items-center justify-center gap-2 shadow">
-                      <Camera className="w-4 h-4" />
-                      {cameraActive ? "Tomar Foto" : "Iniciar Camara"}
+                      className="flex-1 py-3.5 rounded-full bg-[#14183e] hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all">
+                      <Camera className="w-4 h-4 text-[#f1a501]" />
+                      {cameraActive ? "Capturar Fotografía" : "Iniciar Cámara"}
                     </button>
                   ) : null}
                 </div>
 
                 {biometricPassed && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-800 text-sm font-semibold flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5" />
-                    Identidad verificada correctamente. Puntaje: {biometricScore}%
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-sm font-semibold flex items-center gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                    <span>Identidad verificada exitosamente. Score de concordancia: <strong>{biometricScore}%</strong></span>
                   </div>
                 )}
 
                 {remainingAttempts !== null && !biometricPassed && !manualReview && (
-                  <p className="text-xs text-slate-500">Intentos restantes: {remainingAttempts}</p>
+                  <p className="text-xs text-slate-500 text-center font-medium">Intentos restantes de validación: {remainingAttempts}</p>
                 )}
 
-                <div className="flex justify-between pt-2">
+                <div className="flex justify-between pt-4 border-t border-slate-100">
                   <button onClick={() => { setStepError(""); setStep(2); stopCamera(); }}
-                    className="px-6 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-sm">
-                    Atras
+                    className="px-6 py-3 rounded-full font-bold text-[#14183e] bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
+                    Atrás
                   </button>
                   <button onClick={handleStep3Finish} disabled={!biometricPassed && !manualReview}
-                    className="bg-brand-secondary hover:bg-brand-secondary/90 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    className="bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                     Finalizar Solicitud <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
             )}
 
+            {/* STEP 4 */}
             {step === 4 && (
               <div className="text-center py-10 space-y-6">
-                <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
+                <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mx-auto shadow-inner">
                   <CheckCircle2 className="w-14 h-14 text-emerald-500" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-extrabold text-slate-800 mb-2">Solicitud Enviada!</h3>
-                  <p className="text-slate-500 max-w-md mx-auto text-sm">
+                  <h3 className="text-3xl font-extrabold text-[#14183e] font-serif-title mb-2">¡Solicitud Registrada con Éxito!</h3>
+                  <p className="text-slate-600 max-w-md mx-auto text-sm sm:text-base leading-relaxed">
                     {manualReview
-                      ? "Tu solicitud fue recibida. Como no fue posible verificar tu rostro, un asesor revisara tu identidad con los documentos antes de decidir."
-                      : "Tu identidad fue verificada y tu solicitud esta en revision por nuestro equipo. Puedes seguir su estado en Mis Solicitudes."}
+                      ? "Tu solicitud fue recibida. Como no fue posible verificar tu rostro automáticamente, un oficial de crédito revisará tu identidad manualmente."
+                      : "Tu identidad fue auditada correctamente y tu póliza DPF se encuentra en proceso de formalización. Puedes consultar su avance en tiempo real."}
                   </p>
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left max-w-sm mx-auto text-sm">
-                  <p className="font-semibold text-slate-700 mb-2">Detalles de tu solicitud:</p>
-                  <div className="space-y-1 text-slate-600">
+                <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-6 text-left max-w-md mx-auto text-sm space-y-3">
+                  <p className="font-extrabold text-[#14183e] font-serif-title text-base border-b border-amber-200/60 pb-2">Resumen de Solicitud:</p>
+                  <div className="space-y-2 text-[#14183e] font-medium">
                     <div className="flex justify-between">
-                      <span>N de Solicitud:</span>
-                      <span className="font-mono text-xs font-medium">{applicationId?.slice(0, 18)}...</span>
+                      <span className="text-slate-500">N° de Registro:</span>
+                      <span className="font-mono font-bold text-xs">{applicationId?.slice(0, 18)}...</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Estado:</span>
-                      <span className="font-bold text-amber-600">En Revision</span>
+                      <span className="text-slate-500">Estado Inicial:</span>
+                      <span className="font-bold text-[#f1a501] bg-amber-100 px-3 py-0.5 rounded-full text-xs">En Revisión</span>
                     </div>
                   </div>
                 </div>
                 <Link href="/my-applications"
-                  className="inline-block bg-brand-primary hover:bg-brand-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow transition-all">
+                  className="inline-flex items-center gap-2 bg-[#df6951] hover:bg-[#c85640] text-white px-9 py-4 rounded-full font-bold shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm">
                   Ver Mis Solicitudes
                 </Link>
               </div>
@@ -582,6 +619,8 @@ function InvestmentRequestContent() {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

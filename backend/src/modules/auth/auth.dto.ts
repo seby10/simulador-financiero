@@ -1,7 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -82,6 +84,25 @@ export class BiometricResetConfirmDto {
   @MinLength(PASSWORD_MIN)
   @MaxLength(PASSWORD_MAX)
   newPassword: string;
+}
+
+export class UpdateUserRoleDto {
+  @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
+  @IsEnum(UserRole)
+  role: UserRole;
+}
+
+export class UpdateUserStatusDto {
+  /** false cierra todas las sesiones del usuario. */
+  @IsBoolean() isActive: boolean;
+}
+
+export class CreateUserAdminDto extends RegisterDto {
+  /** CUSTOMER si se omite. */
+  @ApiProperty({ enum: UserRole, enumName: 'UserRole', required: false })
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
 }
 
 // ───────────── Respuestas (solo documentación OpenAPI) ─────────────

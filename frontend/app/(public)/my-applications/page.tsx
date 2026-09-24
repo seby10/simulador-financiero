@@ -46,6 +46,8 @@ interface InvestmentApplication {
   };
 }
 
+import Footer from "@/components/footer";
+
 export default function MyApplicationsPage() {
   const router = useRouter();
   const [applications, setApplications] = useState<InvestmentApplication[]>([]);
@@ -137,83 +139,117 @@ export default function MyApplicationsPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col font-sans text-slate-800 transition-colors"
-      style={{ backgroundColor: "var(--brand-page-bg, #f8fafc)" }}
-    >
+    <div className="min-h-screen flex flex-col font-sans text-slate-800 bg-transparent relative">
       <Navbar />
 
-      <main className="flex-1 pb-20">
-        {/* Dynamic Hero Banner */}
-        <div
-          className="text-white py-14 px-4 text-center transition-colors shadow-inner relative overflow-hidden"
-          style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
-        >
-          <div className="absolute inset-0 bg-black/10 pointer-events-none" />
-          <div className="max-w-4xl mx-auto space-y-3 relative z-10">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/15 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/20">
-              <FileText className="w-3.5 h-3.5" /> Mi Portal de Cliente
-            </span>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-sm">
-              MIS SOLICITUDES DE INVERSIÓN
-            </h1>
-            <p className="text-white/80 max-w-xl mx-auto text-sm md:text-base font-medium">
-              Gestiona y revisa el estado detallado de tus pólizas de inversión a plazo fijo (DPF).
-            </p>
-          </div>
+      <main className="flex-1 pb-20 relative z-10">
+        {/* Header Banner */}
+        <div className="pt-10 pb-6 text-center max-w-3xl mx-auto px-4">
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#f1a501] mb-2">
+            PORTAL DEL CLIENTE
+          </p>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#14183e] font-serif-title leading-tight mb-4">
+            Mis Solicitudes de Inversión
+          </h1>
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+            Consulta el estado en tiempo real, desglose de rendimientos e historial de tus pólizas a plazo fijo (DPF).
+          </p>
         </div>
 
-        {/* Main Body */}
-        <div className="max-w-5xl mx-auto px-4 pt-10">
+        {/* Main Content Area */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-2">
+          {/* Top Summary Metrics (When applications exist) */}
+          {!loading && !error && applications.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              {/* Stat 1: Total Inverted */}
+              <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-md flex items-center gap-4 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-2xl bg-[#14183e]/5 flex items-center justify-center text-[#14183e] shrink-0">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#5e6282] uppercase tracking-wider">Total Invertido</p>
+                  <p className="text-xl sm:text-2xl font-black text-[#14183e]">
+                    ${applications
+                      .reduce((acc, app) => acc + Number(app.amount), 0)
+                      .toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Stat 2: Total Projected Net Interest */}
+              <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-md flex items-center gap-4 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#5e6282] uppercase tracking-wider">Ganancia Proyectada</p>
+                  <p className="text-xl sm:text-2xl font-black text-emerald-600">
+                    +${applications
+                      .reduce((acc, app) => {
+                        const fin = calculateFinancials(app);
+                        return acc + Number(fin.netInterest);
+                      }, 0)
+                      .toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Stat 3: Total Applications */}
+              <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-md flex items-center gap-4 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-[#f1a501] shrink-0">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#5e6282] uppercase tracking-wider">Pólizas Registradas</p>
+                  <p className="text-xl sm:text-2xl font-black text-[#14183e]">
+                    {applications.length} {applications.length === 1 ? "Solicitud" : "Solicitudes"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center mb-8 flex-wrap gap-4 border-b border-slate-200/80 pb-4">
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Mis Pólizas Solicitadas
+              <h2 className="text-2xl font-bold text-[#14183e] font-serif-title">
+                Mis Pólizas
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Total de registros: {applications.length}
+                Historial de inversiones y certificados de depósito a plazo fijo
               </p>
             </div>
             <Link
               href="/investments"
-              className="text-white px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 group"
-              style={{ backgroundColor: "var(--brand-secondary, #35b8db)" }}
+              className="bg-[#f1a501] hover:bg-amber-600 text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-[1.02] transition-all flex items-center gap-2"
             >
-              <PlusCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <PlusCircle className="w-4 h-4" />
               Nueva Inversión
             </Link>
           </div>
 
           {loading ? (
-            <div
-              className="rounded-3xl p-16 text-center border border-slate-200/80 shadow-sm text-slate-500 font-medium"
-              style={{ backgroundColor: "var(--brand-card-bg, #ffffff)" }}
-            >
-              <span className="animate-spin inline-block w-8 h-8 border-3 border-brand-primary border-t-transparent rounded-full mb-3" />
-              <p className="text-base font-semibold">Cargando tus solicitudes...</p>
+            <div className="bg-white rounded-[32px] p-16 text-center border border-slate-100 shadow-xl text-slate-500 font-medium">
+              <span className="animate-spin inline-block w-8 h-8 border-3 border-[#f1a501] border-t-transparent rounded-full mb-3" />
+              <p className="text-base font-semibold text-[#14183e]">Cargando tus solicitudes...</p>
             </div>
           ) : error ? (
             <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-rose-700 text-center font-semibold text-sm">
               {error}
             </div>
           ) : applications.length === 0 ? (
-            <div
-              className="rounded-3xl p-16 text-center border border-slate-200/80 shadow-sm space-y-5"
-              style={{ backgroundColor: "var(--brand-card-bg, #ffffff)" }}
-            >
-              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 shadow-inner">
+            <div className="bg-white rounded-[32px] p-16 text-center border border-slate-100 shadow-xl space-y-5">
+              <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-[#f1a501] shadow-inner">
                 <FileText className="w-10 h-10" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-bold text-slate-800">No tienes solicitudes registradas</h3>
+                <h3 className="text-2xl font-bold text-[#14183e] font-serif-title">No tienes solicitudes registradas</h3>
                 <p className="text-slate-500 text-sm max-w-md mx-auto">
                   Aún no has generado ninguna solicitud de inversión. Simula tu rendimiento y genera tu póliza hoy.
                 </p>
               </div>
               <Link
                 href="/investments"
-                className="inline-flex items-center gap-2 text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-sm"
-                style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
+                className="inline-flex items-center gap-2 bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-3.5 rounded-full font-bold shadow-lg shadow-orange-500/25 hover:shadow-xl transition-all text-sm"
               >
                 Simular Inversión <ArrowRight className="w-4 h-4" />
               </Link>
@@ -228,19 +264,18 @@ export default function MyApplicationsPage() {
                 return (
                   <div
                     key={app.id}
-                    className="rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden"
-                    style={{ backgroundColor: "var(--brand-card-bg, #ffffff)" }}
+                    className="bg-white rounded-[32px] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
                   >
-                    {/* Card Header */}
+                    {/* Card Body */}
                     <div className="p-6 md:p-8 space-y-6">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
                         <div className="space-y-1">
                           <div className="flex items-center gap-3 flex-wrap">
-                            <span className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: "var(--brand-secondary, #35b8db)" }} />
-                            <h3 className="font-extrabold text-2xl text-slate-900 tracking-tight">
+                            <span className="w-3 h-3 rounded-full bg-[#f1a501] animate-pulse" />
+                            <h3 className="font-extrabold text-2xl text-[#14183e] font-serif-title">
                               {app.investmentPlan.name}
                             </h3>
-                            <span className="text-xs font-bold text-brand-primary bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                            <span className="text-xs font-bold text-[#f1a501] bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
                               {Number(app.investmentPlan.tea).toFixed(2)}% TEA
                             </span>
                           </div>
@@ -260,29 +295,29 @@ export default function MyApplicationsPage() {
                       {/* Main Financial Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         <div className="space-y-1">
-                          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Monto Invertido</span>
-                          <p className="font-extrabold text-slate-900 text-2xl font-mono">
+                          <span className="text-xs text-[#5e6282] font-bold uppercase tracking-wider block">Monto Invertido</span>
+                          <p className="font-extrabold text-[#14183e] text-2xl">
                             ${Number(app.amount).toLocaleString("es-EC", { minimumFractionDigits: 2 })}
                           </p>
                         </div>
 
                         <div className="space-y-1">
-                          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Plazo de Inversión</span>
-                          <p className="font-extrabold text-slate-900 text-xl">
+                          <span className="text-xs text-[#5e6282] font-bold uppercase tracking-wider block">Plazo</span>
+                          <p className="font-extrabold text-[#14183e] text-xl">
                             {app.termDays} días
                           </p>
                         </div>
 
                         <div className="space-y-1">
-                          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Interés Neto Estimado</span>
-                          <p className="font-extrabold text-emerald-600 text-2xl font-mono">
+                          <span className="text-xs text-[#5e6282] font-bold uppercase tracking-wider block">Interés Neto</span>
+                          <p className="font-extrabold text-emerald-600 text-2xl">
                             +${Number(fin.netInterest).toLocaleString("es-EC", { minimumFractionDigits: 2 })}
                           </p>
                         </div>
 
                         <div className="space-y-1">
-                          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total al Vencimiento</span>
-                          <p className="font-black text-brand-primary text-2xl font-mono">
+                          <span className="text-xs text-[#5e6282] font-bold uppercase tracking-wider block">Total Vencimiento</span>
+                          <p className="font-black text-[#14183e] text-2xl">
                             ${Number(fin.totalToReceive).toLocaleString("es-EC", { minimumFractionDigits: 2 })}
                           </p>
                         </div>
@@ -297,7 +332,7 @@ export default function MyApplicationsPage() {
 
                         <button
                           onClick={() => setSelectedApp(app)}
-                          className="px-5 py-2.5 rounded-xl font-bold border-2 border-slate-200 hover:border-brand-primary text-slate-700 hover:text-brand-primary transition-all flex items-center justify-center gap-2 text-xs bg-slate-50 hover:bg-white"
+                          className="px-5 py-2.5 rounded-full font-bold border border-slate-200 hover:border-[#14183e] text-[#14183e] hover:bg-[#14183e] hover:text-white transition-all flex items-center justify-center gap-2 text-xs bg-slate-50 shadow-sm"
                         >
                           <Eye className="w-4 h-4" /> Ver Detalle Completo
                         </button>
@@ -311,33 +346,30 @@ export default function MyApplicationsPage() {
         </div>
       </main>
 
-      {/* Modal / Drawer Detail View */}
+      {/* Modal Detail View */}
       {selectedApp && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#14183e]/60 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setSelectedApp(null)}
         >
           <div
-            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+            className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col border border-slate-100"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div
-              className="p-6 text-white flex items-center justify-between shrink-0"
-              style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
-            >
+            <div className="p-6 bg-[#14183e] text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-md">
-                  <TrendingUp className="w-5 h-5 text-brand-secondary" />
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
+                  <TrendingUp className="w-5 h-5 text-[#f1a501]" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-xl leading-tight">Detalle de Póliza</h3>
-                  <p className="text-white/70 text-xs font-mono">Solicitud #{selectedApp.id}</p>
+                  <h3 className="font-bold font-serif-title text-xl leading-tight">Detalle de Póliza</h3>
+                  <p className="text-slate-300 text-xs font-mono">Solicitud #{selectedApp.id}</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedApp(null)}
-                className="hover:bg-white/20 p-2 rounded-xl transition-colors text-white"
+                className="hover:bg-white/10 p-2 rounded-full transition-colors text-slate-300 hover:text-white"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -367,24 +399,24 @@ export default function MyApplicationsPage() {
 
               {/* Financial Calculation Summary Table */}
               <div>
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#5e6282] mb-3 flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-emerald-600" /> Resumen de Liquidación de Rendimientos
                 </h4>
                 {(() => {
                   const fin = calculateFinancials(selectedApp);
                   return (
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 text-sm">
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3 text-sm">
                       <div className="flex justify-between border-b border-slate-200/60 pb-2">
                         <span className="text-slate-500 font-medium">Plan Seleccionado</span>
-                        <span className="font-bold text-slate-800">{selectedApp.investmentPlan.name} ({selectedApp.investmentPlan.tea}% TEA)</span>
+                        <span className="font-bold text-[#14183e]">{selectedApp.investmentPlan.name} ({selectedApp.investmentPlan.tea}% TEA)</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200/60 pb-2">
                         <span className="text-slate-500 font-medium">Monto Principal</span>
-                        <span className="font-bold text-slate-800 font-mono">${Number(selectedApp.amount).toLocaleString("es-EC", { minimumFractionDigits: 2 })}</span>
+                        <span className="font-bold text-[#14183e] font-mono">${Number(selectedApp.amount).toLocaleString("es-EC", { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200/60 pb-2">
                         <span className="text-slate-500 font-medium">Plazo de Inversión</span>
-                        <span className="font-bold text-slate-800">{selectedApp.termDays} Días</span>
+                        <span className="font-bold text-[#14183e]">{selectedApp.termDays} Días</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200/60 pb-2">
                         <span className="text-slate-500 font-medium">Interés Bruto Ganado</span>
@@ -401,12 +433,12 @@ export default function MyApplicationsPage() {
                       {fin.monthlyPayment && (
                         <div className="flex justify-between border-b border-slate-200/60 pb-2">
                           <span className="text-slate-600 font-bold">Pago Cuota Mensual</span>
-                          <span className="font-extrabold text-brand-primary font-mono">${fin.monthlyPayment} / mes</span>
+                          <span className="font-extrabold text-[#f1a501] font-mono">${fin.monthlyPayment} / mes</span>
                         </div>
                       )}
                       <div className="flex justify-between pt-1">
-                        <span className="text-slate-900 font-black text-base">Total Final al Vencimiento</span>
-                        <span className="font-black text-brand-primary text-xl font-mono">${fin.totalToReceive}</span>
+                        <span className="text-[#14183e] font-black text-base">Total Final al Vencimiento</span>
+                        <span className="font-black text-[#14183e] text-xl font-mono">${fin.totalToReceive}</span>
                       </div>
                     </div>
                   );
@@ -415,45 +447,45 @@ export default function MyApplicationsPage() {
 
               {/* Applicant Info */}
               <div>
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                  <User className="w-4 h-4 text-brand-primary" /> Datos del Titular de la Póliza
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#5e6282] mb-3 flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#df6951]" /> Datos del Titular de la Póliza
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <span className="text-xs text-slate-400 font-bold uppercase">Nombres y Apellidos</span>
-                    <p className="font-bold text-slate-800">{selectedApp.applicantFullName}</p>
+                    <p className="font-bold text-[#14183e]">{selectedApp.applicantFullName}</p>
                   </div>
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <span className="text-xs text-slate-400 font-bold uppercase">Cédula de Identidad</span>
-                    <p className="font-bold text-slate-800 font-mono">{selectedApp.applicantIdNumber}</p>
+                    <p className="font-bold text-[#14183e] font-mono">{selectedApp.applicantIdNumber}</p>
                   </div>
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <span className="text-xs text-slate-400 font-bold uppercase">Correo Electrónico</span>
-                    <p className="font-bold text-slate-800">{selectedApp.email}</p>
+                    <p className="font-bold text-[#14183e]">{selectedApp.email}</p>
                   </div>
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <span className="text-xs text-slate-400 font-bold uppercase">Teléfono Móvil</span>
-                    <p className="font-bold text-slate-800">{selectedApp.phone}</p>
+                    <p className="font-bold text-[#14183e]">{selectedApp.phone}</p>
                   </div>
                 </div>
               </div>
 
               {/* Biometrics */}
               <div>
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600" /> Seguridad & Verificación Biométrica
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#5e6282] mb-3 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#f1a501]" /> Seguridad & Verificación Biométrica
                 </h4>
-                <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between gap-4 text-sm">
+                <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 flex items-center justify-between gap-4 text-sm">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-[#f1a501]">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="font-bold text-indigo-900">Validación Facial de Identidad</p>
-                      <p className="text-xs text-indigo-700">Comprobación biométrica en vivo realizada con éxito</p>
+                      <p className="font-bold text-[#14183e]">Validación Facial de Identidad</p>
+                      <p className="text-xs text-slate-500">Comprobación biométrica en vivo realizada con éxito</p>
                     </div>
                   </div>
-                  <span className="font-black text-indigo-800 font-mono text-base px-3 py-1 bg-white rounded-xl shadow-sm border border-indigo-200">
+                  <span className="font-black text-[#14183e] font-mono text-base px-3 py-1 bg-white rounded-xl shadow-sm border border-amber-200">
                     {selectedApp.biometricScore ? `${Number(selectedApp.biometricScore).toFixed(1)}% Match` : "100% Validado"}
                   </span>
                 </div>
@@ -464,14 +496,13 @@ export default function MyApplicationsPage() {
             <div className="p-5 bg-slate-50 border-t border-slate-200 flex justify-between items-center gap-3 shrink-0">
               <button
                 onClick={() => window.print()}
-                className="px-5 py-2.5 rounded-xl font-bold border border-slate-300 text-slate-700 hover:bg-white transition-all flex items-center gap-2 text-xs"
+                className="px-5 py-2.5 rounded-full font-bold border border-slate-300 text-slate-700 hover:bg-white transition-all flex items-center gap-2 text-xs"
               >
                 <Printer className="w-4 h-4" /> Imprimir Comprobante
               </button>
               <button
                 onClick={() => setSelectedApp(null)}
-                className="px-6 py-2.5 rounded-xl font-bold text-white shadow transition-all text-xs"
-                style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
+                className="px-6 py-2.5 rounded-full font-bold text-white bg-[#df6951] hover:bg-[#c85640] shadow-md transition-all text-xs"
               >
                 Cerrar Ventana
               </button>
@@ -479,6 +510,9 @@ export default function MyApplicationsPage() {
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

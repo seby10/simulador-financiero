@@ -21,12 +21,17 @@ import {
 } from '../../common/tokens.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma, type User } from '../../generated/prisma/client.js';
-import { BiometricStatus } from '../../generated/prisma/enums.js';
+import { BiometricStatus, UserRole } from '../../generated/prisma/enums.js';
 import {
   BiometricsService,
   SELFIE_DOCUMENT,
 } from '../biometrics/biometrics.service.js';
-import { ChangePasswordDto, LoginDto, RegisterDto } from './auth.dto.js';
+import {
+  ChangePasswordDto,
+  CreateUserAdminDto,
+  LoginDto,
+  RegisterDto,
+} from './auth.dto.js';
 import { hashPassword, verifyPassword } from './password.js';
 
 /** Datos del cliente que se archivan con la sesión para auditoría. */
@@ -61,6 +66,19 @@ const PUBLIC_FIELDS = [
   'isActive',
   'createdAt',
 ] as const;
+
+/** `actorId` es null cuando se entra con la cabecera x-admin-key (sin sesión). */
+const assertNotSelf = (
+  actorId: string | null,
+  userId: string,
+  action: string,
+) => {
+  if (actorId === userId) {
+    throw new ForbiddenException(
+      `No puedes ${action}; pídeselo a otro administrador`,
+    );
+  }
+};
 
 /** Nunca devolver `passwordHash` ni `updatedAt` al cliente. */
 const toPublicUser = (user: User) =>
@@ -151,32 +169,7 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto, context: SessionContext) {
-    const passwordHash = await hashPassword(dto.password);
-    const user = await this.prisma.user
-      .create({
-        data: {
-          email: dto.email,
-          fullName: `${dto.firstName} ${dto.lastName}`,
-          idNumber: dto.idNumber,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          phone: dto.phone,
-          address: dto.address || null,
-          passwordHash,
-        },
-      })
-      .catch((error: unknown) => {
-        // P2002 = violación de índice único: el correo o la cédula ya tienen cuenta.
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
-          throw new ConflictException(
-            'Ya existe una cuenta con ese correo o esa cédula',
-          );
-        }
-        throw error;
-      });
+    const user = await this.createUser(dto, UserRole.CUSTOMER);
     return this.issueSession(user, randomUUID(), context);
   }
 
@@ -328,6 +321,116 @@ export class AuthService {
     return readFile(
       onboardingDocumentPath(application.id, SELFIE_DOCUMENT),
     ).catch(() => null);
+  }
+
+  /** Lista todos los usuarios para la gestión de administración. */
+  async listUsers() {
+    const users = await this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        idNumber: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        address: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        _count: {
+          select: {
+            applications: true,
+          },
+        },
+      },
+    });
+    return users;
+  }
+
+  /**
+   * Cambia el rol de otro usuario. Nadie cambia el suyo: así un administrador no
+   * se quita el acceso por error ni deja el sistema sin administradores.
+   */
+  async updateUserRole(actorId: string | null, userId: string, role: UserRole) {
+    assertNotSelf(actorId, userId, 'cambiar tu propio rol');
+    if (role !== UserRole.ADMIN) await this.assertKeepsAnAdmin(userId);
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    });
+    return toPublicUser(user);
+  }
+
+  /** Activa o desactiva otra cuenta; desactivarla cierra todas sus sesiones. */
+  async setUserActive(
+    actorId: string | null,
+    userId: string,
+    isActive: boolean,
+  ) {
+    assertNotSelf(actorId, userId, 'desactivar tu propia cuenta');
+    if (!isActive) await this.assertKeepsAnAdmin(userId);
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+    });
+    if (!isActive) await this.logoutAll(userId);
+    return toPublicUser(user);
+  }
+
+  /**
+   * Quitarle el rol o desactivar a un administrador activo exige que quede otro.
+   * Cubre también la cabecera x-admin-key, que no tiene cuenta propia que proteger.
+   */
+  private async assertKeepsAnAdmin(userId: string) {
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, isActive: true },
+    });
+    if (target?.role !== UserRole.ADMIN || !target.isActive) return;
+    const others = await this.prisma.user.count({
+      where: { role: UserRole.ADMIN, isActive: true, id: { not: userId } },
+    });
+    if (others === 0) {
+      throw new ConflictException('Debe quedar al menos un administrador activo');
+    }
+  }
+
+  /** Alta desde el panel administrativo, con el rol indicado (CUSTOMER por defecto). */
+  async adminCreateUser(dto: CreateUserAdminDto) {
+    return toPublicUser(
+      await this.createUser(dto, dto.role ?? UserRole.CUSTOMER),
+    );
+  }
+
+  private async createUser(dto: RegisterDto, role: UserRole) {
+    return this.prisma.user
+      .create({
+        data: {
+          email: dto.email,
+          fullName: `${dto.firstName} ${dto.lastName}`,
+          idNumber: dto.idNumber,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          phone: dto.phone,
+          address: dto.address || null,
+          passwordHash: await hashPassword(dto.password),
+          role,
+        },
+      })
+      .catch((error: unknown) => {
+        // P2002 = violación de índice único: el correo o la cédula ya tienen cuenta.
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'Ya existe una cuenta con ese correo o esa cédula',
+          );
+        }
+        throw error;
+      });
   }
 
   /** ponytail: limpieza oportunista; con volumen conviene una tarea programada. */

@@ -52,27 +52,29 @@ export default function AmortizationTable({
   const totalPayments = schedule.reduce((sum: number, row: any) => sum + parseFloat(row.totalPayment), 0).toFixed(2);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#14183e]/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col rounded-[28px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
         
         {/* Modal Header */}
-        <div className="bg-brand-secondary px-6 py-4 flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-bold text-white">Simulador de Crédito</h2>
-          <div className="flex items-center gap-4">
+        <div className="bg-[#14183e] px-6 md:px-8 py-5 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="font-serif-title text-xl font-bold text-white">Tabla de Amortización</span>
+          </div>
+          <div className="flex items-center gap-3">
             {onDownloadPdf && (
               <button 
                 onClick={onDownloadPdf}
-                className="text-white hover:bg-white/20 px-3 py-1.5 rounded-md transition-colors text-sm font-semibold border border-white/30"
+                className="bg-[#df6951] hover:bg-[#c85640] text-white px-4 py-2 rounded-full transition-all text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5"
               >
                 Descargar PDF
               </button>
             )}
             <button 
               onClick={onClose}
-              className="text-white hover:bg-white/20 p-1 rounded-md transition-colors"
+              className="text-slate-300 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"
               title="Cerrar"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -81,45 +83,45 @@ export default function AmortizationTable({
         <div className="p-6 md:p-8 overflow-y-auto">
           
           {/* Summary Grid */}
-          <div className="grid grid-cols-2 gap-x-12 gap-y-8 mb-10 max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200/80">
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-800 mb-1">Monto a solicitar:</span>
-              <div className="text-slate-500 pb-1 border-b border-brand-secondary">
-                {summary.principal} USD
+              <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Monto solicitado:</span>
+              <div className="text-lg font-extrabold text-[#14183e]">
+                ${summary.principal} USD
               </div>
             </div>
             
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-800 mb-1">Plazo:</span>
-              <div className="text-slate-500 pb-1 border-b border-brand-secondary">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Plazo:</span>
+              <div className="text-lg font-extrabold text-[#14183e]">
                 {summary.termMonths} meses
               </div>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-800 mb-1">Tasa efectiva:</span>
-              <div className="text-slate-500 pb-1 border-b border-brand-secondary">
-                {Number(summary.nominalAnnualRatePct).toFixed(2)} %
+              <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Tasa efectiva:</span>
+              <div className="text-lg font-extrabold text-[#df6951]">
+                {Number(summary.nominalAnnualRatePct).toFixed(2)}%
               </div>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-800 mb-1">Tipo de Cuota:</span>
-              <div className="text-slate-500 pb-1 border-b border-brand-secondary uppercase">
-                {summary.method === 'FRENCH' ? 'FIJA' : 'VARIABLE'}
+              <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Sistema:</span>
+              <div className="text-lg font-extrabold text-[#14183e] uppercase">
+                {summary.method === 'FRENCH' ? 'FRANCÉS (FIJA)' : 'ALEMÁN (VAR)'}
               </div>
             </div>
           </div>
 
-          <h3 className="text-center text-brand-primary text-lg font-medium tracking-wide mb-6">
-            TABLA DE AMORTIZACIÓN
+          <h3 className="text-center text-[#14183e] text-lg font-bold font-serif-title tracking-wide mb-6">
+            DESGLOSE PERIÓDICO DE CUOTAS
           </h3>
 
           {/* Table Container */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-center">
-                <thead className="text-brand-primary font-bold bg-white border-b border-slate-200">
+                <thead className="text-[#14183e] font-bold bg-slate-100/80 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-4 font-semibold">No.</th>
                     <th className="px-4 py-4 font-semibold">Fecha</th>

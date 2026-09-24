@@ -1,7 +1,23 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans, Volkhov } from "next/font/google";
 import "./globals.css";
 import ThemeSync from "@/components/theme-sync";
 import { API_URL } from "@/lib/api";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const volkhov = Volkhov({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Simulador Financiero",
@@ -23,20 +39,20 @@ export default async function RootLayout({
     console.error("Failed to fetch institution config", error);
   }
 
-  const primaryColor = config?.primaryColor || "#003b70";
-  const secondaryColor = config?.secondaryColor || "#35b8db";
-  const accentColor = config?.accentColor || "#10b981";
+  const primaryColor = config?.primaryColor || "#1e293b";
+  const secondaryColor = config?.secondaryColor || "#df6951";
+  const accentColor = config?.accentColor || "#f1a501";
   const navbarBgColor = config?.navbarBgColor || "#ffffff";
   const navbarTextColor = config?.navbarTextColor || "#1e293b";
-  const pageBgColor = config?.pageBgColor || "#f8fafc";
+  const pageBgColor = config?.pageBgColor || "#fefcf9";
   const cardBgColor = config?.cardBgColor || "#ffffff";
-  const footerBgColor = config?.footerBgColor || "#003b70";
-  const footerTextColor = config?.footerTextColor || "#e2e8f0";
+  const footerBgColor = config?.footerBgColor || "#181e2b";
+  const footerTextColor = config?.footerTextColor || "#94a3b8";
 
   return (
-    <html lang="es" className="h-full antialiased">
+    <html lang="es" className={`h-full antialiased ${plusJakarta.variable} ${volkhov.variable}`}>
       <body 
-        className="min-h-full flex flex-col font-sans bg-[var(--brand-page-bg,#f8fafc)] text-slate-800"
+        className="min-h-full flex flex-col font-sans bg-[var(--brand-page-bg,#fefcf9)] text-slate-800 relative overflow-x-hidden"
         style={{
           '--brand-primary': primaryColor,
           '--brand-secondary': secondaryColor,
@@ -49,9 +65,16 @@ export default async function RootLayout({
           '--brand-footer-text': footerTextColor,
         } as React.CSSProperties}
       >
+        {/* Global Organic Top-Right Background Decore Shape */}
+        <img 
+          src="/assets/hero/decore-shape.png" 
+          alt="" 
+          className="absolute top-0 right-0 w-[420px] sm:w-[520px] lg:w-[640px] xl:w-[700px] pointer-events-none z-0 select-none"
+        />
         {children}
         <ThemeSync />
       </body>
     </html>
   );
 }
+

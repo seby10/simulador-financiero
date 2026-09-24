@@ -15,6 +15,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 import { API_URL, errorMessage, readApiError } from "@/lib/api";
 import { analyzeImageQuality } from "@/lib/face-analysis";
 
@@ -71,7 +72,6 @@ export default function ForgotPasswordPage() {
     setCameraActive(false);
   };
 
-  // Al salir de la página se libera la cámara (solo toca el stream, no el estado).
   useEffect(() => () => mediaStreamRef.current?.getTracks().forEach((t) => t.stop()), []);
 
   const capturePhoto = () => {
@@ -87,8 +87,6 @@ export default function ForgotPasswordPage() {
     stopCamera();
   };
 
-  // Paso 1: solo se toma el correo. Si existe o no se sabrá junto con la
-  // comparación facial, con el mismo mensaje en ambos casos.
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -96,7 +94,6 @@ export default function ForgotPasswordPage() {
     startCamera();
   };
 
-  // Step 2: Facial Verification
   const handleBiometricVerify = async () => {
     if (!capturedImage) {
       setError("Captura tu rostro en vivo antes de continuar.");
@@ -131,7 +128,6 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  // Step 3: Password Update
   const handleStep3Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -164,110 +160,109 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+    <div className="min-h-screen bg-transparent flex flex-col font-sans text-slate-800 relative">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center p-4 py-10">
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-slate-200/80 my-4">
-          {/* Header */}
-          <div
-            className="p-6 text-white text-center relative overflow-hidden"
-            style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
-          >
-            <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/20">
-              <KeyRound className="w-7 h-7 text-brand-secondary" />
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Recuperación Biométrica</h1>
-            <p className="text-white/80 text-xs mt-1">
-              Restablece tu contraseña mediante reconocimiento facial de identidad
-            </p>
-
-            {/* Step Indicators */}
-            <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-white/15">
-              {[
-                { num: 1, label: "Correo" },
-                { num: 2, label: "Facial" },
-                { num: 3, label: "Nueva Clave" },
-              ].map((s) => (
-                <div
-                  key={s.num}
-                  className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${
-                    step === s.num
-                      ? "bg-white text-brand-primary shadow"
-                      : step > s.num
-                      ? "bg-emerald-500 text-white"
-                      : "bg-white/10 text-white/60"
-                  }`}
-                >
-                  <span>{s.num}.</span> {s.label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Form Body */}
-          <div className="p-6 sm:p-8 space-y-6">
-            {error && (
-              <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl flex items-center gap-3 text-sm border border-rose-200 animate-in slide-in-from-top-2">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <p>{error}</p>
+      <main className="flex-1 flex items-start justify-center p-4 pt-1 sm:pt-4 pb-10 relative z-10">
+        <div className="w-full max-w-lg bg-white rounded-[32px] shadow-2xl shadow-amber-900/10 overflow-hidden border border-amber-200/50 my-0 animate-in fade-in zoom-in-95 duration-300">
+            
+            {/* Card Header Banner */}
+            <div className="bg-gradient-to-b from-[#f7e6c5] to-[#f4dfb7] p-8 sm:p-9 text-center flex flex-col items-center justify-center relative overflow-hidden border-b border-[#e2c999]">
+              <div className="w-16 h-16 bg-white/80 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 shadow-md shadow-amber-900/5 backdrop-blur-md">
+                <KeyRound className="w-8 h-8 text-[#df6951]" />
               </div>
-            )}
+              <h1 className="text-2xl sm:text-[28px] font-bold font-serif-title tracking-tight text-[#181e2b] mb-1.5">
+                Recuperación Biométrica
+              </h1>
+              <p className="text-[#5e6282] text-xs sm:text-sm max-w-xs font-normal leading-relaxed">
+                Restablece tu contraseña mediante reconocimiento facial de identidad
+              </p>
 
-            {/* STEP 1: EMAIL */}
-            {step === 1 && (
-              <form onSubmit={handleStep1Submit} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-xs font-extrabold uppercase text-slate-600">
-                    Correo Electrónico de la Cuenta *
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-slate-800 text-sm font-medium"
-                      placeholder="maria.andrade@example.com"
-                    />
+              {/* Step Indicators */}
+              <div className="flex bg-white/70 p-1.5 rounded-full mt-6 w-full max-w-xs border border-amber-200/80 backdrop-blur-md shadow-sm justify-between items-center px-1.5">
+                {[
+                  { num: 1, label: "Correo" },
+                  { num: 2, label: "Facial" },
+                  { num: 3, label: "Nueva Clave" },
+                ].map((s) => (
+                  <div
+                    key={s.num}
+                    className={`flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-full transition-all ${
+                      step === s.num
+                        ? "bg-[#df6951] text-white shadow-md shadow-orange-500/20"
+                        : step > s.num
+                        ? "bg-emerald-600 text-white"
+                        : "text-[#5e6282]"
+                    }`}
+                  >
+                    <span>{s.num}.</span> {s.label}
                   </div>
-                  <p className="text-xs text-slate-400">
-                    Ingresa el correo con el que te registraste en la institución.
-                  </p>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full text-white py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-70 text-sm"
-                  style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
-                >
-                  Continuar a Verificación Facial
-                  {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-                </button>
-
-                <div className="text-center pt-2">
-                  <Link href="/login" className="text-xs font-bold text-slate-500 hover:text-brand-primary inline-flex items-center gap-1">
-                    <ArrowLeft className="w-3.5 h-3.5" /> Regresar al inicio de sesión
-                  </Link>
+            {/* Form Body */}
+            <div className="p-7 sm:p-10 space-y-6">
+              {error && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 text-xs sm:text-sm border border-red-200 font-medium animate-in slide-in-from-top-2">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
+                  <p>{error}</p>
                 </div>
-              </form>
-            )}
+              )}
+
+              {/* STEP 1: EMAIL */}
+              {step === 1 && (
+                <form onSubmit={handleStep1Submit} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
+                      Correo Electrónico de la Cuenta *
+                    </label>
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-[#df6951] transition-colors" />
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] focus:bg-white outline-none text-slate-800 text-sm font-semibold transition-all shadow-sm"
+                        placeholder="ejemplo@correo.com"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Ingresa el correo con el que te registraste en la institución.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-sm sm:text-base shadow-xl shadow-orange-500/25 hover:shadow-2xl hover:shadow-orange-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-3"
+                  >
+                    Continuar a Verificación Facial
+                    {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                  </button>
+
+                  <div className="text-center pt-3">
+                    <Link href="/login" className="text-xs font-bold text-[#5e6282] hover:text-[#df6951] inline-flex items-center gap-1.5 transition-colors">
+                      <ArrowLeft className="w-4 h-4" /> Regresar al inicio de sesión
+                    </Link>
+                  </div>
+                </form>
+              )}
 
             {/* STEP 2: BIOMETRIC CAMERA */}
             {step === 2 && (
               <div className="space-y-5">
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-xs text-slate-700">
-                  <p className="font-bold text-slate-900">Cuenta: {email}</p>
-                  <p className="text-slate-500 mt-0.5">
+                <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200/60 text-xs text-slate-700">
+                  <p className="font-bold text-[#14183e] text-sm mb-1">Cuenta: {email}</p>
+                  <p className="text-[#5e6282] leading-relaxed">
                     Ubica tu rostro frente a la cámara dentro del óvalo guía. Se comparará con la foto que
-                    verificó tu identidad en tu última solicitud.
+                    verificó tu identidad en tu registro.
                   </p>
                 </div>
 
                 {/* Camera Container */}
-                <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center border-2 border-slate-300 shadow-inner">
+                <div className="relative w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center border-2 border-slate-200 shadow-inner">
                   {!capturedImage && (
                     <>
                       <video
@@ -280,18 +275,18 @@ export default function ForgotPasswordPage() {
 
                       {cameraActive && (
                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                          <div className="w-48 h-64 border-2 border-dashed border-emerald-400 rounded-full opacity-80 animate-pulse" />
+                          <div className="w-44 h-60 border-2 border-dashed border-[#f1a501] rounded-full opacity-80 animate-pulse shadow-lg" />
                         </div>
                       )}
 
                       {!cameraActive && (
                         <div className="text-center text-white p-6 space-y-3">
                           <Camera className="w-12 h-12 mx-auto text-slate-400" />
-                          <p className="text-xs text-slate-300">Presiona el botón para encender la cámara.</p>
+                          <p className="text-xs text-slate-300">Presiona el botón para encender la cámara web.</p>
                           <button
                             type="button"
                             onClick={startCamera}
-                            className="bg-brand-secondary hover:bg-brand-secondary/90 text-white px-5 py-2 rounded-xl text-xs font-bold shadow"
+                            className="bg-[#f1a501] hover:bg-amber-600 text-white px-6 py-2.5 rounded-full text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] transition-all"
                           >
                             Activar Cámara
                           </button>
@@ -303,14 +298,14 @@ export default function ForgotPasswordPage() {
                   {capturedImage && (
                     <div className="relative w-full h-full">
                       <img src={capturedImage} alt="Selfie" className="w-full h-full object-cover" />
-                      <span className="absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow flex items-center gap-1">
+                      <span className="absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Captura Realizada
                       </span>
                     </div>
                   )}
                 </div>
 
-                {cameraError && <p className="text-xs text-rose-600 font-semibold">{cameraError}</p>}
+                {cameraError && <p className="text-xs text-red-600 font-semibold">{cameraError}</p>}
 
                 {/* Camera Actions */}
                 <div className="flex gap-3">
@@ -318,7 +313,7 @@ export default function ForgotPasswordPage() {
                     <button
                       type="button"
                       onClick={capturePhoto}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-sm shadow flex items-center justify-center gap-2"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-full font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition-all"
                     >
                       <Camera className="w-5 h-5" /> Tomar Foto Facial
                     </button>
@@ -329,7 +324,7 @@ export default function ForgotPasswordPage() {
                       <button
                         type="button"
                         onClick={() => { setCapturedImage(null); startCamera(); }}
-                        className="px-4 py-3 rounded-xl font-bold border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs flex items-center gap-1.5"
+                        className="px-5 py-3.5 rounded-full font-bold border border-slate-200 text-[#5e6282] hover:bg-slate-100 text-xs flex items-center gap-1.5 transition-all"
                       >
                         <RefreshCw className="w-4 h-4" /> Repetir
                       </button>
@@ -337,11 +332,10 @@ export default function ForgotPasswordPage() {
                         type="button"
                         onClick={handleBiometricVerify}
                         disabled={loading}
-                        className="flex-1 text-white py-3.5 rounded-xl font-bold text-sm shadow flex items-center justify-center gap-2 disabled:opacity-70"
-                        style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
+                        className="flex-1 bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-sm shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 disabled:opacity-70 hover:scale-[1.01] transition-all"
                       >
                         {loading ? "Validando Biometría..." : "Validar e Ingresar Clave"}
-                        {!loading && <ShieldCheck className="w-5 h-5 text-brand-secondary" />}
+                        {!loading && <ShieldCheck className="w-5 h-5 text-[#f1a501]" />}
                       </button>
                     </>
                   )}
@@ -352,38 +346,38 @@ export default function ForgotPasswordPage() {
             {/* STEP 3: NEW PASSWORD */}
             {step === 3 && (
               <form onSubmit={handleStep3Submit} className="space-y-5">
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-xs font-semibold flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  Identidad facial validada correctamente ({biometricScore}% de coincidencia). Ingresa tu nueva clave.
+                  <span>Identidad facial validada correctamente ({biometricScore}% de coincidencia). Ingresa tu nueva clave.</span>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-extrabold uppercase text-slate-600">Nueva Contraseña *</label>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">Nueva Contraseña *</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400" />
+                    <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
                     <input
                       type="password"
                       required
                       minLength={8}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-slate-800 text-sm font-medium"
+                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-800 text-sm font-semibold transition-all"
                       placeholder="••••••••"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-extrabold uppercase text-slate-600">Confirmar Nueva Contraseña *</label>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">Confirmar Nueva Contraseña *</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400" />
+                    <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
                     <input
                       type="password"
                       required
                       minLength={8}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary outline-none text-slate-800 text-sm font-medium"
+                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-800 text-sm font-semibold transition-all"
                       placeholder="••••••••"
                     />
                   </div>
@@ -392,8 +386,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full text-white py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 text-sm"
-                  style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
+                  className="w-full bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-base shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-2"
                 >
                   {loading ? "Actualizando clave..." : "Guardar Nueva Contraseña"}
                   {!loading && <CheckCircle2 className="w-5 h-5" />}
@@ -404,21 +397,20 @@ export default function ForgotPasswordPage() {
             {/* STEP 4: SUCCESS */}
             {step === 4 && (
               <div className="text-center py-6 space-y-6 animate-in zoom-in-95 duration-300">
-                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
                   <CheckCircle2 className="w-12 h-12" />
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-black text-slate-900">¡Contraseña Actualizada!</h3>
-                  <p className="text-slate-500 text-sm max-w-xs mx-auto">
+                  <h3 className="text-2xl font-bold font-serif-title text-[#14183e]">¡Contraseña Actualizada!</h3>
+                  <p className="text-[#5e6282] text-sm max-w-xs mx-auto leading-relaxed">
                     Tu identidad facial fue verificada y tu nueva contraseña ha sido guardada con éxito.
                   </p>
                 </div>
 
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-sm"
-                  style={{ backgroundColor: "var(--brand-primary, #003b70)" }}
+                  className="inline-flex items-center gap-2 bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.01] transition-all text-sm"
                 >
                   Iniciar Sesión Ahora <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -427,6 +419,9 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

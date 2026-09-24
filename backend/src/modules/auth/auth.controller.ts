@@ -3,6 +3,9 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Req,
   Res,
@@ -12,6 +15,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiTags,
@@ -21,6 +25,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import {
+  AdminOnly,
   Authenticated,
   CurrentUser,
   readCookie,
@@ -32,9 +37,12 @@ import {
   BiometricResetVerifyDto,
   BiometricResetVerifyResponse,
   ChangePasswordDto,
+  CreateUserAdminDto,
   LoginDto,
   RegisterDto,
   SessionResponse,
+  UpdateUserRoleDto,
+  UpdateUserStatusDto,
   UserResponse,
 } from './auth.dto.js';
 import { AuthService, type SessionContext } from './auth.service.js';
@@ -45,10 +53,64 @@ const contextOf = (request: Request): SessionContext => ({
   ipAddress: request.ip,
 });
 
+/** Administrador en sesión; null si entró con la cabecera x-admin-key. */
+const actorOf = (request: Request) => request.user?.sub ?? null;
+
+const uuid = new ParseUUIDPipe({ version: '4' });
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  /** Lista todos los usuarios con su número de solicitudes (solo administradores). */
+  @Get('users')
+  @AdminOnly()
+  @ApiOkResponse({ type: [UserResponse] })
+  listUsers() {
+    return this.auth.listUsers();
+  }
+
+  /** Crea un usuario desde el panel administrativo, con el rol indicado. */
+  @Post('users')
+  @AdminOnly()
+  @ApiCreatedResponse({ type: UserResponse })
+  @ApiConflictResponse({
+    description: 'Ya existe una cuenta con ese correo o esa cédula',
+  })
+  adminCreateUser(@Body() dto: CreateUserAdminDto) {
+    return this.auth.adminCreateUser(dto);
+  }
+
+  /** Cambia el rol de otro usuario (ADMIN / CUSTOMER). */
+  @Patch('users/:id/role')
+  @AdminOnly()
+  @ApiOkResponse({ type: UserResponse })
+  @ApiForbiddenResponse({ description: 'Intento de cambiar el rol propio' })
+  @ApiNotFoundResponse({ description: 'Usuario inexistente' })
+  updateUserRole(
+    @Param('id', uuid) userId: string,
+    @Body() dto: UpdateUserRoleDto,
+    @Req() request: Request,
+  ) {
+    return this.auth.updateUserRole(actorOf(request), userId, dto.role);
+  }
+
+  /** Activa o desactiva otra cuenta; desactivarla cierra sus sesiones. */
+  @Patch('users/:id/status')
+  @AdminOnly()
+  @ApiOkResponse({ type: UserResponse })
+  @ApiForbiddenResponse({
+    description: 'Intento de desactivar la cuenta propia',
+  })
+  @ApiNotFoundResponse({ description: 'Usuario inexistente' })
+  setUserActive(
+    @Param('id', uuid) userId: string,
+    @Body() dto: UpdateUserStatusDto,
+    @Req() request: Request,
+  ) {
+    return this.auth.setUserActive(actorOf(request), userId, dto.isActive);
+  }
 
   /**
    * Recuperación de clave por biometría: compara una captura en vivo con la selfie
