@@ -114,34 +114,34 @@ export default async function Home() {
 
               {/* Right Column: Hero Person Image & Multiple Decorative Planes */}
               <div className="lg:col-span-5 relative flex justify-center lg:justify-end items-center">
-                <div className="relative w-full max-w-[480px] lg:max-w-[580px]">
+                <div className="relative w-full max-w-[280px] sm:max-w-[340px] lg:max-w-[380px]">
 
-                  {/* Decorative Plane 1 (Top Left of Girl) */}
+                  {/* Decorative Plane 1 (Top Left of Person) */}
                   <img
                     src="/assets/hero/plane.png"
                     alt="Plane 1"
-                    className="absolute -top-4 left-4 lg:-left-6 w-16 lg:w-20 rotate-[15deg] z-20 animate-float"
+                    className="absolute -top-4 -left-4 lg:-left-8 w-12 lg:w-16 rotate-[15deg] z-20 animate-float"
                   />
 
                   {/* Decorative Plane 2 (Top Right near screen edge) */}
                   <img
                     src="/assets/hero/plane.png"
                     alt="Plane 2"
-                    className="absolute top-6 -right-4 lg:-right-12 w-14 lg:w-18 rotate-[35deg] z-20 animate-float-slow opacity-95"
+                    className="absolute top-2 -right-4 lg:-right-8 w-10 lg:w-14 rotate-[35deg] z-20 animate-float-slow opacity-95"
                   />
 
                   {/* Decorative Plane 4 (Background depth plane) */}
                   <img
                     src="/assets/hero/plane.png"
                     alt="Plane 4"
-                    className="absolute bottom-16 right-10 w-10 lg:w-12 rotate-[55deg] z-0 opacity-50 animate-float"
+                    className="absolute bottom-8 right-4 w-8 lg:w-10 rotate-[55deg] z-0 opacity-50 animate-float"
                   />
 
                   {/* Main Hero Person Image */}
                   <img
                     src="/assets/hero/hero-person.png"
-                    alt="Traveller girl on suitcase"
-                    className="w-full h-auto object-contain relative z-10 drop-shadow-xl"
+                    alt="Hero Person"
+                    className="w-full max-h-[520px] sm:max-h-[560px] lg:max-h-[580px] object-contain relative z-10 drop-shadow-xl"
                   />
 
                 </div>

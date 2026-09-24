@@ -92,10 +92,10 @@ export default function CreditSimulatorForm() {
     if (activeCreditType?.imageUrl) {
       return activeCreditType.imageUrl;
     }
-    
+
     const name = activeCreditType?.name;
     if (!name) return "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
-    
+
     const lowerName = name.toLowerCase();
     if (lowerName.includes('consumo')) {
       return "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // retail / shopping
@@ -104,7 +104,7 @@ export default function CreditSimulatorForm() {
     } else if (lowerName.includes('hipotecario') || lowerName.includes('casa') || lowerName.includes('vivienda')) {
       return "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // house / real estate
     } else if (lowerName.includes('educa')) {
-      return "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // graduation / university
+      return "https://plus.unsplash.com/premium_photo-1683887034491-f58b4c4fca72?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZXN0dWRpYW50ZXMlMjBxdWUlMjB0cmFiYWphbnxlbnwwfHwwfHx8MA%3D%3D"; // graduation / university
     }
     return "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // generic office fallback
   };
@@ -136,11 +136,10 @@ export default function CreditSimulatorForm() {
               setCreditTypeId(type.id.toString());
               setSimulationResult(null);
             }}
-            className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
-              creditTypeId === type.id.toString()
+            className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${creditTypeId === type.id.toString()
                 ? "bg-[#df6951] text-white shadow-lg shadow-orange-500/25 scale-105"
                 : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
-            }`}
+              }`}
           >
             {type.name}
           </button>
@@ -150,18 +149,18 @@ export default function CreditSimulatorForm() {
       {/* 3. Main Form & Card Container */}
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Left Feature Image Card */}
           <div className="lg:col-span-5 relative group rounded-[32px] overflow-hidden shadow-xl border border-slate-100 bg-white">
             <div className="relative h-[340px] lg:h-[480px] w-full overflow-hidden">
-              <img 
-                src={currentImage} 
-                alt={activeCreditType?.name || "Simulación"} 
+              <img
+                src={currentImage}
+                alt={activeCreditType?.name || "Simulación"}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#14183e]/85 via-[#14183e]/20 to-transparent"></div>
             </div>
-            
+
             {/* Floating Info Overlay */}
             <div className="absolute bottom-6 left-6 right-6 text-white p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
               <span className="text-xs font-bold uppercase tracking-widest text-[#f1a501] block mb-1">
@@ -194,7 +193,7 @@ export default function CreditSimulatorForm() {
             )}
 
             <form onSubmit={handleCalculate} className="space-y-5">
-              
+
               {/* Field 1: Amount */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
@@ -202,7 +201,7 @@ export default function CreditSimulatorForm() {
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                  <input 
+                  <input
                     type="number"
                     min={activeCreditType?.minAmount || "0"}
                     max={activeCreditType?.maxAmount}
@@ -225,7 +224,7 @@ export default function CreditSimulatorForm() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
                   Plazo en Meses
                 </label>
-                <input 
+                <input
                   type="number"
                   min={activeCreditType?.minTermMonths || "1"}
                   max={activeCreditType?.maxTermMonths}
@@ -242,7 +241,7 @@ export default function CreditSimulatorForm() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
                   Sistema de Amortización
                 </label>
-                <select 
+                <select
                   className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-900 font-semibold text-base transition-all cursor-pointer"
                   value={method}
                   onChange={e => setMethod(e.target.value as any)}
@@ -282,7 +281,7 @@ export default function CreditSimulatorForm() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button 
+                <button
                   type="submit"
                   disabled={loadingSimulation || !amount || !termMonths || !creditTypeId}
                   className="flex-1 bg-[#df6951] hover:bg-[#c85640] text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -291,7 +290,7 @@ export default function CreditSimulatorForm() {
                   <ChevronRight className="w-5 h-5" />
                 </button>
 
-                <button 
+                <button
                   type="button"
                   onClick={handleClear}
                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-4 px-6 rounded-full transition-all text-center"
@@ -306,9 +305,9 @@ export default function CreditSimulatorForm() {
 
         {/* Result Table Modal */}
         {simulationResult && (
-          <AmortizationTable 
-            result={simulationResult} 
-            onClose={() => setSimulationResult(null)} 
+          <AmortizationTable
+            result={simulationResult}
+            onClose={() => setSimulationResult(null)}
             onDownloadPdf={async () => {
               await downloadAmortizationPdf({
                 creditTypeId: Number(creditTypeId),
@@ -324,7 +323,7 @@ export default function CreditSimulatorForm() {
       </div>
 
       {/* FAQ Section matching user screenshot */}
-      <FaqAccordion 
+      <FaqAccordion
         items={[
           {
             question: "¿Para qué sirve el simulador?",

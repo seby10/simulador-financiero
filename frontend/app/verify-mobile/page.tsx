@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   Camera,
   CheckCircle2,
@@ -8,11 +9,13 @@ import {
   ShieldCheck,
   RefreshCw,
   AlertCircle,
-  Building2,
   User,
   Check,
   ArrowRight,
+  ScanFace,
 } from "lucide-react";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 import {
   analyzeImageQuality,
   runSimulatedVerification,
@@ -80,14 +83,11 @@ export default function VerifyMobilePage() {
     setCameraActive(false);
   };
 
-  // Try starting WebRTC camera feed
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     startCamera();
     return () => {
       stopCamera();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facingMode]);
 
   const toggleCamera = () => {
@@ -110,7 +110,6 @@ export default function VerifyMobilePage() {
       }
     }
 
-    // Open native mobile camera / gallery input
     fileInputRef.current?.click();
   };
 
@@ -145,10 +144,7 @@ export default function VerifyMobilePage() {
     setErrorMessage(null);
     setResult(null);
 
-    // Run facial analysis
     const analysis = await analyzeImageQuality(capturedImage);
-
-    // Simulate backend response
     const res = runSimulatedVerification(analysis);
     setResult(res);
     setIsVerifying(false);
@@ -162,7 +158,9 @@ export default function VerifyMobilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-transparent flex flex-col font-sans text-slate-800 relative">
+      <Navbar />
+
       {/* Hidden Native File Capture Input */}
       <input
         ref={fileInputRef}
@@ -173,203 +171,195 @@ export default function VerifyMobilePage() {
         className="hidden"
       />
 
-      {/* Corporate Bank Top Bar */}
-      <header className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white font-bold">
-            <Building2 className="w-4.5 h-4.5" />
-          </div>
-          <div>
-            <span className="font-bold text-sm tracking-tight">
-              BANCO<span className="text-blue-400">FINANCIERO</span>
-            </span>
-            <span className="block text-[10px] text-slate-400 font-medium">
-              Verificación de Identidad Digital
-            </span>
-          </div>
-        </div>
+      <main className="flex-1 flex items-start justify-center p-4 pt-1 sm:pt-4 pb-10 relative z-10">
+        <div className="w-full max-w-lg bg-white rounded-[32px] shadow-2xl shadow-amber-900/10 overflow-hidden border border-amber-200/50 my-0 animate-in fade-in zoom-in-95 duration-300">
+            
+            {/* Card Header Banner */}
+            <div className="bg-gradient-to-b from-[#f7e6c5] to-[#f4dfb7] p-8 sm:p-9 text-center flex flex-col items-center justify-center relative overflow-hidden border-b border-[#e2c999]">
+              <div className="w-16 h-16 bg-white/80 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 shadow-md shadow-amber-900/5 backdrop-blur-md">
+                <ScanFace className="w-8 h-8 text-[#df6951]" />
+              </div>
+              <h1 className="text-2xl sm:text-[28px] font-bold font-serif-title tracking-tight text-[#181e2b] mb-1.5">
+                Validación de Rostro
+              </h1>
+              <p className="text-[#5e6282] text-xs sm:text-sm max-w-xs font-normal leading-relaxed">
+                Captura tu fotografía clara de frente para validar tu identidad digital.
+              </p>
 
-        <div className="flex items-center gap-1 text-[11px] text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Canal Seguro</span>
-        </div>
-      </header>
+              {/* Security Pill Badge */}
+              <div className="flex bg-white/70 p-2 rounded-full mt-5 border border-amber-200/80 backdrop-blur-md shadow-sm items-center gap-2 px-4 text-xs font-bold text-[#df6951]">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Canal Biométrico Seguro</span>
+              </div>
+            </div>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-sm w-full mx-auto p-4 flex flex-col justify-between space-y-4">
-        {/* Title Banner */}
-        <div className="text-center pt-2 pb-1">
-          <h1 className="text-base font-bold text-slate-900">
-            Validación de Rostro
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Saca una fotografía clara de tu rostro de frente para validar tu solicitud.
-          </p>
-        </div>
+            {/* Card Body */}
+            <div className="p-7 sm:p-10 space-y-6">
+              
+              {/* Camera / Capture Frame */}
+              <div className="relative aspect-[3/4] w-full bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-200 shadow-inner flex items-center justify-center">
+                {capturedImage ? (
+                  <div className="relative w-full h-full flex items-center justify-center bg-black">
+                    <img
+                      src={capturedImage}
+                      alt="Foto tomada"
+                      className="w-full h-full object-cover"
+                    />
 
-        {/* Camera / Capture Frame */}
-        <div className="relative aspect-[3/4] w-full bg-slate-900 rounded-2xl overflow-hidden border border-slate-300 shadow-md flex items-center justify-center">
-          {capturedImage ? (
-            <div className="relative w-full h-full flex items-center justify-center bg-black">
-              <img
-                src={capturedImage}
-                alt="Foto tomada"
-                className="w-full h-full object-cover"
-              />
+                    {isVerifying && (
+                      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white">
+                        <div className="w-10 h-10 border-3 border-[#f1a501] border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-xs font-semibold">Validando fotografía...</p>
+                        <p className="text-[11px] text-slate-300 mt-1">
+                          Verificando parámetros biométricos en vivo.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : cameraActive ? (
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover ${
+                        facingMode === "user" ? "transform -scale-x-100" : ""
+                      }`}
+                    />
 
-              {isVerifying && (
-                <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white">
-                  <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
-                  <p className="text-xs font-semibold">Validando fotografía...</p>
-                  <p className="text-[11px] text-slate-300 mt-1">
-                    Verificando parámetros de seguridad con el sistema bancario.
-                  </p>
+                    {/* Oval Framing Guide */}
+                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
+                      <div className="w-44 h-60 rounded-[50%] border-2 border-dashed border-[#f1a501] shadow-[0_0_0_9999px_rgba(15,23,42,0.45)] animate-pulse flex items-center justify-center" />
+                      <span className="mt-3 px-3.5 py-1 rounded-full bg-slate-900/80 text-white text-[11px] font-medium backdrop-blur-sm border border-slate-700">
+                        Centra tu rostro en el óvalo
+                      </span>
+                    </div>
+
+                    {/* Toggle camera button */}
+                    <button
+                      type="button"
+                      onClick={toggleCamera}
+                      className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/70 text-white hover:bg-slate-800 backdrop-blur-sm border border-slate-700 transition-colors"
+                      title="Girar cámara"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-6 text-center text-slate-300">
+                    <div className="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-3 text-slate-400">
+                      <User className="w-10 h-10" />
+                    </div>
+                    <p className="text-xs font-medium text-slate-200">
+                      Cámara lista para captura
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">
+                      Presiona el botón a continuación para tomar tu foto.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Verification Results Card */}
+              {result ? (
+                <div className="space-y-4 animate-in slide-in-from-top-2">
+                  <div
+                    className={`p-4 rounded-2xl border ${
+                      result.passed
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+                        : "bg-red-50 border-red-200 text-red-950"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {result.passed ? (
+                        <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <XCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <h3 className="font-bold text-xs sm:text-sm">
+                          {result.passed
+                            ? "Verificación de Identidad Aprobada"
+                            : "Verificación No Completada"}
+                        </h3>
+                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                          {result.passed
+                            ? "Tu rostro ha sido validado exitosamente. Ya puedes continuar con tu solicitud."
+                            : result.failureReason}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {result.passed ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-center space-y-2 shadow-sm">
+                      <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-1">
+                        <Check className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-800">
+                        ¡Proceso Biométrico Finalizado!
+                      </p>
+                      <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                        Puedes cerrar esta pestaña y regresar a la pantalla principal.
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={resetCapture}
+                      className="w-full py-4 rounded-full bg-[#df6951] hover:bg-[#c85640] text-white font-bold text-sm shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 hover:scale-[1.01] transition-all"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Intentar Nuevamente
+                    </button>
+                  )}
+                </div>
+              ) : errorMessage ? (
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5 animate-in slide-in-from-top-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <span>{errorMessage}</span>
+                </div>
+              ) : null}
+
+              {/* Single Main Action Button */}
+              {!result && (
+                <div className="pt-1">
+                  {capturedImage ? (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={resetCapture}
+                        disabled={isVerifying}
+                        className="px-5 py-3.5 rounded-full font-bold border border-slate-200 text-[#5e6282] hover:bg-slate-100 text-xs flex items-center gap-1.5 transition-all"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Repetir
+                      </button>
+                      <button
+                        onClick={handleVerify}
+                        disabled={isVerifying}
+                        className="flex-1 py-4 rounded-full bg-[#df6951] hover:bg-[#c85640] text-white font-bold text-sm shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01] transition-all"
+                      >
+                        <ShieldCheck className="w-5 h-5 text-[#f1a501]" />
+                        {isVerifying ? "Validando..." : "Confirmar y Validar"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCaptureClick}
+                      className="w-full bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-sm sm:text-base shadow-xl shadow-orange-500/25 hover:shadow-2xl hover:shadow-orange-500/35 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
+                    >
+                      <Camera className="w-5 h-5" />
+                      Tomar Fotografía
+                    </button>
+                  )}
                 </div>
               )}
             </div>
-          ) : cameraActive ? (
-            <div className="relative w-full h-full flex items-center justify-center">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover ${
-                  facingMode === "user" ? "transform -scale-x-100" : ""
-                }`}
-              />
-
-              {/* Oval Framing Guide */}
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
-                <div className="w-48 h-64 rounded-[50%] border-2 border-blue-400 shadow-[0_0_0_9999px_rgba(15,23,42,0.45)] flex items-center justify-center" />
-                <span className="mt-3 px-3 py-1 rounded-full bg-slate-900/80 text-white text-[11px] font-medium backdrop-blur-sm">
-                  Centra tu rostro en el óvalo
-                </span>
-              </div>
-
-              {/* Toggle camera button */}
-              <button
-                onClick={toggleCamera}
-                className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/70 text-white hover:bg-slate-800 backdrop-blur-sm border border-slate-700"
-                title="Girar cámara"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-6 text-center text-slate-300">
-              <div className="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-3 text-slate-400">
-                <User className="w-10 h-10" />
-              </div>
-              <p className="text-xs font-medium text-slate-200">
-                Cámara lista para captura
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">
-                Presiona el botón a continuación para tomar tu foto.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Verification Results Card */}
-        {result ? (
-          <div className="space-y-3">
-            <div
-              className={`p-4 rounded-xl border ${
-                result.passed
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-950"
-                  : "bg-rose-50 border-rose-200 text-rose-950"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                {result.passed ? (
-                  <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <XCircle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <h3 className="font-bold text-xs">
-                    {result.passed
-                      ? "Verificación de Identidad Aprobada"
-                      : "Verificación No Completada"}
-                  </h3>
-                  <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
-                    {result.passed
-                      ? "Tu rostro ha sido validado exitosamente. Ya puedes continuar con tu solicitud."
-                      : result.failureReason}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {result.passed ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-4 text-center space-y-2 shadow-sm">
-                <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-1">
-                  <Check className="w-5 h-5" />
-                </div>
-                <p className="text-xs font-bold text-slate-800">
-                  ¡Proceso Biométrico Finalizado!
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  Puedes cerrar esta pestaña y regresar a la pantalla de tu computador.
-                </p>
-              </div>
-            ) : (
-              <button
-                onClick={resetCapture}
-                className="w-full py-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Intentar Nuevamente
-              </button>
-            )}
           </div>
-        ) : errorMessage ? (
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <span>{errorMessage}</span>
-          </div>
-        ) : null}
+        </main>
 
-        {/* Single Main Action Button */}
-        {!result && (
-          <div className="pt-1">
-            {capturedImage ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={resetCapture}
-                  disabled={isVerifying}
-                  className="px-4 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-300 flex items-center gap-1.5 shadow-sm"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Repetir
-                </button>
-                <button
-                  onClick={handleVerify}
-                  disabled={isVerifying}
-                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  {isVerifying ? "Validando..." : "Confirmar y Validar"}
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleCaptureClick}
-                className="w-full py-3.5 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <Camera className="w-4.5 h-4.5" />
-                Tomar Fotografía
-              </button>
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* Corporate Mobile Footer */}
-      <footer className="bg-white border-t border-slate-200 py-3 text-center text-[10px] text-slate-500">
-        © 2026 Banco Financiero S.A. • Seguridad de Identidad
-      </footer>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
