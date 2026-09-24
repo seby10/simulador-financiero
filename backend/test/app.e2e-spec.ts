@@ -998,7 +998,8 @@ describe('API (e2e)', () => {
         firstName: 'Prueba',
         completed: false,
       });
-      expect((await poll(handoff).expect(200)).body.status).toBe('PENDING');
+      // Abrir el enlace en el celular ya se refleja en la computadora.
+      expect((await poll(handoff).expect(200)).body.status).toBe('CONNECTED');
 
       const { body: failed } = await request(server())
         .post(`${mobile(handoff.mobileToken)}/verify`)
@@ -1053,6 +1054,56 @@ describe('API (e2e)', () => {
           newPassword: 'clave-desde-celular',
         })
         .expect(204);
+    });
+
+    it('la computadora ve en vivo el paso del celular y si abandona', async () => {
+      const customer = await registerUser();
+      const { body: handoff } = await request(server())
+        .post('/api/biometrics/handoff/password-reset')
+        .send({ email: customer.email })
+        .expect(201);
+      expect((await poll(handoff).expect(200)).body.status).toBe('WAITING');
+
+      await request(server()).get(mobile(handoff.mobileToken)).expect(200);
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/heartbeat`)
+        .send({ stage: 'CAPTURING' })
+        .expect(204);
+      expect((await poll(handoff).expect(200)).body.status).toBe('CAPTURING');
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/heartbeat`)
+        .send({ stage: 'DANCING' })
+        .expect(400);
+
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/leave`)
+        .expect(204);
+      expect((await poll(handoff).expect(200)).body.status).toBe('INTERRUPTED');
+      // Volver a abrir el enlace retoma el proceso.
+      await request(server()).get(mobile(handoff.mobileToken)).expect(200);
+      expect((await poll(handoff).expect(200)).body.status).toBe('CONNECTED');
+
+      // Al completarse, el canal de eventos envía COMPLETED y se cierra.
+      await request(server())
+        .post(`${mobile(handoff.mobileToken)}/verify`)
+        .send(await live('PASSWORD_RESET', 'r0'))
+        .expect(200);
+      const events = await request(server())
+        .get(`/api/biometrics/handoff/${handoff.handoffId}/events`)
+        .query({ pollToken: handoff.pollToken })
+        .buffer(true)
+        .parse((res, done) => {
+          let text = '';
+          res.on('data', (chunk: Buffer) => (text += chunk.toString()));
+          res.on('end', () => done(null, text));
+        })
+        .expect(200)
+        .expect('Content-Type', /text\/event-stream/);
+      expect(String(events.body)).toContain('"status":"COMPLETED"');
+      await request(server())
+        .get(`/api/biometrics/handoff/${handoff.handoffId}/events`)
+        .query({ pollToken: 'otro' })
+        .expect(404);
     });
 
     it('rechaza códigos inválidos, secretos ajenos y solicitudes de otra cuenta', async () => {

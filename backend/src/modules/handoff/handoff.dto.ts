@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { LivenessPurpose } from '../../generated/prisma/enums.js';
+import { MOBILE_STAGES, type MobileStage } from './handoff.service.js';
 
 /** Traspaso de una cuenta con sesión: confirmar identidad o verificar una solicitud. */
 export class CreateHandoffDto {
@@ -42,6 +43,13 @@ export class CreateResetHandoffDto {
   email: string;
 }
 
+export class HandoffHeartbeatDto {
+  /** Qué está haciendo el celular. */
+  @ApiProperty({ enum: MOBILE_STAGES })
+  @IsIn(MOBILE_STAGES)
+  stage: MobileStage;
+}
+
 export class HandoffPollDto {
   /** Secreto que devolvió la creación del traspaso; solo lo conoce la computadora. */
   @IsString() @MaxLength(100) pollToken: string;
@@ -59,8 +67,11 @@ export class HandoffCreatedResponse {
 }
 
 export class HandoffStatusResponse {
-  /** PENDING mientras el celular no termine; COMPLETED al pasar la verificación. */
-  status: 'PENDING' | 'COMPLETED' | 'EXPIRED';
+  /**
+   * WAITING (sin escanear), CONNECTED / CAPTURING / VERIFYING (lo que hace el
+   * celular), INTERRUPTED (cerró la página o dejó de responder), COMPLETED, EXPIRED.
+   */
+  status: string;
   /** Resultado del flujo (en recuperación incluye resetToken una sola vez). */
   result: Record<string, unknown> | null;
 }

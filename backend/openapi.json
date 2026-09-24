@@ -2027,6 +2027,104 @@
         ]
       }
     },
+    "/api/biometrics/handoff/{id}/events": {
+      "get": {
+        "operationId": "HandoffController_events",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pollToken",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Eventos en vivo (Server-Sent Events) para la computadora: cuándo se abre el\nenlace en el celular, en qué paso va, si se interrumpe y cuándo termina.\nEl secreto va en la URL porque EventSource no admite cabeceras ni cuerpo.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}/heartbeat": {
+      "post": {
+        "operationId": "HandoffController_heartbeat",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffHeartbeatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "410": {
+            "description": "Código vencido o inválido"
+          }
+        },
+        "summary": "Latido del celular (cada ~2 s) con el paso en el que está.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}/leave": {
+      "post": {
+        "operationId": "HandoffController_leave",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "El celular cerró o abandonó la página (navigator.sendBeacon).",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
     "/api/biometrics/handoff/mobile/{token}": {
       "get": {
         "operationId": "HandoffController_mobileInfo",
@@ -4493,12 +4591,7 @@
         "properties": {
           "status": {
             "type": "string",
-            "description": "PENDING mientras el celular no termine; COMPLETED al pasar la verificación.",
-            "enum": [
-              "PENDING",
-              "COMPLETED",
-              "EXPIRED"
-            ]
+            "description": "WAITING (sin escanear), CONNECTED / CAPTURING / VERIFYING (lo que hace el\ncelular), INTERRUPTED (cerró la página o dejó de responder), COMPLETED, EXPIRED."
           },
           "result": {
             "type": "object",
@@ -4510,6 +4603,23 @@
         "required": [
           "status",
           "result"
+        ]
+      },
+      "HandoffHeartbeatDto": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "description": "Qué está haciendo el celular.",
+            "enum": [
+              "CONNECTED",
+              "CAPTURING",
+              "VERIFYING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
         ]
       },
       "HandoffMobileInfoResponse": {

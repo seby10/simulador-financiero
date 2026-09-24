@@ -6,6 +6,8 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
+  Sse,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -14,7 +16,7 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Authenticated, CurrentUser } from '../../common/auth.js';
 import { STRICT } from '../../common/throttle.js';
 import { LiveCaptureDto } from '../biometrics/biometrics.dto.js';
@@ -22,6 +24,7 @@ import {
   CreateHandoffDto,
   CreateResetHandoffDto,
   HandoffCreatedResponse,
+  HandoffHeartbeatDto,
   HandoffMobileInfoResponse,
   HandoffPollDto,
   HandoffStatusResponse,
@@ -61,6 +64,35 @@ export class HandoffController {
   })
   poll(@Param('id', uuid) id: string, @Body() dto: HandoffPollDto) {
     return this.handoff.poll(id, dto.pollToken);
+  }
+
+  /**
+   * Eventos en vivo (Server-Sent Events) para la computadora: cuándo se abre el
+   * enlace en el celular, en qué paso va, si se interrumpe y cuándo termina.
+   * El secreto va en la URL porque EventSource no admite cabeceras ni cuerpo.
+   */
+  @Sse(':id/events')
+  @SkipThrottle()
+  events(@Param('id', uuid) id: string, @Query('pollToken') pollToken = '') {
+    return this.handoff.events(id, pollToken);
+  }
+
+  /** Latido del celular (cada ~2 s) con el paso en el que está. */
+  @Post('mobile/:token/heartbeat')
+  @HttpCode(204)
+  @ApiGoneResponse({ description: 'Código vencido o inválido' })
+  async heartbeat(
+    @Param('token') token: string,
+    @Body() dto: HandoffHeartbeatDto,
+  ) {
+    await this.handoff.heartbeat(token, dto.stage);
+  }
+
+  /** El celular cerró o abandonó la página (navigator.sendBeacon). */
+  @Post('mobile/:token/leave')
+  @HttpCode(204)
+  async leave(@Param('token') token: string) {
+    await this.handoff.leave(token);
   }
 
   /** El celular abre el QR: qué flujo es y a quién saludar. */

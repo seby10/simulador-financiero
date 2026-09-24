@@ -90,6 +90,10 @@ model BiometricHandoff {
   applicationId   String?
   /// Recuperación de clave: el correo que se escribió en la computadora.
   email           String?
+  /// Qué está haciendo el celular (CONNECTED, CAPTURING, VERIFYING, LEFT) y
+  /// su último latido: sin latidos recientes el proceso se da por interrumpido.
+  mobileStage     String?
+  mobileSeenAt    DateTime?
   /// Resultado para la computadora (en recuperación, el token de un solo uso
   /// hasta que la computadora lo retira).
   result          Json?
