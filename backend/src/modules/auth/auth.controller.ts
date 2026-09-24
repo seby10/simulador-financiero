@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Req,
@@ -14,6 +15,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiTags,
@@ -51,12 +53,17 @@ const contextOf = (request: Request): SessionContext => ({
   ipAddress: request.ip,
 });
 
+/** Administrador en sesión; null si entró con la cabecera x-admin-key. */
+const actorOf = (request: Request) => request.user?.sub ?? null;
+
+const uuid = new ParseUUIDPipe({ version: '4' });
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  /** Lista todos los usuarios (solo administradores). */
+  /** Lista todos los usuarios con su número de solicitudes (solo administradores). */
   @Get('users')
   @AdminOnly()
   @ApiOkResponse({ type: [UserResponse] })
@@ -64,31 +71,45 @@ export class AuthController {
     return this.auth.listUsers();
   }
 
-  /** Crea un nuevo usuario desde el panel administrativo (solo administradores). */
+  /** Crea un usuario desde el panel administrativo, con el rol indicado. */
   @Post('users')
   @AdminOnly()
   @ApiCreatedResponse({ type: UserResponse })
+  @ApiConflictResponse({
+    description: 'Ya existe una cuenta con ese correo o esa cédula',
+  })
   adminCreateUser(@Body() dto: CreateUserAdminDto) {
     return this.auth.adminCreateUser(dto);
   }
 
-  /** Cambia el rol de un usuario (ADMIN / CUSTOMER). */
+  /** Cambia el rol de otro usuario (ADMIN / CUSTOMER). */
   @Patch('users/:id/role')
   @AdminOnly()
   @ApiOkResponse({ type: UserResponse })
-  updateUserRole(@Param('id') userId: string, @Body() dto: UpdateUserRoleDto) {
-    return this.auth.updateUserRole(userId, dto.role as any);
+  @ApiForbiddenResponse({ description: 'Intento de cambiar el rol propio' })
+  @ApiNotFoundResponse({ description: 'Usuario inexistente' })
+  updateUserRole(
+    @Param('id', uuid) userId: string,
+    @Body() dto: UpdateUserRoleDto,
+    @Req() request: Request,
+  ) {
+    return this.auth.updateUserRole(actorOf(request), userId, dto.role);
   }
 
-  /** Activa o desactiva la cuenta de un usuario (solo administradores). */
+  /** Activa o desactiva otra cuenta; desactivarla cierra sus sesiones. */
   @Patch('users/:id/status')
   @AdminOnly()
   @ApiOkResponse({ type: UserResponse })
-  toggleUserActive(
-    @Param('id') userId: string,
+  @ApiForbiddenResponse({
+    description: 'Intento de desactivar la cuenta propia',
+  })
+  @ApiNotFoundResponse({ description: 'Usuario inexistente' })
+  setUserActive(
+    @Param('id', uuid) userId: string,
     @Body() dto: UpdateUserStatusDto,
+    @Req() request: Request,
   ) {
-    return this.auth.toggleUserActive(userId, dto.isActive);
+    return this.auth.setUserActive(actorOf(request), userId, dto.isActive);
   }
 
   /**
@@ -241,4 +262,3 @@ export class AuthController {
     return session;
   }
 }
-

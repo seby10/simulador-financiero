@@ -449,7 +449,7 @@ export default async function Home() {
                     ))}
                   </div>
                   <p className="text-slate-700 italic text-base leading-relaxed mb-6 font-serif-title">
-                    "El simulador de crédito me permitió entender exactamente cuánto pagaría mes a mes sin sorpresas. La verificación facial con la cámara tomó menos de 1 minuto y la atención fue insuperable."
+                    &ldquo;El simulador de crédito me permitió entender exactamente cuánto pagaría mes a mes sin sorpresas. La verificación facial con la cámara tomó menos de 1 minuto y la atención fue insuperable.&rdquo;
                   </p>
                   <div className="flex items-center gap-4">
                     <img

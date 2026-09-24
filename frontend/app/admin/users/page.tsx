@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Users,
   UserCheck,
@@ -21,7 +21,7 @@ import {
   AlertCircle,
   FileText,
 } from "lucide-react";
-import { API_URL } from "@/lib/api";
+import { API_URL, errorMessage, readApiError } from "@/lib/api";
 
 type UserRole = "ADMIN" | "CUSTOMER";
 
@@ -40,6 +40,12 @@ interface UserItem {
   _count?: {
     applications: number;
   };
+}
+
+async function fetchUserList(): Promise<UserItem[]> {
+  const res = await fetch(`${API_URL}/auth/users`, { credentials: "include" });
+  if (!res.ok) throw new Error(await readApiError(res, "Error al obtener la lista de usuarios"));
+  return res.json();
 }
 
 export default function AdminUsersPage() {
@@ -66,23 +72,26 @@ export default function AdminUsersPage() {
   const [modalSaving, setModalSaving] = useState(false);
   const [modalSuccess, setModalSuccess] = useState("");
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  /** El estado se actualiza en los callbacks de la promesa: se puede llamar desde un efecto. */
+  const loadUsers = useCallback(
+    () =>
+      fetchUserList()
+        .then((list) => {
+          setUsers(list);
+          setError("");
+        })
+        .catch((err: unknown) => setError(errorMessage(err, "Error al conectar con el servidor")))
+        .finally(() => setLoading(false)),
+    [],
+  );
 
-  const fetchUsers = async () => {
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
+
+  const fetchUsers = () => {
     setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`${API_URL}/auth/users`, { credentials: "include" });
-      if (!res.ok) throw new Error("Error al obtener la lista de usuarios");
-      const data = await res.json();
-      setUsers(data);
-    } catch (err: any) {
-      setError(err.message || "Error al conectar con el servidor");
-    } finally {
-      setLoading(false);
-    }
+    void loadUsers();
   };
 
   const handleToggleStatus = async (user: UserItem) => {
@@ -93,10 +102,10 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !user.isActive }),
       });
-      if (!res.ok) throw new Error("Error al actualizar estado del usuario");
+      if (!res.ok) throw new Error(await readApiError(res, "Error al actualizar estado del usuario"));
       fetchUsers();
-    } catch (err: any) {
-      alert(err.message || "Error al actualizar usuario");
+    } catch (err) {
+      alert(errorMessage(err, "Error al actualizar usuario"));
     }
   };
 
@@ -108,10 +117,10 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       });
-      if (!res.ok) throw new Error("Error al cambiar el rol del usuario");
+      if (!res.ok) throw new Error(await readApiError(res, "Error al cambiar el rol del usuario"));
       fetchUsers();
-    } catch (err: any) {
-      alert(err.message || "Error al cambiar rol");
+    } catch (err) {
+      alert(errorMessage(err, "Error al cambiar rol"));
     }
   };
 
@@ -127,10 +136,7 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(modalForm),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Error al crear usuario");
-      }
+      if (!res.ok) throw new Error(await readApiError(res, "Error al crear usuario"));
       setModalSuccess("¡Usuario creado exitosamente!");
       setModalForm({
         idNumber: "",
@@ -147,8 +153,8 @@ export default function AdminUsersPage() {
         setIsModalOpen(false);
         setModalSuccess("");
       }, 1500);
-    } catch (err: any) {
-      setModalError(err.message || "Error al procesar la solicitud");
+    } catch (err) {
+      setModalError(errorMessage(err, "Error al procesar la solicitud"));
     } finally {
       setModalSaving(false);
     }
@@ -263,7 +269,7 @@ export default function AdminUsersPage() {
             <span className="text-xs font-bold text-slate-500">Rol:</span>
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value as any)}
+              onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
               className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-[#14183e] bg-slate-50 outline-none cursor-pointer"
             >
               <option value="ALL">Todos los roles</option>
@@ -276,7 +282,7 @@ export default function AdminUsersPage() {
             <span className="text-xs font-bold text-slate-500">Estado:</span>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-[#14183e] bg-slate-50 outline-none cursor-pointer"
             >
               <option value="ALL">Todos los estados</option>

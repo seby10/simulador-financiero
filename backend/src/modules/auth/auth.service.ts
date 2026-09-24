@@ -21,12 +21,17 @@ import {
 } from '../../common/tokens.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma, type User } from '../../generated/prisma/client.js';
-import { BiometricStatus } from '../../generated/prisma/enums.js';
+import { BiometricStatus, UserRole } from '../../generated/prisma/enums.js';
 import {
   BiometricsService,
   SELFIE_DOCUMENT,
 } from '../biometrics/biometrics.service.js';
-import { ChangePasswordDto, LoginDto, RegisterDto } from './auth.dto.js';
+import {
+  ChangePasswordDto,
+  CreateUserAdminDto,
+  LoginDto,
+  RegisterDto,
+} from './auth.dto.js';
 import { hashPassword, verifyPassword } from './password.js';
 
 /** Datos del cliente que se archivan con la sesión para auditoría. */
@@ -61,6 +66,19 @@ const PUBLIC_FIELDS = [
   'isActive',
   'createdAt',
 ] as const;
+
+/** `actorId` es null cuando se entra con la cabecera x-admin-key (sin sesión). */
+const assertNotSelf = (
+  actorId: string | null,
+  userId: string,
+  action: string,
+) => {
+  if (actorId === userId) {
+    throw new ForbiddenException(
+      `No puedes ${action}; pídeselo a otro administrador`,
+    );
+  }
+};
 
 /** Nunca devolver `passwordHash` ni `updatedAt` al cliente. */
 const toPublicUser = (user: User) =>
@@ -151,32 +169,7 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto, context: SessionContext) {
-    const passwordHash = await hashPassword(dto.password);
-    const user = await this.prisma.user
-      .create({
-        data: {
-          email: dto.email,
-          fullName: `${dto.firstName} ${dto.lastName}`,
-          idNumber: dto.idNumber,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          phone: dto.phone,
-          address: dto.address || null,
-          passwordHash,
-        },
-      })
-      .catch((error: unknown) => {
-        // P2002 = violación de índice único: el correo o la cédula ya tienen cuenta.
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
-          throw new ConflictException(
-            'Ya existe una cuenta con ese correo o esa cédula',
-          );
-        }
-        throw error;
-      });
+    const user = await this.createUser(dto, UserRole.CUSTOMER);
     return this.issueSession(user, randomUUID(), context);
   }
 
@@ -356,8 +349,12 @@ export class AuthService {
     return users;
   }
 
-  /** Cambia el rol de un usuario (ADMIN / CUSTOMER). */
-  async updateUserRole(userId: string, role: Prisma.UserUncheckedUpdateInput['role']) {
+  /**
+   * Cambia el rol de otro usuario. Nadie cambia el suyo: así un administrador no
+   * se quita el acceso por error ni deja el sistema sin administradores.
+   */
+  async updateUserRole(actorId: string | null, userId: string, role: UserRole) {
+    assertNotSelf(actorId, userId, 'cambiar tu propio rol');
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { role },
@@ -365,55 +362,55 @@ export class AuthService {
     return toPublicUser(user);
   }
 
-  /** Activa o desactiva la cuenta de un usuario. */
-  async toggleUserActive(userId: string, isActive: boolean) {
+  /** Activa o desactiva otra cuenta; desactivarla cierra todas sus sesiones. */
+  async setUserActive(
+    actorId: string | null,
+    userId: string,
+    isActive: boolean,
+  ) {
+    assertNotSelf(actorId, userId, 'desactivar tu propia cuenta');
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive },
     });
-    if (!isActive) {
-      await this.logoutAll(userId);
-    }
+    if (!isActive) await this.logoutAll(userId);
     return toPublicUser(user);
   }
 
-  /** Crea un nuevo usuario desde el panel de administración con rol específico. */
-  async adminCreateUser(dto: {
-    idNumber: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-    address?: string;
-    email: string;
-    password: string;
-    role?: Prisma.UserUncheckedCreateInput['role'];
-  }) {
-    const existingEmail = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-    if (existingEmail) throw new ConflictException('Ya existe una cuenta con ese correo');
+  /** Alta desde el panel administrativo, con el rol indicado (CUSTOMER por defecto). */
+  async adminCreateUser(dto: CreateUserAdminDto) {
+    return toPublicUser(
+      await this.createUser(dto, dto.role ?? UserRole.CUSTOMER),
+    );
+  }
 
-    const existingId = await this.prisma.user.findUnique({
-      where: { idNumber: dto.idNumber },
-    });
-    if (existingId) throw new ConflictException('Ya existe una cuenta con esa cédula');
-
-    const passwordHash = await hashPassword(dto.password);
-    const fullName = `${dto.firstName.trim()} ${dto.lastName.trim()}`;
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        idNumber: dto.idNumber,
-        firstName: dto.firstName.trim(),
-        lastName: dto.lastName.trim(),
-        fullName,
-        phone: dto.phone,
-        address: dto.address,
-        passwordHash,
-        role: dto.role || 'CUSTOMER',
-      },
-    });
-    return toPublicUser(user);
+  private async createUser(dto: RegisterDto, role: UserRole) {
+    return this.prisma.user
+      .create({
+        data: {
+          email: dto.email,
+          fullName: `${dto.firstName} ${dto.lastName}`,
+          idNumber: dto.idNumber,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          phone: dto.phone,
+          address: dto.address || null,
+          passwordHash: await hashPassword(dto.password),
+          role,
+        },
+      })
+      .catch((error: unknown) => {
+        // P2002 = violación de índice único: el correo o la cédula ya tienen cuenta.
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'Ya existe una cuenta con ese correo o esa cédula',
+          );
+        }
+        throw error;
+      });
   }
 
   /** ponytail: limpieza oportunista; con volumen conviene una tarea programada. */
@@ -423,4 +420,3 @@ export class AuthService {
     });
   }
 }
-

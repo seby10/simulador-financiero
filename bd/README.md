@@ -22,6 +22,9 @@ docker compose -f bd/docker-compose.yml up -d
 
 ## ⚙️ Configuración por Defecto
 
+Son los valores por defecto de `docker-compose.yml`. Para cambiarlos crea un `bd/.env`
+(no se versiona) con `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` o `POSTGRES_PORT`.
+
 - **Host**: `localhost`
 - **Puerto**: `5433` (mapeado al puerto `5432` interno)
 - **Usuario**: `postgres`
@@ -62,6 +65,9 @@ Una vez iniciado el contenedor con `docker compose up -d`, navega a la carpeta `
 
 ```bash
 cd ../backend
-npx prisma db push
-pnpm run db:seed  # o npm run db:seed
+npx prisma migrate deploy   # aplica las migraciones versionadas
+npx prisma db seed          # datos iniciales y administrador
 ```
+
+> No uses `prisma db push`: cambia la base sin crear una migración y el resto del
+> equipo (y el servidor) se queda con un esquema distinto.

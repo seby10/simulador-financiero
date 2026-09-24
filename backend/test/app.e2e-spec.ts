@@ -680,6 +680,104 @@ describe('API (e2e)', () => {
     });
   });
 
+  // ───────────────────────── Gestión de usuarios ─────────────────────────
+
+  describe('gestión de usuarios (admin)', () => {
+    const admin = (method: 'get' | 'post' | 'patch', path: string) =>
+      request(app.getHttpServer())
+        [method](`/api/auth/users${path}`)
+        .set('x-admin-key', process.env.ADMIN_API_KEY!);
+
+    it('crea, lista, cambia rol y desactiva cerrando sesiones', async () => {
+      const email = `e2e-${randomUUID()}@example.com`;
+      createdEmails.push(email);
+      const { body: created } = await admin('post', '')
+        .send({
+          idNumber: randomCedula(),
+          firstName: 'Creado',
+          lastName: 'Por Admin',
+          phone: '0991234567',
+          email,
+          password: 'contrasena-larga-de-prueba',
+        })
+        .expect(201);
+      expect(created).toMatchObject({ email, role: 'CUSTOMER' });
+      expect(created.passwordHash).toBeUndefined();
+
+      const { body: list } = await admin('get', '').expect(200);
+      expect(list.some((u: { id: string }) => u.id === created.id)).toBe(true);
+
+      await admin('patch', `/${created.id}/role`)
+        .send({ role: 'ADMIN' })
+        .expect(200);
+      await admin('patch', `/${created.id}/role`)
+        .send({ role: 'SUPERUSER' })
+        .expect(400);
+
+      const { cookies } = {
+        cookies: (
+          await request(app.getHttpServer())
+            .post('/api/auth/login')
+            .send({ email, password: 'contrasena-larga-de-prueba' })
+            .expect(200)
+        ).get('Set-Cookie')!,
+      };
+      await admin('patch', `/${created.id}/status`)
+        .send({ isActive: 'no' })
+        .expect(400);
+      const { body: disabled } = await admin('patch', `/${created.id}/status`)
+        .send({ isActive: false })
+        .expect(200);
+      expect(disabled.isActive).toBe(false);
+      await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', cookies)
+        .expect(401);
+    });
+
+    it('un administrador no puede quitarse el rol ni desactivarse', async () => {
+      const email = `e2e-${randomUUID()}@example.com`;
+      createdEmails.push(email);
+      const { body: created } = await admin('post', '')
+        .send({
+          idNumber: randomCedula(),
+          firstName: 'Admin',
+          lastName: 'Propio',
+          phone: '0991234567',
+          email,
+          password: 'contrasena-larga-de-prueba',
+          role: 'ADMIN',
+        })
+        .expect(201);
+      const login = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email, password: 'contrasena-larga-de-prueba' })
+        .expect(200);
+      const cookies = login.get('Set-Cookie')!;
+      await request(app.getHttpServer())
+        .patch(`/api/auth/users/${created.id}/role`)
+        .set('Cookie', cookies)
+        .send({ role: 'CUSTOMER' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .patch(`/api/auth/users/${created.id}/status`)
+        .set('Cookie', cookies)
+        .send({ isActive: false })
+        .expect(403);
+    });
+
+    it('rechaza ids inválidos y clientes sin rol ADMIN', async () => {
+      await admin('patch', '/no-es-uuid/role')
+        .send({ role: 'ADMIN' })
+        .expect(400);
+      const { cookies } = await registerUser();
+      await request(app.getHttpServer())
+        .get('/api/auth/users')
+        .set('Cookie', cookies)
+        .expect(403);
+    });
+  });
+
   // ───────────────────────── Recuperación biométrica ─────────────────────────
 
   describe('recuperación de clave por biometría', () => {
