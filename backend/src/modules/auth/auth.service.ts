@@ -7,11 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import {
-  decodeImageBase64,
-  onboardingDocumentPath,
-} from '../../common/http.js';
+import { decodeImageBase64 } from '../../common/http.js';
 import {
   accessTtlSeconds,
   hashRefreshToken,
@@ -21,11 +17,9 @@ import {
 } from '../../common/tokens.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma, type User } from '../../generated/prisma/client.js';
-import { BiometricStatus, UserRole } from '../../generated/prisma/enums.js';
-import {
-  BiometricsService,
-  SELFIE_DOCUMENT,
-} from '../biometrics/biometrics.service.js';
+import { IdentityStatus, UserRole } from '../../generated/prisma/enums.js';
+import { BiometricsService } from '../biometrics/biometrics.service.js';
+import { IdentityService } from '../identity/identity.service.js';
 import {
   ChangePasswordDto,
   CreateUserAdminDto,
@@ -47,7 +41,7 @@ const DISABLED_ACCOUNT = 'La cuenta está desactivada';
 
 /** Mismo texto para correo inexistente, cuenta sin verificación previa o rostro distinto. */
 const RESET_FAILED =
-  'No fue posible verificar tu identidad. La recuperación por biometría solo está disponible si ya verificaste tu rostro en una solicitud.';
+  'No fue posible verificar tu identidad. Recuperar la clave requiere haber confirmado tu identidad con verificación facial.';
 const RESET_EXPIRED = 'El token de recuperación es inválido o expiró';
 const RESET_TTL_MS = 15 * 60 * 1000;
 const RESET_WINDOW_MS = 60 * 60 * 1000;
@@ -64,6 +58,8 @@ const PUBLIC_FIELDS = [
   'address',
   'role',
   'isActive',
+  'identityStatus',
+  'identityVerifiedAt',
   'createdAt',
 ] as const;
 
@@ -91,23 +87,25 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly biometrics: BiometricsService,
+    private readonly identity: IdentityService,
   ) {}
 
   /**
-   * Contrasta una captura en vivo con la selfie que ya verificó la identidad del
-   * titular en una solicitud. Si pasa, emite un token de un solo uso para fijar
-   * la nueva clave. Toda falla responde igual: no se revela si el correo existe
+   * Como en un banco, el rostro va primero: contrasta una captura en vivo con la
+   * selfie que confirmó la identidad de la cuenta y, solo si pasa, emite un token
+   * de un solo uso para fijar la nueva clave. Toda falla responde igual: no se revela si el correo existe
    * ni si la cuenta tiene una verificación previa.
    */
   async biometricResetVerify(email: string, selfieBase64: string) {
     const selfie = decodeImageBase64(selfieBase64, 'selfieBase64');
     const user = await this.prisma.user.findUnique({
       where: { email },
-      select: { id: true, isActive: true },
+      select: { id: true, isActive: true, identityStatus: true },
     });
-    const reference = user?.isActive
-      ? await this.verifiedSelfie(user.id)
-      : null;
+    const reference =
+      user?.isActive && user.identityStatus === IdentityStatus.VERIFIED
+        ? await this.identity.referenceFor(user.id)
+        : null;
     if (!user || !reference) throw new UnauthorizedException(RESET_FAILED);
 
     const failures = await this.prisma.biometricPasswordReset.count({
@@ -310,19 +308,6 @@ export class AuthService {
     });
   }
 
-  /** Selfie aprobada más reciente de la cuenta, o null si nunca verificó su rostro. */
-  private async verifiedSelfie(userId: string) {
-    const application = await this.prisma.investmentApplication.findFirst({
-      where: { userId, biometricStatus: BiometricStatus.VERIFIED },
-      orderBy: { updatedAt: 'desc' },
-      select: { id: true },
-    });
-    if (!application) return null;
-    return readFile(
-      onboardingDocumentPath(application.id, SELFIE_DOCUMENT),
-    ).catch(() => null);
-  }
-
   /** Lista todos los usuarios para la gestión de administración. */
   async listUsers() {
     const users = await this.prisma.user.findMany({
@@ -338,6 +323,8 @@ export class AuthService {
         address: true,
         role: true,
         isActive: true,
+        identityStatus: true,
+        identityVerifiedAt: true,
         createdAt: true,
         _count: {
           select: {
@@ -397,6 +384,11 @@ export class AuthService {
           address: dto.address || null,
           passwordHash: await hashPassword(dto.password),
           role,
+          // El personal administrativo no pasa por la verificación biométrica.
+          ...(role === UserRole.ADMIN && {
+            identityStatus: IdentityStatus.VERIFIED,
+            identityVerifiedAt: new Date(),
+          }),
         },
       })
       .catch((error: unknown) => {

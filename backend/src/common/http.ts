@@ -173,6 +173,10 @@ export function decodeImageBase64(value: string, field: string): Buffer {
 export const onboardingDocumentPath = (id: string, kind: string) =>
   join(PRIVATE_UPLOADS, 'onboarding', id, kind);
 
+/** Ruta en disco de un archivo de identidad de la cuenta (cédula, selfie de referencia). */
+export const userDocumentPath = (userId: string, kind: string) =>
+  join(PRIVATE_UPLOADS, 'users', userId, kind);
+
 export async function saveFile(path: string, buffer: Buffer) {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, buffer);

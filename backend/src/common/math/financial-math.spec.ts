@@ -316,8 +316,20 @@ describe('simulateInvestment', () => {
   });
 
   it.each([
-    [31, [[30, '79.17'], [31, '2.64']]],
-    [60, [[30, '79.17'], [60, '79.16']]],
+    [
+      31,
+      [
+        [30, '79.17'],
+        [31, '2.64'],
+      ],
+    ],
+    [
+      60,
+      [
+        [30, '79.17'],
+        [60, '79.16'],
+      ],
+    ],
   ])('pago mensual a %i días', (termDays, expected) => {
     const result = simulateInvestment({
       amount: 10000,

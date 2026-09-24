@@ -32,6 +32,7 @@ import {
   REFRESH_COOKIE,
 } from '../../common/auth.js';
 import { STRICT } from '../../common/throttle.js';
+import { IdentityStatusResponse } from '../identity/identity.dto.js';
 import {
   BiometricResetConfirmDto,
   BiometricResetVerifyDto,
@@ -45,6 +46,7 @@ import {
   UpdateUserStatusDto,
   UserResponse,
 } from './auth.dto.js';
+import { IdentityService } from '../identity/identity.service.js';
 import { AuthService, type SessionContext } from './auth.service.js';
 import { clearSessionCookies, setSessionCookies } from './cookies.js';
 
@@ -61,7 +63,10 @@ const uuid = new ParseUUIDPipe({ version: '4' });
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly identity: IdentityService,
+  ) {}
 
   /** Lista todos los usuarios con su número de solicitudes (solo administradores). */
   @Get('users')
@@ -110,6 +115,15 @@ export class AuthController {
     @Req() request: Request,
   ) {
     return this.auth.setUserActive(actorOf(request), userId, dto.isActive);
+  }
+
+  /** Tras revisar el caso, devuelve los intentos de verificación facial a una cuenta bloqueada. */
+  @Patch('users/:id/identity/unlock')
+  @AdminOnly()
+  @ApiOkResponse({ type: IdentityStatusResponse })
+  @ApiConflictResponse({ description: 'La verificación no está bloqueada' })
+  unlockIdentity(@Param('id', uuid) userId: string) {
+    return this.identity.unlock(userId);
   }
 
   /**

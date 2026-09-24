@@ -16,7 +16,7 @@ import {
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { AdminOnly, Authenticated, CurrentUser } from '../../common/auth.js';
+import { AdminOnly, CurrentUser, VerifiedIdentity } from '../../common/auth.js';
 import { STRICT } from '../../common/throttle.js';
 import {
   BiometricAttemptResponse,
@@ -38,7 +38,7 @@ export class BiometricsController {
    * la inversión sigue siendo decisión de un administrador.
    */
   @Post('applications/:id/verify')
-  @Authenticated()
+  @VerifiedIdentity()
   @Throttle(STRICT)
   @HttpCode(200)
   @ApiOkResponse({ type: BiometricsResponse })

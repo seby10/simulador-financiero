@@ -7,6 +7,7 @@ import { PrismaModule } from './database/prisma.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { BiometricsModule } from './modules/biometrics/biometrics.module.js';
 import { CreditModule } from './modules/credit/credit.module.js';
+import { IdentityModule } from './modules/identity/identity.module.js';
 import { InstitutionModule } from './modules/institution/institution.module.js';
 import { InvestmentModule } from './modules/investment/investment.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
@@ -20,6 +21,7 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
     CreditModule,
     InvestmentModule,
     BiometricsModule,
+    IdentityModule,
     OnboardingModule,
   ],
   providers: [

@@ -12,7 +12,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { IsCedula } from '../../common/validation/cedula.js';
-import { UserRole } from '../../generated/prisma/enums.js';
+import { IdentityStatus, UserRole } from '../../generated/prisma/enums.js';
 
 /** El correo identifica al usuario: se normaliza para que `A@X.com` y `a@x.com` sean el mismo. */
 const NormalizedEmail = () =>
@@ -123,6 +123,10 @@ export class UserResponse {
   @ApiProperty({ enum: UserRole, enumName: 'UserRole' })
   role: UserRole;
   isActive: boolean;
+  /** Mientras no sea VERIFIED el cliente debe confirmar su identidad para operar. */
+  @ApiProperty({ enum: IdentityStatus, enumName: 'IdentityStatus' })
+  identityStatus: IdentityStatus;
+  identityVerifiedAt: Date | null;
   createdAt: Date;
 }
 
