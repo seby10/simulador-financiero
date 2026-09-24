@@ -141,7 +141,7 @@ export class AuthController {
   })
   @ApiTooManyRequestsResponse({ description: 'Demasiados intentos fallidos' })
   biometricResetVerify(@Body() dto: BiometricResetVerifyDto) {
-    return this.auth.biometricResetVerify(dto.email, dto.selfieBase64);
+    return this.auth.biometricResetVerify(dto.email, dto);
   }
 
   /** Fija la nueva contraseña con el token de un solo uso y cierra todas las sesiones. */

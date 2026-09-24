@@ -24,6 +24,8 @@ const group = readFileSync(join(demo, 'sample6.jpg'));
 const image = jpeg.decode(group, { useTArray: true, formatAsRGBA: true });
 const PERSON_A = { x: 681, y: 321, width: 159, height: 306 };
 const PERSON_B = { x: 250, y: 467, width: 210, height: 291 };
+/** Mirando de frente (yaw ≈ 0.54); A y B tienen la cabeza girada. */
+const PERSON_C = { x: 1181, y: 305, width: 188, height: 280 };
 
 type Box = typeof PERSON_A;
 
@@ -71,37 +73,29 @@ describe('distanceToScore', () => {
 describe('FaceApiBiometricProvider', { timeout: 60_000 }, () => {
   const provider = new FaceApiBiometricProvider();
   const selfieA = asJpeg(crop(PERSON_A, 0.5, 90));
+  const selfieC = asJpeg(crop(PERSON_C, 0.4, 90));
+  /** Comparación sin gestos: solo se evalúa la coincidencia con la referencia. */
+  const match = (selfie: Buffer, reference: Buffer) =>
+    provider.assess({ frames: [selfie], challenges: [], reference });
 
   it('reconoce a la misma persona en dos tomas distintas', async () => {
-    const result = await provider.assess({
-      selfie: selfieA,
-      reference: asJpeg(crop(PERSON_A, 0.3, 45)),
-    });
+    const result = await match(selfieA, asJpeg(crop(PERSON_A, 0.3, 45)));
     expect(result.provider).toBe('faceapi');
     expect(result.matchScore).toBeGreaterThanOrEqual(75);
-    expect(result.livenessScore).toBeGreaterThan(50);
   });
 
   it('no confunde a otra persona', async () => {
-    const result = await provider.assess({
-      selfie: selfieA,
-      reference: asJpeg(crop(PERSON_B, 0.3, 90)),
-    });
+    const result = await match(selfieA, asJpeg(crop(PERSON_B, 0.3, 90)));
     expect(result.matchScore).toBeLessThan(75);
   });
 
   it('acepta la referencia en PNG y girada', async () => {
-    const result = await provider.assess({
-      selfie: selfieA,
-      reference: asPng(crop(PERSON_A, 0.3, 90, true)),
-    });
+    const result = await match(selfieA, asPng(crop(PERSON_A, 0.3, 90, true)));
     expect(result.matchScore).toBeGreaterThanOrEqual(75);
   });
 
   it('rechaza una captura con más de un rostro', async () => {
-    await expect(
-      provider.assess({ selfie: group, reference: selfieA }),
-    ).rejects.toThrow(/más de un rostro/);
+    await expect(match(group, selfieA)).rejects.toThrow(/más de un rostro/);
   });
 
   it('rechaza una captura sin rostro', async () => {
@@ -109,17 +103,48 @@ describe('FaceApiBiometricProvider', { timeout: 60_000 }, () => {
     const blinds = asJpeg(
       crop({ x: 450, y: 20, width: 200, height: 200 }, 0, 90),
     );
-    await expect(
-      provider.assess({ selfie: blinds, reference: selfieA }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(match(blinds, selfieA)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('rechaza una referencia sin rostro', async () => {
     const blinds = asJpeg(
       crop({ x: 450, y: 20, width: 200, height: 200 }, 0, 90),
     );
-    await expect(
-      provider.assess({ selfie: selfieA, reference: blinds }),
-    ).rejects.toThrow(/cédula/);
+    await expect(match(selfieA, blinds)).rejects.toThrow(/cédula/);
+  });
+
+  describe('prueba de vida', () => {
+    it('de frente y sin gestos pedidos pasa con puntaje alto', async () => {
+      const result = await match(selfieC, selfieC);
+      expect(result.livenessFailure).toBeNull();
+      expect(result.livenessScore).toBeGreaterThanOrEqual(90);
+    });
+
+    it('exige que la primera captura sea de frente', async () => {
+      const result = await match(selfieA, selfieA);
+      expect(result.livenessFailure).toMatch(/de frente/);
+      expect(result.livenessScore).toBeLessThan(60);
+    });
+
+    it('detecta que no se hizo el gesto pedido', async () => {
+      const result = await provider.assess({
+        frames: [selfieC, asJpeg(crop(PERSON_C, 0.5, 80))],
+        challenges: ['TURN_LEFT'],
+        reference: selfieC,
+      });
+      expect(result.livenessFailure).toMatch(/girar la cabeza a la izquierda/);
+      expect(result.livenessScore).toBeLessThan(60);
+    });
+
+    it('detecta que otra persona hizo el gesto', async () => {
+      const result = await provider.assess({
+        frames: [selfieC, selfieA],
+        challenges: ['TURN_RIGHT'],
+        reference: selfieC,
+      });
+      expect(result.livenessFailure).toMatch(/misma persona/);
+    });
   });
 });

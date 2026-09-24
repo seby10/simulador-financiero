@@ -12,6 +12,7 @@ import type {
   BiometricCapture,
   BiometricProvider,
 } from './biometrics.provider.js';
+import { CHALLENGE_LABELS, challengeMet, isFrontal } from './liveness.js';
 
 // face-api.node-wasm usa esta misma instancia de tfjs (no la empaqueta).
 const require = createRequire(import.meta.url);
@@ -34,6 +35,13 @@ const MIN_DETECTION_CONFIDENCE = 0.5;
  * persona; si fotos reales de cédula la superan, subir el umbral por entorno.
  */
 const DISTANCE_AT_THRESHOLD = 0.45;
+
+/**
+ * Entre fotogramas de la misma sesión (misma cámara, segundos de diferencia) el
+ * rostro debe ser el mismo; se tolera algo más que contra la cédula porque el
+ * giro de cabeza cambia el descriptor.
+ */
+const SAME_SESSION_DISTANCE = 0.55;
 
 const clamp = (value: number) => Math.min(100, Math.max(0, value));
 const round2 = (value: number) => Math.round(value * 100) / 100;
@@ -137,30 +145,24 @@ async function detectFaces(tensor: tf.Tensor3D): Promise<FaceResult[]> {
  * el rostro más grande, porque la cédula ecuatoriana trae además un retrato
  * fantasma pequeño; si no aparece ninguno se prueba girando la imagen.
  *
- * ponytail: livenessScore es por ahora la confianza de detección de la captura
- * (calidad del rostro), no una prueba de vida. La prueba de vida real llega con
- * el reto de varios fotogramas.
+ * Prueba de vida activa: el primer fotograma debe ser de frente y cada uno de
+ * los siguientes debe mostrar el gesto pedido, siempre con la misma persona.
+ * Esto detiene una foto impresa o en pantalla (no gira ni sonríe a pedido); no
+ * sustituye a un detector pasivo certificado (ISO/IEC 30107-3) contra máscaras
+ * o deepfakes en tiempo real.
  */
 @Injectable()
 export class FaceApiBiometricProvider implements BiometricProvider {
   readonly name = 'faceapi';
 
   async assess({
-    selfie,
+    frames,
+    challenges,
     reference,
   }: BiometricCapture): Promise<BiometricAssessment> {
     await loadEngine();
-    const captured = await this.facesIn(selfie, false);
-    if (captured.length === 0) {
-      throw new BadRequestException(
-        'No se detectó un rostro en la captura. Ubícate de frente, con buena luz y sin cubrirte la cara.',
-      );
-    }
-    if (captured.length > 1) {
-      throw new BadRequestException(
-        'La captura tiene más de un rostro. Asegúrate de estar solo frente a la cámara.',
-      );
-    }
+    const faces: FaceResult[] = [];
+    for (const frame of frames) faces.push(await this.singleFace(frame));
     const [referenceFace] = await this.facesIn(reference, true);
     if (!referenceFace) {
       throw new BadRequestException(
@@ -168,16 +170,78 @@ export class FaceApiBiometricProvider implements BiometricProvider {
       );
     }
 
-    const [face] = captured;
+    const [neutral, ...gestures] = faces;
     const distance = faceapi.euclideanDistance(
-      face.descriptor,
+      neutral.descriptor,
       referenceFace.descriptor,
     );
     return {
       provider: this.name,
-      livenessScore: round2(face.detection.score * 100),
+      ...this.liveness(neutral, gestures, challenges),
       matchScore: distanceToScore(distance),
     };
+  }
+
+  /**
+   * Todas las comprobaciones pasan → 90–100 según la nitidez de los rostros.
+   * Si alguna falla el puntaje queda por debajo de 60 y se informa la primera.
+   */
+  private liveness(
+    neutral: FaceResult,
+    gestures: FaceResult[],
+    challenges: BiometricCapture['challenges'],
+  ) {
+    const points = (face: FaceResult) => face.landmarks.positions;
+    const checks: [boolean, string][] = [
+      [
+        isFrontal(points(neutral)),
+        'La primera captura debe ser mirando de frente a la cámara',
+      ],
+      [
+        gestures.every(
+          (face) =>
+            faceapi.euclideanDistance(face.descriptor, neutral.descriptor) <=
+            SAME_SESSION_DISTANCE,
+        ),
+        'Las capturas no corresponden a la misma persona',
+      ],
+      ...challenges.map((challenge, i): [boolean, string] => [
+        challengeMet(challenge, points(gestures[i]), points(neutral)),
+        `No se detectó el gesto pedido: ${CHALLENGE_LABELS[challenge]}`,
+      ]),
+    ];
+    const failed = checks.find(([ok]) => !ok);
+    if (!failed) {
+      const sharpness = Math.min(
+        neutral.detection.score,
+        ...gestures.map((face) => face.detection.score),
+      );
+      return {
+        livenessScore: round2(90 + sharpness * 10),
+        livenessFailure: null,
+      };
+    }
+    const passed = checks.filter(([ok]) => ok).length;
+    return {
+      livenessScore: round2((60 * passed) / checks.length),
+      livenessFailure: failed[1],
+    };
+  }
+
+  /** Exactamente un rostro por fotograma; si no, el problema es de la toma. */
+  private async singleFace(frame: Buffer) {
+    const faces = await this.facesIn(frame, false);
+    if (faces.length === 0) {
+      throw new BadRequestException(
+        'No se detectó un rostro en la captura. Ubícate de frente, con buena luz y sin cubrirte la cara.',
+      );
+    }
+    if (faces.length > 1) {
+      throw new BadRequestException(
+        'La captura tiene más de un rostro. Asegúrate de estar solo frente a la cámara.',
+      );
+    }
+    return faces[0];
   }
 
   /** Rostros de la imagen; con `tryRotations` prueba 90°, 180° y 270° si no halla ninguno. */

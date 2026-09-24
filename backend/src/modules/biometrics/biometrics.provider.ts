@@ -1,19 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import type { Challenge } from './liveness.js';
 
 /** Token de inyección: cambiar de proveedor es cambiar esta sola línea del módulo. */
 export const BIOMETRIC_PROVIDER = Symbol('BIOMETRIC_PROVIDER');
 
 export interface BiometricCapture {
-  /** Selfie en vivo enviada por el solicitante. */
-  selfie: Buffer;
-  /** Documento de identidad ya cargado, contra el que se compara. */
+  /**
+   * Fotogramas en vivo: el primero de frente (se compara con la referencia) y
+   * luego uno por cada gesto de `challenges`, en el mismo orden.
+   */
+  frames: Buffer[];
+  /** Gestos que pidió el servidor en la sesión de prueba de vida. */
+  challenges: Challenge[];
+  /** Imagen contra la que se compara: cédula o selfie verificada. */
   reference: Buffer;
 }
 
 export interface BiometricAssessment {
   /** Probabilidad de que sea una persona viva y no una foto (0–100). */
   livenessScore: number;
+  /** Qué falló en la prueba de vida, si el proveedor lo sabe. */
+  livenessFailure?: string | null;
   /** Coincidencia facial contra el documento (0–100). */
   matchScore: number;
   provider: string;
@@ -40,12 +48,13 @@ const scale = (raw: number) => round2(FLOOR + (raw / 0x10000) * (100 - FLOOR));
 export class SimulatedBiometricProvider implements BiometricProvider {
   readonly name = 'simulated';
 
+  /** Solo mira el primer fotograma: los gestos no se pueden simular con un hash. */
   assess({
-    selfie,
+    frames,
     reference,
   }: BiometricCapture): Promise<BiometricAssessment> {
     const digest = createHash('sha256')
-      .update(selfie)
+      .update(frames[0])
       .update(reference)
       .digest();
     return Promise.resolve({

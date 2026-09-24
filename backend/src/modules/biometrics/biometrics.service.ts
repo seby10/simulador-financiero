@@ -20,13 +20,23 @@ import { Prisma } from '../../generated/prisma/client.js';
 import {
   ApplicationStatus,
   BiometricStatus,
+  LivenessPurpose,
 } from '../../generated/prisma/enums.js';
 import {
   BIOMETRIC_PROVIDER,
   type BiometricAssessment,
   type BiometricProvider,
 } from './biometrics.provider.js';
-import { BiometricsDto } from './biometrics.dto.js';
+import { BiometricsDto, LiveCaptureDto } from './biometrics.dto.js';
+import {
+  CHALLENGE_LABELS,
+  CHALLENGES,
+  type Challenge,
+  drawChallenges,
+} from './liveness.js';
+
+/** Tiempo para completar los gestos: suficiente para hacerlos, corto para reusar. */
+const LIVENESS_TTL_MS = 3 * 60 * 1000;
 
 /** Documento contra el que se compara la selfie. */
 export const REFERENCE_DOCUMENT = 'idFront';
@@ -55,6 +65,8 @@ export interface BiometricEvaluation extends BiometricAssessment {
   passed: boolean;
   /** Qué umbral no se alcanzó; null si pasó. */
   failureReason: string | null;
+  /** Fotograma de frente: el que se guarda como referencia si la verificación pasa. */
+  selfie: Buffer;
 }
 
 @Injectable()
@@ -64,14 +76,87 @@ export class BiometricsService {
     @Inject(BIOMETRIC_PROVIDER) private readonly provider: BiometricProvider,
   ) {}
 
-  /** Contrasta una captura con una imagen de referencia y aplica los umbrales. */
+  /** Abre una sesión de prueba de vida: dos gestos al azar, un solo uso, 3 minutos. */
+  async createLivenessSession(purpose: LivenessPurpose) {
+    // Limpieza oportunista de sesiones vencidas.
+    await this.prisma.livenessSession.deleteMany({
+      where: { expiresAt: { lt: new Date(Date.now() - LIVENESS_TTL_MS) } },
+    });
+    const session = await this.prisma.livenessSession.create({
+      data: {
+        purpose,
+        challenges: drawChallenges(),
+        expiresAt: new Date(Date.now() + LIVENESS_TTL_MS),
+      },
+    });
+    return {
+      sessionId: session.id,
+      challenges: session.challenges as Challenge[],
+      expiresAt: session.expiresAt,
+      instructions: (session.challenges as Challenge[]).map(
+        (c) => CHALLENGE_LABELS[c],
+      ),
+    };
+  }
+
+  /**
+   * Consume la sesión de prueba de vida, contrasta los fotogramas con la
+   * referencia y aplica los umbrales. La sesión se gasta aunque la captura
+   * falle: cada intento necesita gestos nuevos.
+   */
   async evaluate(
-    selfie: Buffer,
+    purpose: LivenessPurpose,
+    capture: LiveCaptureDto,
     reference: Buffer,
   ): Promise<BiometricEvaluation> {
-    const assessment = await this.provider.assess({ selfie, reference });
+    const challenges = await this.consumeSession(
+      purpose,
+      capture.livenessSessionId,
+    );
+    if (capture.frames.length !== challenges.length + 1) {
+      throw new BadRequestException(
+        `Se esperaban ${challenges.length + 1} fotogramas: uno de frente y uno por cada gesto`,
+      );
+    }
+    const frames = capture.frames.map((frame, i) =>
+      decodeImageBase64(frame, `frames[${i}]`),
+    );
+    const assessment = await this.provider.assess({
+      frames,
+      challenges,
+      reference,
+    });
     const failureReason = this.rejectionReason(assessment);
-    return { ...assessment, passed: failureReason === null, failureReason };
+    return {
+      ...assessment,
+      passed: failureReason === null,
+      failureReason,
+      selfie: frames[0],
+    };
+  }
+
+  private async consumeSession(purpose: LivenessPurpose, sessionId: string) {
+    const session = await this.prisma.livenessSession.findUnique({
+      where: { id: sessionId },
+    });
+    // Condicionado: dos envíos simultáneos de la misma sesión no pasan ambos.
+    const { count } = await this.prisma.livenessSession.updateMany({
+      where: {
+        id: sessionId,
+        purpose,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { usedAt: new Date() },
+    });
+    if (!session || count === 0) {
+      throw new BadRequestException(
+        'La sesión de verificación expiró o ya se usó. Inicia la verificación de nuevo.',
+      );
+    }
+    return session.challenges.filter((c): c is Challenge =>
+      (CHALLENGES as readonly string[]).includes(c),
+    );
   }
 
   /**
@@ -91,7 +176,6 @@ export class BiometricsService {
       throw new BadRequestException(`Faltan documentos: ${missing.join(', ')}`);
     }
 
-    const selfie = decodeImageBase64(dto.selfieBase64, 'selfieBase64');
     const reference = await this.readReference(applicationId);
 
     const limit = maxAttempts();
@@ -105,7 +189,11 @@ export class BiometricsService {
       );
     }
 
-    const evaluation = await this.evaluate(selfie, reference);
+    const evaluation = await this.evaluate(
+      LivenessPurpose.APPLICATION,
+      dto,
+      reference,
+    );
     const attempt = previous + 1;
 
     await this.prisma.biometricVerification
@@ -136,7 +224,11 @@ export class BiometricsService {
 
     let biometricStatus: BiometricStatus = BiometricStatus.PENDING;
     if (evaluation.passed) {
-      await this.markVerified(applicationId, selfie, evaluation.matchScore);
+      await this.markVerified(
+        applicationId,
+        evaluation.selfie,
+        evaluation.matchScore,
+      );
       biometricStatus = BiometricStatus.VERIFIED;
     } else if (attempt >= limit) {
       await this.prisma.investmentApplication.updateMany({
@@ -178,11 +270,15 @@ export class BiometricsService {
 
   private rejectionReason({
     livenessScore,
+    livenessFailure,
     matchScore,
   }: BiometricAssessment): string | null {
     const liveness = livenessMin();
     if (livenessScore < liveness) {
-      return `Prueba de vida insuficiente (${livenessScore.toFixed(2)} < ${liveness})`;
+      return (
+        livenessFailure ??
+        `Prueba de vida insuficiente (${livenessScore.toFixed(2)} < ${liveness})`
+      );
     }
     const match = matchMin();
     if (matchScore < match) {

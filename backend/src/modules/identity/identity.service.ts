@@ -9,7 +9,6 @@ import {
 import { readFile } from 'node:fs/promises';
 import {
   assertFileKind,
-  decodeImageBase64,
   onboardingDocumentPath,
   saveFile,
   userDocumentPath,
@@ -18,7 +17,9 @@ import { PrismaService } from '../../database/prisma.service.js';
 import {
   BiometricStatus,
   IdentityStatus,
+  LivenessPurpose,
 } from '../../generated/prisma/enums.js';
+import { LiveCaptureDto } from '../biometrics/biometrics.dto.js';
 import {
   BiometricsService,
   SELFIE_DOCUMENT,
@@ -73,10 +74,9 @@ export class IdentityService {
     return this.describe(user);
   }
 
-  async verify(userId: string, selfieBase64: string) {
+  async verify(userId: string, capture: LiveCaptureDto) {
     const user = await this.load(userId);
     this.assertPending(user.identityStatus);
-    const selfie = decodeImageBase64(selfieBase64, 'selfieBase64');
     const document = await readFile(userDocumentPath(userId, ID_FRONT)).catch(
       () => {
         throw new BadRequestException(
@@ -105,7 +105,11 @@ export class IdentityService {
 
     // Si la captura no tiene un rostro válido el proveedor responde 400 y el
     // intento no cuenta: es un problema de la foto, no un rostro distinto.
-    const evaluation = await this.biometrics.evaluate(selfie, document);
+    const evaluation = await this.biometrics.evaluate(
+      LivenessPurpose.IDENTITY,
+      capture,
+      document,
+    );
     await this.prisma.identityVerification.create({
       data: {
         userId,
@@ -118,7 +122,10 @@ export class IdentityService {
     });
 
     if (evaluation.passed) {
-      await saveFile(userDocumentPath(userId, REFERENCE_SELFIE), selfie);
+      await saveFile(
+        userDocumentPath(userId, REFERENCE_SELFIE),
+        evaluation.selfie,
+      );
       const { count } = await this.prisma.user.updateMany({
         where: { id: userId, identityStatus: IdentityStatus.PENDING },
         data: {

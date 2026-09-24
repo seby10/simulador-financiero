@@ -541,6 +541,38 @@
         ]
       }
     },
+    "/api/biometrics/liveness-sessions": {
+      "post": {
+        "operationId": "BiometricsController_createLivenessSession",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLivenessSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abre una sesión de prueba de vida: devuelve los gestos que la persona debe\nhacer frente a la cámara. Pública porque la recuperación de clave ocurre sin\nsesión; cada sesión sirve una sola vez, para un solo flujo, por 3 minutos.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
     "/api/biometrics/applications/{id}/verify": {
       "post": {
         "operationId": "BiometricsController_verify",
@@ -2564,15 +2596,26 @@
             "maxLength": 254,
             "format": "email"
           },
-          "selfieBase64": {
+          "livenessSessionId": {
             "type": "string",
-            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
-            "maxLength": 7000000
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
           }
         },
         "required": [
           "email",
-          "selfieBase64"
+          "livenessSessionId",
+          "frames"
         ]
       },
       "BiometricResetVerifyResponse": {
@@ -2725,18 +2768,82 @@
           "newPassword"
         ]
       },
-      "BiometricsDto": {
+      "LivenessPurpose": {
+        "type": "string",
+        "enum": [
+          "IDENTITY",
+          "PASSWORD_RESET",
+          "APPLICATION"
+        ],
+        "description": "Flujo en el que se usará: la sesión no sirve en otro."
+      },
+      "CreateLivenessSessionDto": {
         "type": "object",
         "properties": {
-          "selfieBase64": {
-            "type": "string",
-            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
-            "example": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
-            "maxLength": 7000000
+          "purpose": {
+            "description": "Flujo en el que se usará: la sesión no sirve en otro.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LivenessPurpose"
+              }
+            ]
           }
         },
         "required": [
-          "selfieBase64"
+          "purpose"
+        ]
+      },
+      "LivenessSessionResponse": {
+        "type": "object",
+        "properties": {
+          "challenges": {
+            "type": "array",
+            "description": "Gestos a realizar, en orden.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "TURN_LEFT",
+                "TURN_RIGHT",
+                "SMILE"
+              ]
+            }
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challenges",
+          "sessionId",
+          "expiresAt"
+        ]
+      },
+      "BiometricsDto": {
+        "type": "object",
+        "properties": {
+          "livenessSessionId": {
+            "type": "string",
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
+          }
+        },
+        "required": [
+          "livenessSessionId",
+          "frames"
         ]
       },
       "ApplicationStatus": {
@@ -2907,15 +3014,26 @@
               true
             ]
           },
-          "selfieBase64": {
+          "livenessSessionId": {
             "type": "string",
-            "description": "Captura facial en vivo, JPEG/PNG en base64 (con o sin prefijo data URL).",
-            "maxLength": 7000000
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
           }
         },
         "required": [
           "consent",
-          "selfieBase64"
+          "livenessSessionId",
+          "frames"
         ]
       },
       "IdentityVerifyResponse": {

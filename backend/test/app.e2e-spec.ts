@@ -36,6 +36,8 @@ const pdf = Buffer.from('%PDF-1.4');
 const selfie = (suffix: string) =>
   `data:image/png;base64,${Buffer.concat([png, Buffer.from(suffix)]).toString('base64')}`;
 
+type Purpose = 'IDENTITY' | 'PASSWORD_RESET' | 'APPLICATION';
+
 // Requiere DATABASE_URL con migraciones y seed aplicados.
 describe('API (e2e)', () => {
   let app: INestApplication;
@@ -76,6 +78,34 @@ describe('API (e2e)', () => {
   // ───────────────────────── Ayudantes ─────────────────────────
 
   /**
+   * Abre una sesión de prueba de vida y arma la captura: el fotograma de frente
+   * (el que compara el proveedor simulado) y uno por cada gesto pedido.
+   */
+  const live = async (purpose: Purpose, suffix: string) => {
+    const { body } = await request(app.getHttpServer())
+      .post('/api/biometrics/liveness-sessions')
+      .send({ purpose })
+      .expect(201);
+    return {
+      livenessSessionId: body.sessionId as string,
+      frames: [
+        selfie(suffix),
+        ...(body.challenges as string[]).map((c) => selfie(`gesto-${c}`)),
+      ],
+    };
+  };
+
+  /** Envía una captura en vivo y permite seguir encadenando `.expect(status)`. */
+  const liveRequest = (
+    purpose: Purpose,
+    suffix: string,
+    send: (capture: Awaited<ReturnType<typeof live>>) => request.Test,
+  ) => ({
+    expect: async (status: number) =>
+      send(await live(purpose, suffix)).expect(status),
+  });
+
+  /**
    * Crea un cliente nuevo en cada llamada y devuelve sus cookies de sesión. Por
    * defecto completa la confirmación de identidad (sin ella no puede operar).
    */
@@ -104,7 +134,7 @@ describe('API (e2e)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/api/identity/verify')
         .set('Cookie', cookies)
-        .send({ selfieBase64: selfie('s0'), consent: true })
+        .send({ ...(await live('IDENTITY', 's0')), consent: true })
         .expect(200);
       expect(body.status).toBe('VERIFIED');
     }
@@ -156,10 +186,12 @@ describe('API (e2e)', () => {
   };
 
   const verify = (customer: Customer, id: string, suffix: string) =>
-    request(app.getHttpServer())
-      .post(`/api/biometrics/applications/${id}/verify`)
-      .set('Cookie', customer.cookies)
-      .send({ selfieBase64: selfie(suffix) });
+    liveRequest('APPLICATION', suffix, (capture) =>
+      request(app.getHttpServer())
+        .post(`/api/biometrics/applications/${id}/verify`)
+        .set('Cookie', customer.cookies)
+        .send(capture),
+    );
 
   const adminGet = (id: string) =>
     request(app.getHttpServer())
@@ -435,7 +467,7 @@ describe('API (e2e)', () => {
       try {
         await request(app.getHttpServer())
           .post(`/api/biometrics/applications/${id}/verify`)
-          .send({ selfieBase64: selfie('s0') })
+          .send(await live('APPLICATION', 's0'))
           .expect(401);
         await verify(intruder, id, 's0').expect(404);
       } finally {
@@ -460,7 +492,10 @@ describe('API (e2e)', () => {
           .post(`/api/biometrics/applications/${id}/verify`)
           .set('Cookie', customer.cookies)
           .send({
-            selfieBase64: Buffer.from('esto no es un png').toString('base64'),
+            ...(await live('APPLICATION', 's0')),
+            frames: ['esto no es un png', 'tampoco', 'ni esto'].map((t) =>
+              Buffer.from(t).toString('base64'),
+            ),
           })
           .expect(400);
       } finally {
@@ -792,6 +827,44 @@ describe('API (e2e)', () => {
     });
   });
 
+  // ───────────────────────── Prueba de vida ─────────────────────────
+
+  describe('sesiones de prueba de vida', () => {
+    it('sortea dos gestos distintos y vence en minutos', async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/api/biometrics/liveness-sessions')
+        .send({ purpose: 'IDENTITY' })
+        .expect(201);
+      expect(body.challenges).toHaveLength(2);
+      expect(new Set(body.challenges).size).toBe(2);
+      expect(new Date(body.expiresAt).getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('una sesión sirve una sola vez y solo para su flujo', async () => {
+      const customer = await registerUser({ verified: false });
+      await request(app.getHttpServer())
+        .post('/api/identity/document')
+        .set('Cookie', customer.cookies)
+        .attach('idFront', png, 'cedula.png')
+        .expect(200);
+      const send = (capture: object) =>
+        request(app.getHttpServer())
+          .post('/api/identity/verify')
+          .set('Cookie', customer.cookies)
+          .send({ ...capture, consent: true });
+
+      // Sesión de otro flujo: no sirve.
+      await send(await live('PASSWORD_RESET', 's2')).expect(400);
+      // Fotogramas de más o de menos: no sirve.
+      const short = await live('IDENTITY', 's2');
+      await send({ ...short, frames: short.frames.slice(0, 2) }).expect(400);
+      // Una sesión válida se consume aunque la verificación falle.
+      const capture = await live('IDENTITY', 's2');
+      await send(capture).expect(200);
+      await send(capture).expect(400);
+    });
+  });
+
   // ───────────────────────── Confirmación de identidad ─────────────────────────
 
   describe('confirmación de identidad del registro', () => {
@@ -806,10 +879,12 @@ describe('API (e2e)', () => {
           .set('Cookie', cookies)
           .attach('idFront', file, 'cedula.png'),
       verify: (suffix: string, consent: unknown = true) =>
-        request(app.getHttpServer())
-          .post('/api/identity/verify')
-          .set('Cookie', cookies)
-          .send({ selfieBase64: selfie(suffix), consent }),
+        liveRequest('IDENTITY', suffix, (capture) =>
+          request(app.getHttpServer())
+            .post('/api/identity/verify')
+            .set('Cookie', cookies)
+            .send({ ...capture, consent }),
+        ),
     });
 
     it('una cuenta nueva queda pendiente y no puede operar', async () => {
@@ -890,9 +965,11 @@ describe('API (e2e)', () => {
 
   describe('recuperación de clave por biometría', () => {
     const resetVerify = (email: string, suffix: string) =>
-      request(app.getHttpServer())
-        .post('/api/auth/biometric-reset/verify')
-        .send({ email, selfieBase64: selfie(suffix) });
+      liveRequest('PASSWORD_RESET', suffix, (capture) =>
+        request(app.getHttpServer())
+          .post('/api/auth/biometric-reset/verify')
+          .send({ email, ...capture }),
+      );
 
     it('responde igual sin cuenta o sin identidad verificada', async () => {
       const { email } = await registerUser({ verified: false });

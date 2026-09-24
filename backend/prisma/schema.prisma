@@ -56,6 +56,27 @@ enum IdentityStatus {
   LOCKED
 }
 
+/// Para qué se abrió una sesión de prueba de vida: una sesión no sirve en otro flujo.
+enum LivenessPurpose {
+  IDENTITY
+  PASSWORD_RESET
+  APPLICATION
+}
+
+/// Reto de prueba de vida emitido por el servidor. Se consume en el primer uso y
+/// vence a los pocos minutos: una captura grabada no se puede volver a presentar.
+model LivenessSession {
+  id         String          @id @default(uuid())
+  purpose    LivenessPurpose
+  /// Gestos pedidos, en orden (TURN_LEFT, TURN_RIGHT, SMILE).
+  challenges String[]
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@index([expiresAt])
+}
+
 /// Cada intento de confirmar la identidad de una cuenta, pase o no.
 model IdentityVerification {
   id            String   @id @default(uuid())

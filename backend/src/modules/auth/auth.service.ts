@@ -7,7 +7,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { decodeImageBase64 } from '../../common/http.js';
 import {
   accessTtlSeconds,
   hashRefreshToken,
@@ -17,7 +16,12 @@ import {
 } from '../../common/tokens.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma, type User } from '../../generated/prisma/client.js';
-import { IdentityStatus, UserRole } from '../../generated/prisma/enums.js';
+import {
+  IdentityStatus,
+  LivenessPurpose,
+  UserRole,
+} from '../../generated/prisma/enums.js';
+import { LiveCaptureDto } from '../biometrics/biometrics.dto.js';
 import { BiometricsService } from '../biometrics/biometrics.service.js';
 import { IdentityService } from '../identity/identity.service.js';
 import {
@@ -96,8 +100,7 @@ export class AuthService {
    * de un solo uso para fijar la nueva clave. Toda falla responde igual: no se revela si el correo existe
    * ni si la cuenta tiene una verificación previa.
    */
-  async biometricResetVerify(email: string, selfieBase64: string) {
-    const selfie = decodeImageBase64(selfieBase64, 'selfieBase64');
+  async biometricResetVerify(email: string, capture: LiveCaptureDto) {
     const user = await this.prisma.user.findUnique({
       where: { email },
       select: { id: true, isActive: true, identityStatus: true },
@@ -122,7 +125,11 @@ export class AuthService {
       );
     }
 
-    const evaluation = await this.biometrics.evaluate(selfie, reference);
+    const evaluation = await this.biometrics.evaluate(
+      LivenessPurpose.PASSWORD_RESET,
+      capture,
+      reference,
+    );
     const resetToken = evaluation.passed ? newRefreshToken() : null;
     const expiresAt = resetToken ? new Date(Date.now() + RESET_TTL_MS) : null;
     await this.prisma.biometricPasswordReset.create({

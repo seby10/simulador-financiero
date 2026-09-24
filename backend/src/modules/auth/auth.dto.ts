@@ -12,6 +12,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { IsCedula } from '../../common/validation/cedula.js';
+import { LiveCaptureDto } from '../biometrics/biometrics.dto.js';
 import { IdentityStatus, UserRole } from '../../generated/prisma/enums.js';
 
 /** El correo identifica al usuario: se normaliza para que `A@X.com` y `a@x.com` sean el mismo. */
@@ -69,11 +70,9 @@ export class ChangePasswordDto {
   newPassword: string;
 }
 
-export class BiometricResetVerifyDto {
+export class BiometricResetVerifyDto extends LiveCaptureDto {
   /** @example "maria.andrade@example.com" */
   @IsEmail() @MaxLength(254) @NormalizedEmail() email: string;
-  /** Captura facial JPEG/PNG en base64 (con o sin prefijo data URL). */
-  @IsString() @IsNotEmpty() @MaxLength(7_000_000) selfieBase64: string;
 }
 
 export class BiometricResetConfirmDto {

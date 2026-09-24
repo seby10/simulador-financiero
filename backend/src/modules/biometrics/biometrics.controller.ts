@@ -10,6 +10,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
@@ -22,6 +23,8 @@ import {
   BiometricAttemptResponse,
   BiometricsDto,
   BiometricsResponse,
+  CreateLivenessSessionDto,
+  LivenessSessionResponse,
 } from './biometrics.dto.js';
 import { BiometricsService } from './biometrics.service.js';
 
@@ -31,6 +34,18 @@ const uuid = new ParseUUIDPipe({ version: '4' });
 @Controller('biometrics')
 export class BiometricsController {
   constructor(private readonly biometrics: BiometricsService) {}
+
+  /**
+   * Abre una sesión de prueba de vida: devuelve los gestos que la persona debe
+   * hacer frente a la cámara. Pública porque la recuperación de clave ocurre sin
+   * sesión; cada sesión sirve una sola vez, para un solo flujo, por 3 minutos.
+   */
+  @Post('liveness-sessions')
+  @Throttle(STRICT)
+  @ApiCreatedResponse({ type: LivenessSessionResponse })
+  createLivenessSession(@Body() dto: CreateLivenessSessionDto) {
+    return this.biometrics.createLivenessSession(dto.purpose);
+  }
 
   /**
    * Verifica prueba de vida y coincidencia facial contra la cédula cargada.

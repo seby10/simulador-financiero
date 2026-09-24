@@ -78,6 +78,6 @@ export class IdentityController {
   @ApiConflictResponse({ description: 'La identidad ya está verificada' })
   @ApiTooManyRequestsResponse({ description: 'Se agotaron los intentos' })
   verify(@CurrentUser('sub') userId: string, @Body() dto: VerifyIdentityDto) {
-    return this.identity.verify(userId, dto.selfieBase64);
+    return this.identity.verify(userId, dto);
   }
 }

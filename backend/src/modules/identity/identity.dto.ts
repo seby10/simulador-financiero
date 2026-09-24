@@ -1,10 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Equals, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { Equals } from 'class-validator';
 import { IdentityStatus } from '../../generated/prisma/enums.js';
+import { LiveCaptureDto } from '../biometrics/biometrics.dto.js';
 
-export class VerifyIdentityDto {
-  /** Captura facial en vivo, JPEG/PNG en base64 (con o sin prefijo data URL). */
-  @IsString() @IsNotEmpty() @MaxLength(7_000_000) selfieBase64: string;
+export class VerifyIdentityDto extends LiveCaptureDto {
   /** Aceptación expresa del tratamiento de datos biométricos (LOPDP). */
   @ApiProperty({ enum: [true] })
   @Equals(true, {
