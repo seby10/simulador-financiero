@@ -24,6 +24,10 @@ describe('AuthService: siempre queda un administrador activo', () => {
         update: vi.fn().mockResolvedValue(updated),
       },
       authSession: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      $executeRaw: vi.fn().mockResolvedValue(1),
+      // La comprobación corre dentro de una transacción con cerrojo; aquí se
+      // ejecuta directamente sobre el mismo doble.
+      $transaction: vi.fn((work: (tx: unknown) => unknown) => work(prisma)),
     };
     const service = new AuthService(
       prisma as unknown as PrismaService,

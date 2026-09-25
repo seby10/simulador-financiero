@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { LockNamespace, withAdvisoryLock } from '../../common/locks.js';
 import {
   accessTtlSeconds,
   hashRefreshToken,
@@ -352,12 +353,14 @@ export class AuthService {
    */
   async updateUserRole(actorId: string | null, userId: string, role: UserRole) {
     assertNotSelf(actorId, userId, 'cambiar tu propio rol');
-    if (role !== UserRole.ADMIN) await this.assertKeepsAnAdmin(userId);
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { role },
-    });
-    return toPublicUser(user);
+    if (role === UserRole.ADMIN) {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { role },
+      });
+      return toPublicUser(user);
+    }
+    return this.demoting(userId, { role });
   }
 
   /** Activa o desactiva otra cuenta; desactivarla cierra todas sus sesiones. */
@@ -367,31 +370,56 @@ export class AuthService {
     isActive: boolean,
   ) {
     assertNotSelf(actorId, userId, 'desactivar tu propia cuenta');
-    if (!isActive) await this.assertKeepsAnAdmin(userId);
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { isActive },
-    });
-    if (!isActive) await this.logoutAll(userId);
-    return toPublicUser(user);
+    if (isActive) {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { isActive },
+      });
+      return toPublicUser(user);
+    }
+    const user = await this.demoting(userId, { isActive });
+    await this.logoutAll(userId);
+    return user;
   }
 
   /**
    * Quitarle el rol o desactivar a un administrador activo exige que quede otro.
    * Cubre también la cabecera x-admin-key, que no tiene cuenta propia que proteger.
+   *
+   * Contar y luego escribir por separado no basta: dos administradores que se
+   * degradan a la vez ven cada uno al otro y ambos pasan, dejando el sistema sin
+   * ninguno. El cerrojo pone en fila a todo el que toque el padrón, así que el
+   * segundo cuenta ya con el cambio del primero hecho.
    */
-  private async assertKeepsAnAdmin(userId: string) {
-    const target = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true, isActive: true },
-    });
-    if (target?.role !== UserRole.ADMIN || !target.isActive) return;
-    const others = await this.prisma.user.count({
-      where: { role: UserRole.ADMIN, isActive: true, id: { not: userId } },
-    });
-    if (others === 0) {
-      throw new ConflictException('Debe quedar al menos un administrador activo');
-    }
+  private demoting(userId: string, data: Prisma.UserUpdateInput) {
+    return withAdvisoryLock(
+      this.prisma,
+      LockNamespace.AdminRoster,
+      'admin-roster',
+      async (tx) => {
+        const target = await tx.user.findUnique({
+          where: { id: userId },
+          select: { role: true, isActive: true },
+        });
+        if (target?.role === UserRole.ADMIN && target.isActive) {
+          const others = await tx.user.count({
+            where: {
+              role: UserRole.ADMIN,
+              isActive: true,
+              id: { not: userId },
+            },
+          });
+          if (others === 0) {
+            throw new ConflictException(
+              'Debe quedar al menos un administrador activo',
+            );
+          }
+        }
+        return toPublicUser(
+          await tx.user.update({ where: { id: userId }, data }),
+        );
+      },
+    );
   }
 
   /** Alta desde el panel administrativo, con el rol indicado (CUSTOMER por defecto). */
