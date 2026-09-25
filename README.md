@@ -24,6 +24,7 @@ Sin `ADMIN_SEED_EMAIL` y `ADMIN_SEED_PASSWORD` el seed no crea cuenta alguna y n
 ## 🛠️ Requisitos Previos
 
 Asegúrate de tener instalado en tu equipo:
+
 * **Node.js**: v18.0.0 o superior (recomendado v20.x)
 * **npm**: v9.0.0 o superior
 
@@ -99,17 +100,24 @@ npm run dev
 ## 🌟 Características Destacadas
 
 1. **Simulación de Créditos (Sistemas Francés y Alemán)**:
-   - Cálculo de cuotas fijas o decrecientes, desglose de interés, amortización y cobros indirectos obligatorios (Seguro de desgravamen, SOLCA) u opcionales (Fundaciones).
-   - Generación y **descarga de reporte en formato PDF** con la marca institucional.
+   * Cálculo de cuotas fijas o decrecientes, desglose de interés, amortización y cobros indirectos obligatorios (Seguro de desgravamen, SOLCA) u opcionales (Fundaciones).
+   * Generación y **descarga de reporte en formato PDF** con la marca institucional.
 
 2. **Personalización Multi-Marca (Branding Dinámico)**:
-   - El administrador puede cambiar en tiempo real desde `/admin/institution` el Nombre de la Institución, Logo, RUC, Representante Legal y la **Paleta de Colores (Primario, Secundario, Navbar, Tarjetas)**.
+   * El administrador puede cambiar en tiempo real desde `/admin/institution` el Nombre de la Institución, Logo, RUC, Representante Legal y la **Paleta de Colores (Primario, Secundario, Navbar, Tarjetas)**.
 
 3. **Verificación Biométrica Facial**:
-   - Integración de cámara web en vivo para captura de rostro, análisis de vivacidad y comprobación de coincidencia facial contra la cédula del cliente mediante IA (`face-api.js`).
+   * Integración de cámara web en vivo para captura de rostro, análisis de vivacidad y comprobación de coincidencia facial contra la cédula del cliente mediante IA (`face-api.js`).
 
 4. **Recuperación Biométrica de Clave**:
-   - Permite a los clientes cambiar su contraseña si olvidan la clave mediante la verificación facial por webcam.
+   * Permite a los clientes cambiar su contraseña si olvidan la clave mediante la verificación facial por webcam.
+
+---
+
+## ☁️ Despliegue
+
+API en Render, portal en Vercel y base en Neon: los pasos, las variables de
+entorno y los tropiezos conocidos están en **[DEPLOY.md](DEPLOY.md)**.
 
 ---
 
