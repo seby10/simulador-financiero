@@ -9,9 +9,15 @@ import { UserRole } from '../generated/prisma/enums.js';
 const ALGORITHM = 'HS256';
 const MIN_SECRET_LENGTH = 32;
 
-/** Claims propios del access token; `sub` es el id del usuario. */
+/**
+ * Claims propios del access token; `sub` es el id del usuario y `sid` la
+ * AuthSession que lo emitió. Sin `sid` el token sería puramente estático y
+ * seguiría valiendo hasta expirar despues de cerrar sesión o desactivar la
+ * cuenta; con él, cada petición puede comprobar que la sesión sigue viva.
+ */
 export interface AccessTokenClaims {
   sub: string;
+  sid: string;
   email: string;
   role: UserRole;
 }
@@ -52,7 +58,11 @@ export const refreshTtlSeconds = () =>
 export async function signAccessToken(
   claims: AccessTokenClaims,
 ): Promise<string> {
-  return new SignJWT({ email: claims.email, role: claims.role })
+  return new SignJWT({
+    sid: claims.sid,
+    email: claims.email,
+    role: claims.role,
+  })
     .setProtectedHeader({ alg: ALGORITHM })
     .setSubject(claims.sub)
     .setIssuedAt()
@@ -75,11 +85,17 @@ export async function verifyAccessToken(
     const { payload } = await jwtVerify(token, key, {
       algorithms: [ALGORITHM],
     });
-    const { sub, email, role } = payload;
-    if (!sub || typeof email !== 'string' || !isRole(role)) {
+    const { sub, sid, email, role } = payload;
+    if (
+      !sub ||
+      typeof sid !== 'string' ||
+      !sid ||
+      typeof email !== 'string' ||
+      !isRole(role)
+    ) {
       throw new Error('claims incompletos');
     }
-    return { sub, email, role };
+    return { sub, sid, email, role };
   } catch {
     throw new UnauthorizedException('Sesión inválida o expirada');
   }

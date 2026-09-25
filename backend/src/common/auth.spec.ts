@@ -1,17 +1,45 @@
 import type { ExecutionContext } from '@nestjs/common';
-import { UserRole } from '../generated/prisma/enums.js';
+import type { PrismaService } from '../database/prisma.service.js';
+import { IdentityStatus, UserRole } from '../generated/prisma/enums.js';
 import {
   ACCESS_COOKIE,
   AdminGuard,
   AdminOnly,
   Authenticated,
   currentUser,
+  IDENTITY_REQUIRED,
+  IdentityVerifiedGuard,
   JwtAuthGuard,
   readCookie,
+  VerifiedIdentity,
 } from './auth.js';
 import { signAccessToken } from './tokens.js';
 
 const SECRET = 'secreto-de-pruebas-con-mas-de-32-caracteres';
+
+/** Lo que devuelve la consulta de sesión de `authenticate`. */
+type SessionRow = {
+  revokedAt: Date | null;
+  user: { isActive: boolean };
+} | null;
+
+const LIVE: SessionRow = { revokedAt: null, user: { isActive: true } };
+
+const prismaWith = (
+  session: SessionRow,
+  identityStatus?: IdentityStatus | null,
+) =>
+  ({
+    authSession: { findUnique: () => Promise.resolve(session) },
+    user: {
+      findUnique: () =>
+        Promise.resolve(
+          identityStatus === null || identityStatus === undefined
+            ? null
+            : { identityStatus },
+        ),
+    },
+  }) as unknown as PrismaService;
 
 interface RequestStub {
   header: (name: string) => string | undefined;
@@ -59,7 +87,7 @@ describe('auth', () => {
   });
 
   const tokenFor = (role: UserRole) =>
-    signAccessToken({ sub: 'u-1', email: 'a@b.ec', role });
+    signAccessToken({ sub: 'u-1', sid: 's-1', email: 'a@b.ec', role });
 
   describe('readCookie', () => {
     it('devuelve el valor cuando existe', () => {
@@ -75,7 +103,7 @@ describe('auth', () => {
   });
 
   describe('JwtAuthGuard', () => {
-    const guard = new JwtAuthGuard();
+    const guard = new JwtAuthGuard(prismaWith(LIVE));
 
     it('acepta un access token válido y publica los claims', async () => {
       const request = requestWith({
@@ -85,6 +113,7 @@ describe('auth', () => {
       await expect(guard.canActivate(context)).resolves.toBe(true);
       expect(request.user).toMatchObject({
         sub: 'u-1',
+        sid: 's-1',
         email: 'a@b.ec',
         role: UserRole.CUSTOMER,
       });
@@ -105,8 +134,43 @@ describe('auth', () => {
     });
   });
 
+  // Un access token firmado sigue siendo válido hasta expirar: lo que corta el
+  // acceso tras cerrar sesión o desactivar la cuenta es la consulta a AuthSession.
+  describe('revocación de la sesión', () => {
+    it.each([
+      ['la sesión ya no existe', null],
+      [
+        'la sesión fue revocada',
+        { revokedAt: new Date(), user: { isActive: true } },
+      ],
+      [
+        'la cuenta fue desactivada',
+        { revokedAt: null, user: { isActive: false } },
+      ],
+    ])('rechaza cuando %s', async (_, session: SessionRow) => {
+      const guard = new JwtAuthGuard(prismaWith(session));
+      const request = requestWith({
+        accessToken: await tokenFor(UserRole.CUSTOMER),
+      });
+      await expect(guard.canActivate(contextFor(request))).rejects.toThrow(
+        'Sesión cerrada o revocada',
+      );
+      expect(request.user).toBeUndefined();
+    });
+
+    it('también corta la vía de sesión de AdminGuard', async () => {
+      const guard = new AdminGuard(prismaWith(null));
+      const request = requestWith({
+        accessToken: await tokenFor(UserRole.ADMIN),
+      });
+      await expect(guard.canActivate(contextFor(request))).rejects.toThrow(
+        'Sesión cerrada o revocada',
+      );
+    });
+  });
+
   describe('AdminGuard por cabecera', () => {
-    const guard = new AdminGuard();
+    const guard = new AdminGuard(prismaWith(LIVE));
 
     it('permite la clave correcta', async () => {
       await expect(
@@ -134,7 +198,7 @@ describe('auth', () => {
   });
 
   describe('AdminGuard por sesión', () => {
-    const guard = new AdminGuard();
+    const guard = new AdminGuard(prismaWith(LIVE));
 
     it('permite una sesión con rol ADMIN', async () => {
       const request = requestWith({
@@ -159,6 +223,41 @@ describe('auth', () => {
     });
   });
 
+  describe('IdentityVerifiedGuard', () => {
+    const guardFor = (identityStatus: IdentityStatus | null) =>
+      new IdentityVerifiedGuard(prismaWith(LIVE, identityStatus));
+
+    const contextForRole = async (role: UserRole) =>
+      contextFor(requestWith({ accessToken: await tokenFor(role) }));
+
+    it('deja pasar a un cliente con la identidad verificada', async () => {
+      await expect(
+        guardFor(IdentityStatus.VERIFIED).canActivate(
+          await contextForRole(UserRole.CUSTOMER),
+        ),
+      ).resolves.toBe(true);
+    });
+
+    // El personal administrativo no se enrola con biometría: ni se consulta.
+    it('deja pasar a un administrador sin mirar su identidad', async () => {
+      await expect(
+        guardFor(null).canActivate(await contextForRole(UserRole.ADMIN)),
+      ).resolves.toBe(true);
+    });
+
+    it.each([IdentityStatus.PENDING, IdentityStatus.LOCKED, null])(
+      'frena a un cliente con identidad %s',
+      async (identityStatus) => {
+        const context = await contextForRole(UserRole.CUSTOMER);
+        await expect(
+          guardFor(identityStatus).canActivate(context),
+        ).rejects.toMatchObject({
+          response: { error: IDENTITY_REQUIRED, statusCode: 403 },
+        });
+      },
+    );
+  });
+
   describe('decoradores', () => {
     it('@Authenticated registra JwtAuthGuard', () => {
       expect(guardsOf(Authenticated)).toEqual([JwtAuthGuard]);
@@ -167,11 +266,16 @@ describe('auth', () => {
     it('@AdminOnly registra AdminGuard', () => {
       expect(guardsOf(AdminOnly)).toEqual([AdminGuard]);
     });
+
+    it('@VerifiedIdentity registra IdentityVerifiedGuard', () => {
+      expect(guardsOf(VerifiedIdentity)).toEqual([IdentityVerifiedGuard]);
+    });
   });
 
   describe('currentUser', () => {
     const claims = {
       sub: 'u-1',
+      sid: 's-1',
       email: 'a@b.ec',
       role: UserRole.CUSTOMER,
     };

@@ -283,7 +283,7 @@ export class AuthService {
     context: SessionContext,
   ) {
     const refreshToken = newRefreshToken();
-    await this.prisma.authSession.create({
+    const session = await this.prisma.authSession.create({
       data: {
         userId: user.id,
         tokenHash: hashRefreshToken(refreshToken),
@@ -292,9 +292,12 @@ export class AuthService {
         userAgent: context.userAgent?.slice(0, 255),
         ipAddress: context.ipAddress,
       },
+      select: { id: true },
     });
+    // `sid`: los guards comprueban contra esta fila que la sesión siga viva.
     const accessToken = await signAccessToken({
       sub: user.id,
+      sid: session.id,
       email: user.email,
       role: user.role,
     });

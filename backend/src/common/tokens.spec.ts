@@ -11,7 +11,12 @@ import {
 
 const SECRET = 'secreto-de-pruebas-con-mas-de-32-caracteres';
 const key = () => new TextEncoder().encode(SECRET);
-const claims = { sub: 'u-1', email: 'a@b.ec', role: UserRole.ADMIN };
+const claims = {
+  sub: 'u-1',
+  sid: 's-1',
+  email: 'a@b.ec',
+  role: UserRole.ADMIN,
+};
 
 /** Firma un token a medida para probar claims que la API pública no permite emitir. */
 const forge = (payload: Record<string, unknown>, expiration = '5m') =>
@@ -105,9 +110,21 @@ describe('tokens', () => {
     });
 
     it.each([
-      ['sin sub', { email: 'a@b.ec', role: UserRole.ADMIN }],
-      ['sin email', { sub: 'u-1', role: UserRole.ADMIN }],
-      ['con rol desconocido', { sub: 'u-1', email: 'a@b.ec', role: 'ROOT' }],
+      ['sin sub', { sid: 's-1', email: 'a@b.ec', role: UserRole.ADMIN }],
+      ['sin sid', { sub: 'u-1', email: 'a@b.ec', role: UserRole.ADMIN }],
+      [
+        'con sid vacío',
+        { sub: 'u-1', sid: '', email: 'a@b.ec', role: UserRole.ADMIN },
+      ],
+      [
+        'con sid no textual',
+        { sub: 'u-1', sid: 7, email: 'a@b.ec', role: UserRole.ADMIN },
+      ],
+      ['sin email', { sub: 'u-1', sid: 's-1', role: UserRole.ADMIN }],
+      [
+        'con rol desconocido',
+        { sub: 'u-1', sid: 's-1', email: 'a@b.ec', role: 'ROOT' },
+      ],
     ])('rechaza un token %s', async (_, payload) => {
       const token = await forge(payload);
       await expect(verifyAccessToken(token)).rejects.toThrow(

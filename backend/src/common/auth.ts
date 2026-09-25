@@ -46,13 +46,33 @@ export const readCookie = (request: Request, name: string) =>
 
 const INVALID_ADMIN = 'Credencial de administrador inválida';
 
-/** Verifica el access token de la cookie y deja los claims en `request.user`. */
-async function authenticate(request: Request): Promise<AccessTokenClaims> {
+const REVOKED_SESSION = 'Sesión cerrada o revocada';
+
+/**
+ * Verifica el access token de la cookie y deja los claims en `request.user`.
+ *
+ * La firma sola no basta: un JWT vale hasta expirar, así que cerrar sesión,
+ * cerrarlas todas o desactivar la cuenta no surtirían efecto durante los
+ * minutos restantes del token. Por eso se comprueba contra la base que la
+ * AuthSession que lo emitió (`sid`) siga viva y que la cuenta siga activa.
+ */
+async function authenticate(
+  request: Request,
+  prisma: PrismaService,
+): Promise<AccessTokenClaims> {
   const token = readCookie(request, ACCESS_COOKIE);
   if (!token) {
     throw new UnauthorizedException('Sesión ausente');
   }
   const claims = await verifyAccessToken(token);
+  const session = await prisma.authSession.findUnique({
+    where: { id: claims.sid },
+    select: { revokedAt: true, user: { select: { isActive: true } } },
+  });
+  // Sin fila (purgada) o revocada: el token ya no representa una sesión abierta.
+  if (!session?.user.isActive || session.revokedAt) {
+    throw new UnauthorizedException(REVOKED_SESSION);
+  }
   request.user = claims;
   return claims;
 }
@@ -63,8 +83,10 @@ const httpRequest = (context: ExecutionContext) =>
 /** Exige una sesión válida (cookie de access token). */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+  constructor(private readonly prisma: PrismaService) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    await authenticate(httpRequest(context));
+    await authenticate(httpRequest(context), this.prisma);
     return true;
   }
 }
@@ -76,6 +98,8 @@ export class JwtAuthGuard implements CanActivate {
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
+  constructor(private readonly prisma: PrismaService) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = httpRequest(context);
     const provided = request.header(ADMIN_KEY_HEADER);
@@ -96,7 +120,7 @@ export class AdminGuard implements CanActivate {
     if (!readCookie(request, ACCESS_COOKIE)) {
       throw new UnauthorizedException(INVALID_ADMIN);
     }
-    const { role } = await authenticate(request);
+    const { role } = await authenticate(request, this.prisma);
     if (role !== UserRole.ADMIN) {
       throw new ForbiddenException('Se requiere rol de administrador');
     }
@@ -118,7 +142,7 @@ export class IdentityVerifiedGuard implements CanActivate {
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const claims = await authenticate(httpRequest(context));
+    const claims = await authenticate(httpRequest(context), this.prisma);
     if (claims.role === UserRole.ADMIN) return true;
     const user = await this.prisma.user.findUnique({
       where: { id: claims.sub },
