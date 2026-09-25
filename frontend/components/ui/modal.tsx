@@ -42,7 +42,7 @@ export default function Modal({ isOpen, onClose, onConfirm, title, message, type
               </span>
               {title}
             </h3>
-            <button onClick={onClose} className="hover:bg-black/10 p-1 rounded-full transition-colors">
+            <button onClick={onClose} aria-label="Cerrar" className="hover:bg-black/10 p-1 rounded-full transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
