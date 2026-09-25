@@ -270,10 +270,13 @@ export class HandoffService {
       handoff.purpose === LivenessPurpose.PASSWORD_RESET &&
       result?.resetToken
     ) {
-      await this.prisma.biometricHandoff.update({
-        where: { id: handoff.id },
-        data: { result: { delivered: true } },
-      });
+      // Marcar después de leer entregaría el token a dos consultas simultáneas:
+      // ambas lo verían presente y ambas se lo llevarían. La condición va dentro
+      // del UPDATE, así que solo una fila cambia y solo ese llamador gana.
+      const claimed = await this.prisma.$executeRaw`
+        UPDATE "BiometricHandoff" SET "result" = '{"delivered": true}'::jsonb
+        WHERE "id" = ${handoff.id} AND "result" ->> 'resetToken' IS NOT NULL`;
+      if (claimed === 0) return { status, result: { delivered: true } };
     }
     return { status, result };
   }
