@@ -13,17 +13,16 @@ const nextConfig: NextConfig = {
     "*.trycloudflare.com",
     ...(process.env.ALLOWED_DEV_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
   ],
+  // El optimizador descarga la imagen desde el servidor de Next, así que una
+  // lista abierta convierte cualquier URL que escriba un administrador en una
+  // petición hecha por el servidor: también a direcciones internas (SSRF).
+  // IMAGE_HOSTS="cdn.mi-banco.ec,otro.example" añade los que haga falta.
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '**',
-      },
-    ],
+      "images.unsplash.com",
+      "plus.unsplash.com",
+      ...(process.env.IMAGE_HOSTS?.split(",").map((h) => h.trim()).filter(Boolean) ?? []),
+    ].map((hostname) => ({ protocol: "https" as const, hostname })),
   },
   async rewrites() {
     return [
