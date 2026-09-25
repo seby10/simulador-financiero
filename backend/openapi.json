@@ -944,6 +944,22 @@
         "tags": [
           "Institución"
         ]
+      },
+      "get": {
+        "operationId": "InstitutionController_logo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": "Logo no cargado"
+          }
+        },
+        "summary": "Logo institucional (público).",
+        "tags": [
+          "Institución"
+        ]
       }
     },
     "/api/institution/hero": {
@@ -996,6 +1012,22 @@
           }
         ],
         "summary": "Sube la imagen de fondo del Landing Page (PNG/JPEG).",
+        "tags": [
+          "Institución"
+        ]
+      },
+      "get": {
+        "operationId": "InstitutionController_hero",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": "Imagen no cargada"
+          }
+        },
+        "summary": "Imagen de portada del Landing Page (público).",
         "tags": [
           "Institución"
         ]
@@ -3436,7 +3468,7 @@
             "type": "string",
             "nullable": true,
             "description": "Fondo del landing; se sube con POST /institution/hero o se enlaza por https.",
-            "example": "/uploads/institution/hero-3f1c.jpg"
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "id": {
             "type": "number",
@@ -3559,7 +3591,7 @@
             "type": "string",
             "nullable": true,
             "description": "Fondo del landing; se sube con POST /institution/hero o se enlaza por https.",
-            "example": "/uploads/institution/hero-3f1c.jpg"
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "institutionName": {
             "type": "string",
@@ -3721,7 +3753,7 @@
             "type": "string",
             "nullable": true,
             "description": "Se sube con POST /credit/types/{id}/image o se enlaza por https.",
-            "example": "/uploads/institution/hero-3f1c.jpg"
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
@@ -3776,7 +3808,7 @@
             "type": "string",
             "nullable": true,
             "description": "Se sube con POST /credit/types/{id}/image o se enlaza por https.",
-            "example": "/uploads/institution/hero-3f1c.jpg"
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
@@ -4248,7 +4280,7 @@
             "type": "string",
             "nullable": true,
             "description": "Se sube con POST /investment/plans/{id}/image o se enlaza por https.",
-            "example": "/uploads/institution/hero-3f1c.jpg"
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
@@ -4321,7 +4353,7 @@
             "type": "string",
             "nullable": true,
             "description": "Se sube con POST /investment/plans/{id}/image o se enlaza por https.",
-            "example": "/uploads/institution/hero-3f1c.jpg"
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
