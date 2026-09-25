@@ -2,8 +2,10 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Post,
   Put,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,6 +17,7 @@ import {
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiProduces,
   ApiPayloadTooLargeResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -24,8 +27,9 @@ import {
   InstitutionResponse,
   UpdateInstitutionDto,
   UploadLogoDto,
+  UploadHeroDto,
 } from './institution.dto.js';
-import { InstitutionService } from './institution.service.js';
+import { type AssetKind, InstitutionService } from './institution.service.js';
 
 @ApiTags('Institución')
 @Controller('institution')
@@ -60,6 +64,45 @@ export class InstitutionController {
   @ApiBadRequestResponse({ description: 'Archivo ausente o no es PNG/JPEG' })
   @ApiPayloadTooLargeResponse({ description: 'Archivo mayor a 5 MB' })
   uploadLogo(@UploadedFile() file?: Express.Multer.File) {
-    return this.service.updateLogo(file);
+    return this.service.updateAsset('logo', file);
+  }
+
+  /** Sube la imagen de fondo del Landing Page (PNG/JPEG). */
+  @Post('hero')
+  @AdminOnly()
+  @UseInterceptors(
+    FileInterceptor('hero', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UploadHeroDto })
+  @ApiCreatedResponse({ type: InstitutionResponse })
+  @ApiBadRequestResponse({ description: 'Archivo ausente o no es PNG/JPEG' })
+  @ApiPayloadTooLargeResponse({ description: 'Archivo mayor a 5 MB' })
+  uploadHero(@UploadedFile() file?: Express.Multer.File) {
+    return this.service.updateAsset('hero', file);
+  }
+
+  /** Logo institucional (público). */
+  @Get('logo')
+  @ApiProduces('image/png', 'image/jpeg')
+  @ApiNotFoundResponse({ description: 'Logo no cargado' })
+  @Header('Cache-Control', 'public, max-age=86400')
+  logo() {
+    return this.serve('logo');
+  }
+
+  /** Imagen de portada del Landing Page (público). */
+  @Get('hero')
+  @ApiProduces('image/png', 'image/jpeg')
+  @ApiNotFoundResponse({ description: 'Imagen no cargada' })
+  @Header('Cache-Control', 'public, max-age=86400')
+  hero() {
+    return this.serve('hero');
+  }
+
+  // La URL cambia (?v=) con cada subida, así que se puede cachear sin miedo.
+  private async serve(kind: AssetKind) {
+    const asset = await this.service.asset(kind);
+    return new StreamableFile(asset.data, { type: asset.mimeType });
   }
 }

@@ -8,7 +8,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -16,9 +19,15 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
+  ApiConsumes,
+  ApiPayloadTooLargeResponse,
 } from '@nestjs/swagger';
 import { AdminOnly } from '../../common/auth.js';
-import { ApiPdfResponse, pdfFile } from '../../common/http.js';
+import {
+  ApiPdfResponse,
+  pdfFile,
+  MAX_UPLOAD_BYTES,
+} from '../../common/http.js';
 import { InstitutionService } from '../institution/institution.service.js';
 import { PdfService } from '../pdf/pdf.service.js';
 import {
@@ -76,6 +85,23 @@ export class CreditController {
     @Body() dto: UpdateCreditTypeDto,
   ) {
     return this.credit.updateType(id, dto);
+  }
+
+  /** Sube la imagen del tipo de crédito. */
+  @Post('types/:id/image')
+  @AdminOnly()
+  @UseInterceptors(
+    FileInterceptor('image', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOkResponse({ type: CreditTypeResponse })
+  @ApiNotFoundResponse()
+  @ApiPayloadTooLargeResponse({ description: 'Archivo mayor a 5 MB' })
+  uploadImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.credit.updateImage(id, file);
   }
 
   /** Elimina un tipo de crédito. */

@@ -1,6 +1,824 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/auth/users": {
+      "get": {
+        "operationId": "AuthController_listUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Lista todos los usuarios con su número de solicitudes (solo administradores).",
+        "tags": [
+          "Auth"
+        ]
+      },
+      "post": {
+        "operationId": "AuthController_adminCreateUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "409": {
+            "description": "Ya existe una cuenta con ese correo o esa cédula"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Crea un usuario desde el panel administrativo, con el rol indicado.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/users/{id}/role": {
+      "patch": {
+        "operationId": "AuthController_updateUserRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Intento de cambiar el rol propio\n\nLa sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": "Usuario inexistente"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Cambia el rol de otro usuario (ADMIN / CUSTOMER).",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/users/{id}/status": {
+      "patch": {
+        "operationId": "AuthController_setUserActive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Intento de desactivar la cuenta propia\n\nLa sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": "Usuario inexistente"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Activa o desactiva otra cuenta; desactivarla cierra sus sesiones.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/users/{id}/identity/unlock": {
+      "patch": {
+        "operationId": "AuthController_unlockIdentity",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "409": {
+            "description": "La verificación no está bloqueada"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Tras revisar el caso, devuelve los intentos de verificación facial a una cuenta bloqueada.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/biometric-reset/verify": {
+      "post": {
+        "operationId": "AuthController_biometricResetVerify",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricResetVerifyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiometricResetVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "La captura no es JPEG/PNG"
+          },
+          "401": {
+            "description": "Identidad no verificada (mismo mensaje exista o no la cuenta)"
+          },
+          "429": {
+            "description": "Demasiados intentos fallidos"
+          }
+        },
+        "summary": "Recuperación de clave por biometría: compara una captura en vivo con la selfie\nque verificó la identidad del titular en una solicitud. Máx. 5 fallos por hora.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/biometric-reset/confirm": {
+      "post": {
+        "operationId": "AuthController_biometricResetConfirm",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricResetConfirmDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Contraseña actualizada"
+          },
+          "401": {
+            "description": "Token inválido, usado o expirado"
+          }
+        },
+        "summary": "Fija la nueva contraseña con el token de un solo uso y cierra todas las sesiones.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya existe una cuenta con ese correo o esa cédula"
+          }
+        },
+        "summary": "Crea la cuenta (rol CUSTOMER) y deja la sesión abierta.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Correo o contraseña incorrectos"
+          },
+          "403": {
+            "description": "La cuenta está desactivada"
+          }
+        },
+        "summary": "Inicia sesión y emite las cookies httpOnly.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie, token inválido, expirado o ya usado"
+          }
+        },
+        "summary": "Canjea el refresh token por uno nuevo (rotación). No lleva cuerpo: el token\nviaja en la cookie httpOnly.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Sesión cerrada (idempotente)"
+          }
+        },
+        "summary": "Revoca la familia de tokens de este dispositivo y borra las cookies.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout-all": {
+      "post": {
+        "operationId": "AuthController_logoutAll",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Todas las sesiones revocadas"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Cierra la sesión en todos los dispositivos.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Datos de la sesión actual.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/change-password": {
+      "post": {
+        "operationId": "AuthController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "La contraseña actual no coincide\n\nSesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Cambia la contraseña, revoca las demás sesiones y renueva la de aquí.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/biometrics/liveness-sessions": {
+      "post": {
+        "operationId": "BiometricsController_createLivenessSession",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLivenessSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abre una sesión de prueba de vida: devuelve los gestos que la persona debe\nhacer frente a la cámara. Pública porque la recuperación de clave ocurre sin\nsesión; cada sesión sirve una sola vez, para un solo flujo, por 3 minutos.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/applications/{id}/verify": {
+      "post": {
+        "operationId": "BiometricsController_verify",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiometricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Faltan documentos, la captura no es JPEG/PNG o la cédula frontal no es una foto"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          },
+          "403": {
+            "description": "Identidad sin verificar (error: IDENTITY_REQUIRED)"
+          },
+          "404": {
+            "description": "Solicitud inexistente o de otro usuario"
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta o la identidad ya fue verificada"
+          },
+          "429": {
+            "description": "Se agotaron los intentos"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Verifica prueba de vida y coincidencia facial contra la cédula cargada.\nSi ambos puntajes superan su umbral la identidad queda verificada; aprobar\nla inversión sigue siendo decisión de un administrador.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/applications/{id}": {
+      "get": {
+        "operationId": "BiometricsController_history",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BiometricAttemptResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": "Solicitud inexistente"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Historial de intentos, con sus puntajes y motivos de rechazo.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/identity": {
+      "get": {
+        "operationId": "IdentityController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Estado de la verificación: el frontend lo usa para pedir \"Acción necesaria\".",
+        "tags": [
+          "Identidad"
+        ]
+      }
+    },
+    "/api/identity/document": {
+      "post": {
+        "operationId": "IdentityController_uploadDocument",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadIdentityDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Archivo ausente o no es JPEG/PNG"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          },
+          "409": {
+            "description": "La identidad ya está verificada"
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Carga (o reemplaza) la foto del lado frontal de la cédula.",
+        "tags": [
+          "Identidad"
+        ]
+      }
+    },
+    "/api/identity/verify": {
+      "post": {
+        "operationId": "IdentityController_verify",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyIdentityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sin consentimiento, sin cédula cargada, o captura sin un rostro válido"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          },
+          "409": {
+            "description": "La identidad ya está verificada"
+          },
+          "429": {
+            "description": "Se agotaron los intentos"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Compara una selfie en vivo con la cédula cargada. Si coincide, la cuenta\nqueda verificada; al agotar los intentos se bloquea para revisión manual.",
+        "tags": [
+          "Identidad"
+        ]
+      }
+    },
     "/api/institution": {
       "get": {
         "operationId": "InstitutionController_get",
@@ -50,15 +868,21 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Reemplaza los datos institucionales.",
@@ -96,21 +920,114 @@
             "description": "Archivo ausente o no es PNG/JPEG"
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "413": {
             "description": "Archivo mayor a 5 MB"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Sube el logo institucional (PNG/JPEG).",
+        "tags": [
+          "Institución"
+        ]
+      },
+      "get": {
+        "operationId": "InstitutionController_logo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": "Logo no cargado"
+          }
+        },
+        "summary": "Logo institucional (público).",
+        "tags": [
+          "Institución"
+        ]
+      }
+    },
+    "/api/institution/hero": {
+      "post": {
+        "operationId": "InstitutionController_uploadHero",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadHeroDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Archivo ausente o no es PNG/JPEG"
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Sube la imagen de fondo del Landing Page (PNG/JPEG).",
+        "tags": [
+          "Institución"
+        ]
+      },
+      "get": {
+        "operationId": "InstitutionController_hero",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": "Imagen no cargada"
+          }
+        },
+        "summary": "Imagen de portada del Landing Page (público).",
         "tags": [
           "Institución"
         ]
@@ -165,18 +1082,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "409": {
             "description": "Nombre duplicado"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Crea un tipo de crédito.",
@@ -252,18 +1175,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Actualiza parcialmente un tipo de crédito.",
@@ -295,21 +1224,81 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Elimina un tipo de crédito.",
+        "tags": [
+          "Crédito"
+        ]
+      }
+    },
+    "/api/credit/types/{id}/image": {
+      "post": {
+        "operationId": "CreditController_uploadImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Sube la imagen del tipo de crédito.",
         "tags": [
           "Crédito"
         ]
@@ -364,18 +1353,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "409": {
             "description": "Nombre duplicado"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Crea un cargo indirecto.",
@@ -451,18 +1446,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Actualiza parcialmente un cargo indirecto.",
@@ -494,18 +1495,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Elimina un cargo indirecto.",
@@ -637,18 +1644,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "409": {
             "description": "Nombre duplicado"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Crea una póliza.",
@@ -724,18 +1737,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Actualiza parcialmente una póliza.",
@@ -767,7 +1786,10 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
@@ -776,15 +1798,72 @@
             "description": "La póliza tiene solicitudes"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Elimina una póliza sin solicitudes asociadas.",
+        "tags": [
+          "Inversión"
+        ]
+      }
+    },
+    "/api/investment/plans/{id}/image": {
+      "post": {
+        "operationId": "InvestmentController_uploadImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "413": {
+            "description": "Archivo mayor a 5 MB"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Sube la imagen de la póliza.",
         "tags": [
           "Inversión"
         ]
@@ -864,6 +1943,331 @@
         ]
       }
     },
+    "/api/biometrics/handoff": {
+      "post": {
+        "operationId": "HandoffController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHandoffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffCreatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Abre un traspaso para confirmar la identidad o verificar una solicitud propia.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/password-reset": {
+      "post": {
+        "operationId": "HandoffController_createForReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResetHandoffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffCreatedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Abre un traspaso para recuperar la clave (sin sesión, con el correo).",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/{id}/status": {
+      "post": {
+        "operationId": "HandoffController_poll",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffPollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Traspaso inexistente o secreto incorrecto"
+          }
+        },
+        "summary": "La computadora consulta si el celular ya terminó.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/{id}/events": {
+      "get": {
+        "operationId": "HandoffController_events",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pollToken",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Eventos en vivo (Server-Sent Events) para la computadora: cuándo se abre el\nenlace en el celular, en qué paso va, si se interrumpe y cuándo termina.\nEl secreto va en la URL porque EventSource no admite cabeceras ni cuerpo.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}/heartbeat": {
+      "post": {
+        "operationId": "HandoffController_heartbeat",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffHeartbeatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "410": {
+            "description": "Código vencido o inválido"
+          }
+        },
+        "summary": "Latido del celular (cada ~2 s) con el paso en el que está.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}/leave": {
+      "post": {
+        "operationId": "HandoffController_leave",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "El celular cerró o abandonó la página (navigator.sendBeacon).",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}": {
+      "get": {
+        "operationId": "HandoffController_mobileInfo",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffMobileInfoResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Código vencido o inválido"
+          }
+        },
+        "summary": "El celular abre el QR: qué flujo es y a quién saludar.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/biometrics/handoff/mobile/{token}/verify": {
+      "post": {
+        "operationId": "HandoffController_verify",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveCaptureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Código vencido o inválido"
+          }
+        },
+        "summary": "El celular envía la prueba de vida; el servidor ejecuta el flujo original.",
+        "tags": [
+          "Biometría"
+        ]
+      }
+    },
+    "/api/onboarding/my-applications": {
+      "get": {
+        "operationId": "OnboardingController_myApplications",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Solicitudes de la cuenta autenticada, con su estado y el de la biometría.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
     "/api/onboarding/apply": {
       "post": {
         "operationId": "OnboardingController_apply",
@@ -890,13 +2294,24 @@
             }
           },
           "400": {
-            "description": "Datos inválidos o fuera de rango de la póliza"
+            "description": "Datos inválidos, fuera de rango de la póliza o cédula distinta a la de la cuenta"
+          },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          },
+          "403": {
+            "description": "Identidad sin verificar (error: IDENTITY_REQUIRED)"
           },
           "404": {
             "description": "Póliza inexistente"
           }
         },
-        "summary": "Registra una solicitud de inversión (estado PENDING_REVIEW).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Registra una solicitud de inversión de la cuenta autenticada (PENDING_REVIEW).",
         "tags": [
           "Onboarding"
         ]
@@ -939,61 +2354,28 @@
           "400": {
             "description": "Sin archivos, campo desconocido o tipo no permitido"
           },
+          "401": {
+            "description": "Sesión ausente, inválida o expirada"
+          },
+          "403": {
+            "description": "Identidad sin verificar (error: IDENTITY_REQUIRED)"
+          },
+          "404": {
+            "description": "Solicitud inexistente o de otro usuario"
+          },
           "409": {
-            "description": "La solicitud ya fue resuelta"
+            "description": "La solicitud ya fue resuelta o la identidad ya fue evaluada"
           },
           "413": {
             "description": "Archivo mayor a 5 MB"
           }
         },
-        "summary": "Carga cédula (frontal/reverso) y planilla de servicio. Se puede repetir mientras esté pendiente.",
-        "tags": [
-          "Onboarding"
-        ]
-      }
-    },
-    "/api/onboarding/{id}/biometrics": {
-      "post": {
-        "operationId": "OnboardingController_biometrics",
-        "parameters": [
+        "security": [
           {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "session": []
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BiometricsDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BiometricsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Faltan documentos o la captura no es JPEG/PNG"
-          },
-          "409": {
-            "description": "La solicitud ya fue resuelta"
-          }
-        },
-        "summary": "Verificación biométrica simulada (liveness + face match); aprueba la solicitud.",
+        "summary": "Carga cédula (frontal/reverso) y planilla de servicio. La cédula frontal debe\nser JPEG/PNG porque es la referencia facial. Se puede repetir hasta verificar.",
         "tags": [
           "Onboarding"
         ]
@@ -1027,18 +2409,132 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Lista solicitudes, opcionalmente filtradas por estado.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/applications/{id}/approve": {
+      "post": {
+        "operationId": "OnboardingController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta o la biometría sigue pendiente"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Aprueba una solicitud pendiente con la identidad ya resuelta.",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/api/onboarding/applications/{id}/reject": {
+      "post": {
+        "operationId": "OnboardingController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentApplicationWithPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "La solicitud ya fue resuelta"
+          },
+          "503": {
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Rechaza una solicitud pendiente.",
         "tags": [
           "Onboarding"
         ]
@@ -1069,18 +2565,24 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": ""
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
         "summary": "Detalle de una solicitud.",
@@ -1109,7 +2611,8 @@
               "enum": [
                 "idFront",
                 "idBack",
-                "utilityBill"
+                "utilityBill",
+                "selfie"
               ],
               "type": "string"
             }
@@ -1140,21 +2643,27 @@
             }
           },
           "401": {
-            "description": "Cabecera x-admin-key ausente o inválida"
+            "description": "Cabecera x-admin-key o sesión ausente o inválida"
+          },
+          "403": {
+            "description": "La sesión no tiene rol ADMIN"
           },
           "404": {
             "description": "Solicitud o documento inexistente"
           },
           "503": {
-            "description": "ADMIN_API_KEY no configurada en el servidor"
+            "description": "ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor"
           }
         },
         "security": [
           {
             "admin": []
+          },
+          {
+            "session": []
           }
         ],
-        "summary": "Descarga un documento cargado (datos personales: solo administradores).",
+        "summary": "Descarga un documento cargado o la selfie verificada (solo administradores).",
         "tags": [
           "Onboarding"
         ]
@@ -1163,8 +2672,8 @@
   },
   "info": {
     "title": "Simulador Financiero API",
-    "description": "Simulación de créditos (Francés/Alemán), pólizas a plazo fijo y onboarding digital. Montos y tasas viajan como string decimal; las tasas están en porcentaje. Las rutas administrativas requieren la cabecera `x-admin-key`.",
-    "version": "1.0.0",
+    "description": "Simulación de créditos (Francés/Alemán), pólizas a plazo fijo y onboarding digital. Montos y tasas viajan como string decimal; las tasas están en porcentaje. La sesión se gestiona con cookies httpOnly emitidas por `/api/auth`. Las rutas administrativas aceptan una sesión con rol ADMIN o la cabecera `x-admin-key`.",
+    "version": "1.1.0",
     "contact": {}
   },
   "tags": [],
@@ -1175,12 +2684,792 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-admin-key"
+      },
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
       }
     },
     "schemas": {
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "CUSTOMER",
+          "ADMIN"
+        ]
+      },
+      "IdentityStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "VERIFIED",
+          "LOCKED"
+        ],
+        "description": "Mientras no sea VERIFIED el cliente debe confirmar su identidad para operar."
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "identityStatus": {
+            "description": "Mientras no sea VERIFIED el cliente debe confirmar su identidad para operar.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IdentityStatus"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "example": "9f1c0b6e-4f7a-4f5e-9a1d-8d4a2f6b3c11"
+          },
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com"
+          },
+          "fullName": {
+            "type": "string",
+            "description": "Nombres y apellidos.",
+            "example": "María José Andrade"
+          },
+          "idNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null solo en cuentas administrativas creadas por el seed."
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "identityVerifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "identityStatus",
+          "id",
+          "email",
+          "fullName",
+          "idNumber",
+          "firstName",
+          "lastName",
+          "phone",
+          "address",
+          "isActive",
+          "identityVerifiedAt",
+          "createdAt"
+        ]
+      },
+      "CreateUserAdminDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "description": "CUSTOMER si se omite.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "idNumber": {
+            "type": "string",
+            "description": "Cédula ecuatoriana; una cuenta por titular.",
+            "example": "1710034065"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "María José",
+            "maxLength": 100
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Andrade",
+            "maxLength": 100
+          },
+          "phone": {
+            "type": "string",
+            "example": "0991234567",
+            "pattern": "^\\+?\\d{7,15}$"
+          },
+          "address": {
+            "type": "string",
+            "example": "Av. Amazonas y Colón",
+            "maxLength": 300
+          },
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "description": "Mínimo 8 caracteres.",
+            "example": "cafe-con-pan-1892",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "idNumber",
+          "firstName",
+          "lastName",
+          "phone",
+          "email",
+          "password"
+        ]
+      },
+      "UpdateUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "UpdateUserStatusDto": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean",
+            "description": "false cierra todas las sesiones del usuario."
+          }
+        },
+        "required": [
+          "isActive"
+        ]
+      },
+      "IdentityStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IdentityStatus"
+              }
+            ]
+          },
+          "verifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "hasDocument": {
+            "type": "boolean",
+            "description": "Ya cargó la foto de la cédula frontal."
+          },
+          "remainingAttempts": {
+            "type": "number",
+            "example": 3
+          },
+          "maxAttempts": {
+            "type": "number",
+            "example": 5
+          }
+        },
+        "required": [
+          "status",
+          "verifiedAt",
+          "hasDocument",
+          "remainingAttempts",
+          "maxAttempts"
+        ]
+      },
+      "BiometricResetVerifyDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "livenessSessionId": {
+            "type": "string",
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
+          }
+        },
+        "required": [
+          "email",
+          "livenessSessionId",
+          "frames"
+        ]
+      },
+      "BiometricResetVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "resetToken": {
+            "type": "string",
+            "description": "Úselo en `biometric-reset/confirm` antes de que expire (15 min)."
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-09-23T18:30:00.000Z"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "92.41"
+          }
+        },
+        "required": [
+          "resetToken",
+          "expiresAt",
+          "matchScore"
+        ]
+      },
+      "BiometricResetConfirmDto": {
+        "type": "object",
+        "properties": {
+          "resetToken": {
+            "type": "string",
+            "description": "Token de un solo uso devuelto por `biometric-reset/verify`.",
+            "maxLength": 100
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Mínimo 8 caracteres; cierra todas las sesiones abiertas.",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "resetToken",
+          "newPassword"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "idNumber": {
+            "type": "string",
+            "description": "Cédula ecuatoriana; una cuenta por titular.",
+            "example": "1710034065"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "María José",
+            "maxLength": 100
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Andrade",
+            "maxLength": 100
+          },
+          "phone": {
+            "type": "string",
+            "example": "0991234567",
+            "pattern": "^\\+?\\d{7,15}$"
+          },
+          "address": {
+            "type": "string",
+            "example": "Av. Amazonas y Colón",
+            "maxLength": 300
+          },
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "description": "Mínimo 8 caracteres.",
+            "example": "cafe-con-pan-1892",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "idNumber",
+          "firstName",
+          "lastName",
+          "phone",
+          "email",
+          "password"
+        ]
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          },
+          "accessTokenExpiresIn": {
+            "type": "number",
+            "description": "Segundos de vida del access token recién emitido.",
+            "example": 900
+          }
+        },
+        "required": [
+          "user",
+          "accessTokenExpiresIn"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "maria.andrade@example.com",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "example": "cafe-con-pan-1892",
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Mínimo 8 caracteres; cierra todas las sesiones abiertas.",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "LivenessPurpose": {
+        "type": "string",
+        "enum": [
+          "IDENTITY",
+          "PASSWORD_RESET",
+          "APPLICATION"
+        ],
+        "description": "Flujo en el que se usará: la sesión no sirve en otro."
+      },
+      "CreateLivenessSessionDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "description": "Flujo en el que se usará: la sesión no sirve en otro.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LivenessPurpose"
+              }
+            ]
+          }
+        },
+        "required": [
+          "purpose"
+        ]
+      },
+      "LivenessSessionResponse": {
+        "type": "object",
+        "properties": {
+          "challenges": {
+            "type": "array",
+            "description": "Gestos a realizar, en orden.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "TURN_LEFT",
+                "TURN_RIGHT",
+                "SMILE"
+              ]
+            }
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challenges",
+          "sessionId",
+          "expiresAt"
+        ]
+      },
+      "BiometricsDto": {
+        "type": "object",
+        "properties": {
+          "livenessSessionId": {
+            "type": "string",
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
+          }
+        },
+        "required": [
+          "livenessSessionId",
+          "frames"
+        ]
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING_REVIEW",
+          "APPROVED",
+          "REJECTED"
+        ],
+        "description": "Estado de la solicitud; la biometría no lo cambia, lo decide un administrador."
+      },
+      "BiometricStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "VERIFIED",
+          "FAILED"
+        ],
+        "description": "VERIFIED si este intento pasó; FAILED si agotó los intentos."
+      },
+      "BiometricChecksDto": {
+        "type": "object",
+        "properties": {
+          "liveness": {
+            "type": "string",
+            "description": "PASSED o FAILED según el umbral de vivacidad.",
+            "example": "PASSED"
+          },
+          "faceMatch": {
+            "type": "string",
+            "description": "MATCH o NO_MATCH según el umbral de coincidencia.",
+            "example": "MATCH"
+          }
+        },
+        "required": [
+          "liveness",
+          "faceMatch"
+        ]
+      },
+      "BiometricsResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Estado de la solicitud; la biometría no lo cambia, lo decide un administrador.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "biometricStatus": {
+            "description": "VERIFIED si este intento pasó; FAILED si agotó los intentos.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BiometricStatus"
+              }
+            ]
+          },
+          "applicationId": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "number",
+            "description": "Número de intento, empezando en 1.",
+            "example": 1
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "livenessScore": {
+            "type": "string",
+            "example": "92.41"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "95.07"
+          },
+          "remainingAttempts": {
+            "type": "number",
+            "description": "Intentos que aún quedan disponibles.",
+            "example": 2
+          },
+          "checks": {
+            "$ref": "#/components/schemas/BiometricChecksDto"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Umbral que no se alcanzó, o null si la verificación pasó."
+          }
+        },
+        "required": [
+          "status",
+          "biometricStatus",
+          "applicationId",
+          "attempt",
+          "passed",
+          "livenessScore",
+          "matchScore",
+          "remainingAttempts",
+          "checks",
+          "failureReason"
+        ]
+      },
+      "BiometricAttemptResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "number"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "livenessScore": {
+            "type": "string",
+            "example": "92.41"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "95.07"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string",
+            "example": "simulated"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "attempt",
+          "passed",
+          "livenessScore",
+          "matchScore",
+          "failureReason",
+          "provider",
+          "createdAt"
+        ]
+      },
+      "UploadIdentityDocumentDto": {
+        "type": "object",
+        "properties": {
+          "idFront": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "idFront"
+        ]
+      },
+      "VerifyIdentityDto": {
+        "type": "object",
+        "properties": {
+          "consent": {
+            "type": "boolean",
+            "description": "Aceptación expresa del tratamiento de datos biométricos (LOPDP).",
+            "enum": [
+              true
+            ]
+          },
+          "livenessSessionId": {
+            "type": "string",
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
+          }
+        },
+        "required": [
+          "consent",
+          "livenessSessionId",
+          "frames"
+        ]
+      },
+      "IdentityVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IdentityStatus"
+              }
+            ]
+          },
+          "verifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "hasDocument": {
+            "type": "boolean",
+            "description": "Ya cargó la foto de la cédula frontal."
+          },
+          "remainingAttempts": {
+            "type": "number",
+            "example": 3
+          },
+          "maxAttempts": {
+            "type": "number",
+            "example": 5
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "matchScore": {
+            "type": "string",
+            "example": "92.41"
+          },
+          "livenessScore": {
+            "type": "string",
+            "example": "96.10"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Umbral que no se alcanzó, o null si pasó."
+          }
+        },
+        "required": [
+          "status",
+          "verifiedAt",
+          "hasDocument",
+          "remainingAttempts",
+          "maxAttempts",
+          "passed",
+          "matchScore",
+          "livenessScore",
+          "failureReason"
+        ]
+      },
       "InstitutionResponse": {
         "type": "object",
         "properties": {
+          "primaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "secondaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "accentColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "pageBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "cardBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "heroImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Fondo del landing; se sube con POST /institution/hero o se enlaza por https.",
+            "example": "/api/institution/hero?v=1727222400000"
+          },
           "id": {
             "type": "number",
             "description": "Siempre 1 (configuración única)."
@@ -1226,6 +3515,15 @@
             "type": "string",
             "description": "Texto legal impreso en los PDF.",
             "maxLength": 2000
+          },
+          "heroTitle": {
+            "type": "string",
+            "example": "El respaldo financiero que necesitas.",
+            "maxLength": 100
+          },
+          "heroSubtitle": {
+            "type": "string",
+            "maxLength": 300
           }
         },
         "required": [
@@ -1244,6 +3542,57 @@
       "UpdateInstitutionDto": {
         "type": "object",
         "properties": {
+          "primaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "secondaryColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "accentColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "navbarTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "pageBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "cardBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerBgColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "footerTextColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "example": "#003b70"
+          },
+          "heroImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Fondo del landing; se sube con POST /institution/hero o se enlaza por https.",
+            "example": "/api/institution/hero?v=1727222400000"
+          },
           "institutionName": {
             "type": "string",
             "example": "Cooperativa de Ahorro y Crédito Andina",
@@ -1275,6 +3624,15 @@
             "type": "string",
             "description": "Texto legal impreso en los PDF.",
             "maxLength": 2000
+          },
+          "heroTitle": {
+            "type": "string",
+            "example": "El respaldo financiero que necesitas.",
+            "maxLength": 100
+          },
+          "heroSubtitle": {
+            "type": "string",
+            "maxLength": 300
           }
         },
         "required": [
@@ -1297,6 +3655,18 @@
         },
         "required": [
           "logo"
+        ]
+      },
+      "UploadHeroDto": {
+        "type": "object",
+        "properties": {
+          "hero": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "hero"
         ]
       },
       "CreditTypeResponse": {
@@ -1331,6 +3701,10 @@
             "description": "Tasa nominal anual en %.",
             "example": "16"
           },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -1349,6 +3723,7 @@
           "minTermMonths",
           "maxTermMonths",
           "annualInterestRate",
+          "imageUrl",
           "createdAt",
           "updatedAt"
         ]
@@ -1373,6 +3748,12 @@
             "description": "Decimal: número positivo con hasta 3 enteros y 4 decimales (se acepta también number JSON).",
             "pattern": "^\\d{1,3}(\\.\\d{1,4})?$",
             "example": "16.0000"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /credit/types/{id}/image o se enlaza por https.",
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
@@ -1422,6 +3803,12 @@
             "description": "Decimal: número positivo con hasta 3 enteros y 4 decimales (se acepta también number JSON).",
             "pattern": "^\\d{1,3}(\\.\\d{1,4})?$",
             "example": "16.0000"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /credit/types/{id}/image o se enlaza por https.",
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
@@ -1822,6 +4209,10 @@
           "allowsMonthlyPayout": {
             "type": "boolean"
           },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -1841,6 +4232,7 @@
           "termMaxDays",
           "tea",
           "allowsMonthlyPayout",
+          "imageUrl",
           "createdAt",
           "updatedAt"
         ]
@@ -1883,6 +4275,12 @@
               "idBack",
               "utilityBill"
             ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /investment/plans/{id}/image o se enlaza por https.",
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
@@ -1950,6 +4348,12 @@
               "idBack",
               "utilityBill"
             ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Se sube con POST /investment/plans/{id}/image o se enlaza por https.",
+            "example": "/api/institution/hero?v=1727222400000"
           },
           "name": {
             "type": "string",
@@ -2138,6 +4542,299 @@
           "payoutSchedule"
         ]
       },
+      "CreateHandoffDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "enum": [
+              "IDENTITY",
+              "APPLICATION"
+            ],
+            "type": "string"
+          },
+          "applicationId": {
+            "type": "string",
+            "description": "Solicitud a verificar (solo APPLICATION).",
+            "format": "uuid"
+          },
+          "consent": {
+            "type": "boolean",
+            "description": "Aceptación del tratamiento de datos biométricos (solo IDENTITY)."
+          }
+        },
+        "required": [
+          "purpose"
+        ]
+      },
+      "HandoffCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "handoffId": {
+            "type": "string"
+          },
+          "mobileToken": {
+            "type": "string",
+            "description": "Va en el QR: /verify-mobile?t=..."
+          },
+          "pollToken": {
+            "type": "string",
+            "description": "Se queda en la computadora para consultar el resultado."
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handoffId",
+          "mobileToken",
+          "pollToken",
+          "expiresAt"
+        ]
+      },
+      "CreateResetHandoffDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "HandoffPollDto": {
+        "type": "object",
+        "properties": {
+          "pollToken": {
+            "type": "string",
+            "description": "Secreto que devolvió la creación del traspaso; solo lo conoce la computadora.",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "pollToken"
+        ]
+      },
+      "HandoffStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "WAITING (sin escanear), CONNECTED / CAPTURING / VERIFYING (lo que hace el\ncelular), INTERRUPTED (cerró la página o dejó de responder), COMPLETED, EXPIRED."
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Resultado del flujo (en recuperación incluye resetToken una sola vez)."
+          }
+        },
+        "required": [
+          "status",
+          "result"
+        ]
+      },
+      "HandoffHeartbeatDto": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "description": "Qué está haciendo el celular.",
+            "enum": [
+              "CONNECTED",
+              "CAPTURING",
+              "VERIFYING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "HandoffMobileInfoResponse": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LivenessPurpose"
+              }
+            ]
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Primer nombre del titular, para saludar (no se envía en recuperación)."
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "purpose",
+          "firstName",
+          "completed",
+          "expiresAt"
+        ]
+      },
+      "LiveCaptureDto": {
+        "type": "object",
+        "properties": {
+          "livenessSessionId": {
+            "type": "string",
+            "description": "Sesión abierta con POST /biometrics/liveness-sessions (un solo uso).",
+            "format": "uuid"
+          },
+          "frames": {
+            "description": "Fotogramas JPEG/PNG en base64: el primero mirando de frente y luego uno por\ncada gesto de la sesión, en el mismo orden.",
+            "minItems": 2,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 3000000
+            }
+          }
+        },
+        "required": [
+          "livenessSessionId",
+          "frames"
+        ]
+      },
+      "ApplicationPlanRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tea": {
+            "type": "string",
+            "example": "8.5"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tea"
+        ]
+      },
+      "InvestmentApplicationWithPlanResponse": {
+        "type": "object",
+        "properties": {
+          "payoutMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutMethod"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "biometricStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BiometricStatus"
+              }
+            ]
+          },
+          "documentUrls": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Tipo de documento → URL de descarga (requiere credencial de administrador).",
+            "example": {
+              "idFront": "/api/onboarding/applications/ce64e373-f776-4b61-8bf0-78a19bb86da4/documents/idFront"
+            }
+          },
+          "investmentPlan": {
+            "$ref": "#/components/schemas/ApplicationPlanRefDto"
+          },
+          "id": {
+            "type": "string",
+            "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cuenta que creó la solicitud."
+          },
+          "applicantFullName": {
+            "type": "string"
+          },
+          "applicantIdNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sourceOfFunds": {
+            "type": "string"
+          },
+          "investmentPlanId": {
+            "type": "number"
+          },
+          "amount": {
+            "type": "string",
+            "example": "15000"
+          },
+          "termDays": {
+            "type": "number"
+          },
+          "biometricScore": {
+            "type": "string",
+            "nullable": true,
+            "description": "Coincidencia facial del intento que verificó la identidad.",
+            "example": "95.07"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payoutMethod",
+          "status",
+          "biometricStatus",
+          "documentUrls",
+          "investmentPlan",
+          "id",
+          "userId",
+          "applicantFullName",
+          "applicantIdNumber",
+          "email",
+          "phone",
+          "sourceOfFunds",
+          "investmentPlanId",
+          "amount",
+          "termDays",
+          "biometricScore",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "ApplyDto": {
         "type": "object",
         "properties": {
@@ -2200,139 +4897,22 @@
           "termDays"
         ]
       },
-      "ApplicationStatus": {
-        "type": "string",
-        "enum": [
-          "PENDING_REVIEW",
-          "APPROVED",
-          "REJECTED"
-        ]
-      },
-      "ApplicationPlanRefDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number"
-          },
-          "name": {
-            "type": "string"
-          },
-          "tea": {
-            "type": "string",
-            "example": "8.5"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "tea"
-        ]
-      },
-      "InvestmentApplicationWithPlanResponse": {
-        "type": "object",
-        "properties": {
-          "payoutMethod": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PayoutMethod"
-              }
-            ]
-          },
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApplicationStatus"
-              }
-            ]
-          },
-          "documentUrls": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Tipo de documento → URL de descarga (requiere credencial de administrador).",
-            "example": {
-              "idFront": "/api/onboarding/applications/ce64e373-f776-4b61-8bf0-78a19bb86da4/documents/idFront"
-            }
-          },
-          "investmentPlan": {
-            "$ref": "#/components/schemas/ApplicationPlanRefDto"
-          },
-          "id": {
-            "type": "string",
-            "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
-          },
-          "applicantFullName": {
-            "type": "string"
-          },
-          "applicantIdNumber": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "sourceOfFunds": {
-            "type": "string"
-          },
-          "investmentPlanId": {
-            "type": "number"
-          },
-          "amount": {
-            "type": "string",
-            "example": "15000"
-          },
-          "termDays": {
-            "type": "number"
-          },
-          "biometricScore": {
-            "type": "string",
-            "nullable": true,
-            "example": "95.07"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "payoutMethod",
-          "status",
-          "documentUrls",
-          "investmentPlan",
-          "id",
-          "applicantFullName",
-          "applicantIdNumber",
-          "email",
-          "phone",
-          "sourceOfFunds",
-          "investmentPlanId",
-          "amount",
-          "termDays",
-          "biometricScore",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
       "UploadDocumentsDto": {
         "type": "object",
         "properties": {
           "idFront": {
             "type": "string",
+            "description": "Solo JPEG o PNG: es la referencia de la verificación facial.",
             "format": "binary"
           },
           "idBack": {
             "type": "string",
+            "description": "JPEG, PNG o PDF.",
             "format": "binary"
           },
           "utilityBill": {
             "type": "string",
+            "description": "JPEG, PNG o PDF.",
             "format": "binary"
           }
         }
@@ -2354,6 +4934,13 @@
               }
             ]
           },
+          "biometricStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BiometricStatus"
+              }
+            ]
+          },
           "documentUrls": {
             "type": "object",
             "additionalProperties": {
@@ -2367,6 +4954,11 @@
           "id": {
             "type": "string",
             "example": "ce64e373-f776-4b61-8bf0-78a19bb86da4"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cuenta que creó la solicitud."
           },
           "applicantFullName": {
             "type": "string"
@@ -2396,6 +4988,7 @@
           "biometricScore": {
             "type": "string",
             "nullable": true,
+            "description": "Coincidencia facial del intento que verificó la identidad.",
             "example": "95.07"
           },
           "createdAt": {
@@ -2410,8 +5003,10 @@
         "required": [
           "payoutMethod",
           "status",
+          "biometricStatus",
           "documentUrls",
           "id",
+          "userId",
           "applicantFullName",
           "applicantIdNumber",
           "email",
@@ -2423,66 +5018,6 @@
           "biometricScore",
           "createdAt",
           "updatedAt"
-        ]
-      },
-      "BiometricsDto": {
-        "type": "object",
-        "properties": {
-          "selfieBase64": {
-            "type": "string",
-            "description": "Captura facial JPEG/PNG en base64 (con o sin prefijo data URL).",
-            "example": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
-            "maxLength": 7000000
-          }
-        },
-        "required": [
-          "selfieBase64"
-        ]
-      },
-      "BiometricChecksDto": {
-        "type": "object",
-        "properties": {
-          "liveness": {
-            "type": "string",
-            "example": "PASSED"
-          },
-          "faceMatch": {
-            "type": "string",
-            "example": "MATCH"
-          }
-        },
-        "required": [
-          "liveness",
-          "faceMatch"
-        ]
-      },
-      "BiometricsResponse": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApplicationStatus"
-              }
-            ]
-          },
-          "applicationId": {
-            "type": "string"
-          },
-          "biometricScore": {
-            "type": "string",
-            "nullable": true,
-            "example": "95.07"
-          },
-          "checks": {
-            "$ref": "#/components/schemas/BiometricChecksDto"
-          }
-        },
-        "required": [
-          "status",
-          "applicationId",
-          "biometricScore",
-          "checks"
         ]
       }
     }

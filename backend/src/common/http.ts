@@ -156,6 +156,27 @@ export function assertFileKind(
   return kind;
 }
 
+/** Imagen JPEG/PNG en base64, con o sin prefijo data URL, validada por su contenido. */
+export function decodeImageBase64(value: string, field: string): Buffer {
+  const buffer = Buffer.from(
+    value.replace(/^data:image\/[a-z]+;base64,/i, ''),
+    'base64',
+  );
+  assertFileKind(buffer, ['png', 'jpg'], field);
+  return buffer;
+}
+
+/**
+ * Ruta en disco de un documento de onboarding. `id` llega validado como UUID en
+ * los controladores, así que no hay path traversal posible.
+ */
+export const onboardingDocumentPath = (id: string, kind: string) =>
+  join(PRIVATE_UPLOADS, 'onboarding', id, kind);
+
+/** Ruta en disco de un archivo de identidad de la cuenta (cédula, selfie de referencia). */
+export const userDocumentPath = (userId: string, kind: string) =>
+  join(PRIVATE_UPLOADS, 'users', userId, kind);
+
 export async function saveFile(path: string, buffer: Buffer) {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, buffer);

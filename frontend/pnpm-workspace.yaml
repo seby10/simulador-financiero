@@ -1,0 +1,5 @@
+# pnpm 10+ bloquea los scripts de instalación salvo los que se aprueben aquí.
+# unrs-resolver (resolver de eslint-plugin-import) trae su binario nativo como
+# dependencia opcional por plataforma; su postinstall solo es un respaldo.
+allowBuilds:
+  unrs-resolver: false

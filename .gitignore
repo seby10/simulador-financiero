@@ -1,1 +1,3 @@
 CLAUDE.md
+# Variables locales de la base de datos (docker-compose ya trae valores por defecto)
+bd/.env

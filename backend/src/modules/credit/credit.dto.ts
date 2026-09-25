@@ -14,6 +14,7 @@ import {
   Min,
 } from 'class-validator';
 import { IsDecimalString } from '../../common/http.js';
+import { IsOptionalImageUrl } from '../../common/validation/branding.js';
 import type {
   AmortizationMethod,
   AmortizationRow,
@@ -32,6 +33,8 @@ export class CreateCreditTypeDto {
   /** Tasa nominal anual en %. */
   @IsDecimalString({ decimals: 4, integerDigits: 3, example: '16.0000' })
   annualInterestRate: string;
+  /** Se sube con POST /credit/types/{id}/image o se enlaza por https. */
+  @IsOptionalImageUrl() imageUrl?: string | null;
 }
 
 export class UpdateCreditTypeDto extends PartialType(CreateCreditTypeDto) {}
@@ -77,6 +80,7 @@ export class CreditTypeResponse {
   maxTermMonths: number;
   /** Tasa nominal anual en %. @example "16" */
   annualInterestRate: string;
+  imageUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

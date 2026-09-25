@@ -1,57 +1,214 @@
 import {
   applyDecorators,
   CanActivate,
+  createParamDecorator,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   ServiceUnavailableException,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiCookieAuth,
+  ApiForbiddenResponse,
   ApiSecurity,
   ApiServiceUnavailableResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { PrismaService } from '../database/prisma.service.js';
+import { IdentityStatus, UserRole } from '../generated/prisma/enums.js';
+import { AccessTokenClaims, verifyAccessToken } from './tokens.js';
 
 export const ADMIN_KEY_HEADER = 'x-admin-key';
 export const ADMIN_SECURITY = 'admin';
+export const SESSION_SECURITY = 'session';
+
+/** Cookies httpOnly: el JavaScript del navegador nunca toca los tokens. */
+export const ACCESS_COOKIE = 'access_token';
+export const REFRESH_COOKIE = 'refresh_token';
+
+declare global {
+  namespace Express {
+    interface Request {
+      /** Lo puebla JwtAuthGuard/AdminGuard tras verificar el access token. */
+      user?: AccessTokenClaims;
+    }
+  }
+}
 
 const digest = (value: string) => createHash('sha256').update(value).digest();
 
+export const readCookie = (request: Request, name: string) =>
+  (request.cookies as Record<string, string> | undefined)?.[name];
+
+const INVALID_ADMIN = 'Credencial de administrador inválida';
+
+const REVOKED_SESSION = 'Sesión cerrada o revocada';
+
 /**
- * ponytail: clave compartida para el panel administrativo (usar solo desde el servidor
- * de Next.js, nunca en el navegador). Migrar a JWT + roles cuando existan usuarios admin.
+ * Verifica el access token de la cookie y deja los claims en `request.user`.
+ *
+ * La firma sola no basta: un JWT vale hasta expirar, así que cerrar sesión,
+ * cerrarlas todas o desactivar la cuenta no surtirían efecto durante los
+ * minutos restantes del token. Por eso se comprueba contra la base que la
+ * AuthSession que lo emitió (`sid`) siga viva y que la cuenta siga activa.
+ */
+async function authenticate(
+  request: Request,
+  prisma: PrismaService,
+): Promise<AccessTokenClaims> {
+  const token = readCookie(request, ACCESS_COOKIE);
+  if (!token) {
+    throw new UnauthorizedException('Sesión ausente');
+  }
+  const claims = await verifyAccessToken(token);
+  const session = await prisma.authSession.findUnique({
+    where: { id: claims.sid },
+    select: { revokedAt: true, user: { select: { isActive: true } } },
+  });
+  // Sin fila (purgada) o revocada: el token ya no representa una sesión abierta.
+  if (!session?.user.isActive || session.revokedAt) {
+    throw new UnauthorizedException(REVOKED_SESSION);
+  }
+  request.user = claims;
+  return claims;
+}
+
+const httpRequest = (context: ExecutionContext) =>
+  context.switchToHttp().getRequest<Request>();
+
+/** Exige una sesión válida (cookie de access token). */
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    await authenticate(httpRequest(context), this.prisma);
+    return true;
+  }
+}
+
+/**
+ * Acceso administrativo por dos vías mientras conviven ambos esquemas:
+ * la cabecera `x-admin-key` (integraciones servidor-a-servidor ya existentes)
+ * o una sesión con rol ADMIN.
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
-    const expected = process.env.ADMIN_API_KEY;
-    // Falla cerrado: sin clave configurada nadie accede a rutas administrativas.
-    if (!expected) {
-      throw new ServiceUnavailableException('ADMIN_API_KEY no configurada');
+  constructor(private readonly prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = httpRequest(context);
+    const provided = request.header(ADMIN_KEY_HEADER);
+    // Si el cliente mandó la cabecera, esa es la vía elegida: no se cae a la sesión.
+    if (provided !== undefined) {
+      const expected = process.env.ADMIN_API_KEY;
+      // Falla cerrado: sin clave configurada nadie entra por esta vía.
+      if (!expected) {
+        throw new ServiceUnavailableException('ADMIN_API_KEY no configurada');
+      }
+      // Digests de igual longitud → comparación en tiempo constante.
+      if (!timingSafeEqual(digest(provided), digest(expected))) {
+        throw new UnauthorizedException(INVALID_ADMIN);
+      }
+      return true;
     }
-    const provided =
-      context.switchToHttp().getRequest<Request>().header(ADMIN_KEY_HEADER) ??
-      '';
-    // Digests de igual longitud → comparación en tiempo constante.
-    if (!timingSafeEqual(digest(provided), digest(expected))) {
-      throw new UnauthorizedException('Credencial de administrador inválida');
+
+    if (!readCookie(request, ACCESS_COOKIE)) {
+      throw new UnauthorizedException(INVALID_ADMIN);
+    }
+    const { role } = await authenticate(request, this.prisma);
+    if (role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Se requiere rol de administrador');
     }
     return true;
   }
 }
 
-/** Restringe la ruta a administradores y la documenta en OpenAPI. */
+/** Código que el frontend usa para llevar al cliente a confirmar su identidad. */
+export const IDENTITY_REQUIRED = 'IDENTITY_REQUIRED';
+
+/**
+ * Un cliente cuya identidad no está verificada por biometría existe, pero aún no
+ * puede operar: igual que en un banco, la cuenta queda a medias hasta confirmar
+ * el rostro. El personal administrativo no pasa por esta verificación.
+ * Consulta la base en cada petición: el access token puede ser anterior a la verificación.
+ */
+@Injectable()
+export class IdentityVerifiedGuard implements CanActivate {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const claims = await authenticate(httpRequest(context), this.prisma);
+    if (claims.role === UserRole.ADMIN) return true;
+    const user = await this.prisma.user.findUnique({
+      where: { id: claims.sub },
+      select: { identityStatus: true },
+    });
+    if (user?.identityStatus !== IdentityStatus.VERIFIED) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: IDENTITY_REQUIRED,
+        message: 'Confirma tu identidad con verificación facial para continuar',
+      });
+    }
+    return true;
+  }
+}
+
+/** Sesión válida y, si es cliente, con la identidad ya verificada. */
+export const VerifiedIdentity = () =>
+  applyDecorators(
+    UseGuards(IdentityVerifiedGuard),
+    ApiCookieAuth(SESSION_SECURITY),
+    ApiUnauthorizedResponse({
+      description: 'Sesión ausente, inválida o expirada',
+    }),
+    ApiForbiddenResponse({
+      description: `Identidad sin verificar (error: ${IDENTITY_REQUIRED})`,
+    }),
+  );
+
+/** Restringe la ruta a sesiones autenticadas y la documenta en OpenAPI. */
+export const Authenticated = () =>
+  applyDecorators(
+    UseGuards(JwtAuthGuard),
+    ApiCookieAuth(SESSION_SECURITY),
+    ApiUnauthorizedResponse({
+      description: 'Sesión ausente, inválida o expirada',
+    }),
+  );
+
+/** Restringe la ruta a administradores (cabecera o sesión) y la documenta. */
 export const AdminOnly = () =>
   applyDecorators(
     UseGuards(AdminGuard),
     ApiSecurity(ADMIN_SECURITY),
+    ApiCookieAuth(SESSION_SECURITY),
     ApiUnauthorizedResponse({
-      description: `Cabecera ${ADMIN_KEY_HEADER} ausente o inválida`,
+      description: `Cabecera ${ADMIN_KEY_HEADER} o sesión ausente o inválida`,
     }),
+    ApiForbiddenResponse({ description: 'La sesión no tiene rol ADMIN' }),
     ApiServiceUnavailableResponse({
-      description: 'ADMIN_API_KEY no configurada en el servidor',
+      description: 'ADMIN_API_KEY o JWT_SECRET no configuradas en el servidor',
     }),
   );
+
+/** Extraído aparte del decorador para poder probarlo sin montar una ruta. */
+export const currentUser = (
+  property: keyof AccessTokenClaims | undefined,
+  context: ExecutionContext,
+) => {
+  const { user } = httpRequest(context);
+  if (!user) {
+    // Sin guard delante no hay claims que entregar: es un error de programación.
+    throw new UnauthorizedException('Sesión ausente');
+  }
+  return property ? user[property] : user;
+};
+
+/** Claims de la sesión actual (o una de sus propiedades). */
+export const CurrentUser = createParamDecorator(currentUser);

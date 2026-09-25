@@ -14,6 +14,7 @@ import { IsDecimalString } from '../../common/http.js';
 import { IsCedula } from '../../common/validation/cedula.js';
 import {
   ApplicationStatus,
+  BiometricStatus,
   PayoutMethod,
 } from '../../generated/prisma/enums.js';
 
@@ -40,11 +41,6 @@ export class ApplyDto {
   payoutMethod: PayoutMethod;
 }
 
-export class BiometricsDto {
-  /** Captura facial JPEG/PNG en base64 (con o sin prefijo data URL). @example "data:image/jpeg;base64,/9j/4AAQSkZJRg..." */
-  @IsString() @IsNotEmpty() @MaxLength(7_000_000) selfieBase64: string;
-}
-
 export class ListApplicationsQuery {
   @ApiProperty({
     enum: ApplicationStatus,
@@ -56,12 +52,15 @@ export class ListApplicationsQuery {
   status?: ApplicationStatus;
 }
 
-/** Campos multipart de carga de documentos (JPEG, PNG o PDF, máx. 5 MB c/u). */
+/** Campos multipart de carga de documentos (máx. 5 MB c/u). */
 export class UploadDocumentsDto {
+  /** Solo JPEG o PNG: es la referencia de la verificación facial. */
   @ApiProperty({ type: 'string', format: 'binary', required: false })
   idFront?: unknown;
+  /** JPEG, PNG o PDF. */
   @ApiProperty({ type: 'string', format: 'binary', required: false })
   idBack?: unknown;
+  /** JPEG, PNG o PDF. */
   @ApiProperty({ type: 'string', format: 'binary', required: false })
   utilityBill?: unknown;
 }
@@ -78,6 +77,8 @@ export class ApplicationPlanRefDto {
 export class InvestmentApplicationResponse {
   /** @example "ce64e373-f776-4b61-8bf0-78a19bb86da4" */
   id: string;
+  /** Cuenta que creó la solicitud. */
+  userId: string | null;
   applicantFullName: string;
   applicantIdNumber: string;
   email: string;
@@ -91,7 +92,9 @@ export class InvestmentApplicationResponse {
   payoutMethod: PayoutMethod;
   @ApiProperty({ enum: ApplicationStatus, enumName: 'ApplicationStatus' })
   status: ApplicationStatus;
-  /** @example "95.07" */
+  @ApiProperty({ enum: BiometricStatus, enumName: 'BiometricStatus' })
+  biometricStatus: BiometricStatus;
+  /** Coincidencia facial del intento que verificó la identidad. @example "95.07" */
   biometricScore: string | null;
   /** Tipo de documento → URL de descarga (requiere credencial de administrador). */
   @ApiProperty({
@@ -109,20 +112,4 @@ export class InvestmentApplicationResponse {
 
 export class InvestmentApplicationWithPlanResponse extends InvestmentApplicationResponse {
   investmentPlan: ApplicationPlanRefDto;
-}
-
-export class BiometricChecksDto {
-  /** @example "PASSED" */
-  liveness: string;
-  /** @example "MATCH" */
-  faceMatch: string;
-}
-
-export class BiometricsResponse {
-  applicationId: string;
-  @ApiProperty({ enum: ApplicationStatus, enumName: 'ApplicationStatus' })
-  status: ApplicationStatus;
-  /** @example "95.07" */
-  biometricScore: string | null;
-  checks: BiometricChecksDto;
 }
