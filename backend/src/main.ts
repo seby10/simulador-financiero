@@ -12,6 +12,7 @@ import {
   ADMIN_SECURITY,
   SESSION_SECURITY,
 } from './common/auth.js';
+import { csrfOrigin } from './common/csrf.js';
 import { PUBLIC_UPLOADS } from './common/http.js';
 
 try {
@@ -43,6 +44,8 @@ async function bootstrap() {
   // Capturas faciales en base64 superan el límite por defecto (100 kb).
   app.useBodyParser('json', { limit: '8mb' });
   app.use(cookieParser());
+  // Después de cookieParser: decide según las cookies de sesión de la petición.
+  app.use(csrfOrigin);
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
