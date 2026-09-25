@@ -459,7 +459,8 @@ describe('API (e2e)', () => {
       } finally {
         await cleanUp(id);
       }
-    });
+      // Cuatro evaluaciones faciales seguidas: no entra en los 30 s del resto.
+    }, 120_000);
 
     it('solo el dueño puede verificar su solicitud', async () => {
       const { id } = await applicationWithDocuments();
