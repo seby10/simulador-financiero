@@ -13,7 +13,6 @@ import {
   SESSION_SECURITY,
 } from './common/auth.js';
 import { csrfOrigin } from './common/csrf.js';
-import { PUBLIC_UPLOADS } from './common/http.js';
 
 try {
   process.loadEnvFile();
@@ -23,7 +22,9 @@ try {
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.setGlobalPrefix('api');
+  // /uploads queda fuera del prefijo: las URLs guardadas en la base ya apuntan
+  // ahí y las sirve UploadsController leyendo de Postgres.
+  app.setGlobalPrefix('api', { exclude: ['uploads/:folder/:name'] });
   // El frontend reenvía /api con un proxy local (rewrites de Next o nginx): sin
   // confiar en él, request.ip sería 127.0.0.1 para todos y el límite por IP
   // castigaría a todos los usuarios a la vez.
@@ -53,7 +54,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.useStaticAssets(PUBLIC_UPLOADS, { prefix: '/uploads/' });
   app.enableShutdownHooks();
 
   const openApi = SwaggerModule.createDocument(
@@ -87,6 +87,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, openApi, {
     swaggerOptions: { withCredentials: true },
   });
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
 }
 await bootstrap();

@@ -197,6 +197,17 @@ model InstitutionAsset {
   updatedAt DateTime @updatedAt
 }
 
+/// Archivos subidos (imágenes de productos, cédulas, selfies). Viven en la base
+/// y no en el disco: el contenedor de la API se reinicia con el disco en blanco
+/// y perder la selfie de referencia dejaría sin recuperación de clave a su dueño.
+model StoredFile {
+  /// Ruta lógica: "public/credit/x.png", "private/users/<id>/selfie".
+  path      String   @id
+  mimeType  String   @db.VarChar(32)
+  data      Bytes
+  updatedAt DateTime @updatedAt
+}
+
 model CreditType {
   id                 Int      @id @default(autoincrement())
   name               String   @unique

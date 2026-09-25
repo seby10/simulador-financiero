@@ -5,10 +5,8 @@ import type {
   TableCell,
   TDocumentDefinitions,
 } from 'pdfmake/interfaces.js';
-import { readFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
-import { PUBLIC_UPLOADS } from '../../common/http.js';
 import { money, sum } from '../../common/math/decimal.util.js';
+import { PrismaService } from '../../database/prisma.service.js';
 import type {
   AmortizationResult,
   InvestmentResult,
@@ -59,6 +57,8 @@ const dateEc = (date: Date) =>
 @Injectable()
 export class PdfService {
   private readonly logger = new Logger(PdfService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async amortizationTable(
     institution: InstitutionConfig,
@@ -332,16 +332,20 @@ export class PdfService {
     }
   }
 
+  /**
+   * El logo se incrusta como data URL: pdfmake tiene prohibido salir a la red o
+   * al disco. Vive en la base (InstitutionAsset), igual que lo sirve la API.
+   */
   private async logoDataUrl(logoUrl: string | null): Promise<string | null> {
-    if (!logoUrl?.startsWith('/uploads/')) return null;
-    const path = join(PUBLIC_UPLOADS, logoUrl.slice('/uploads/'.length));
-    try {
-      const mime = extname(path) === '.png' ? 'image/png' : 'image/jpeg';
-      return `data:${mime};base64,${(await readFile(path)).toString('base64')}`;
-    } catch {
-      this.logger.warn(`Logo no encontrado: ${path}`);
+    if (!logoUrl) return null;
+    const asset = await this.prisma.institutionAsset.findUnique({
+      where: { kind: 'logo' },
+    });
+    if (!asset) {
+      this.logger.warn('Logo no cargado: el PDF sale sin marca');
       return null;
     }
+    return `data:${asset.mimeType};base64,${Buffer.from(asset.data).toString('base64')}`;
   }
 }
 

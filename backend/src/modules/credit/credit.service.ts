@@ -1,13 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import {
   assertFileKind,
   assertMinMax,
   assertRange,
-  PUBLIC_UPLOADS,
-  saveFile,
+  publicFilePath,
 } from '../../common/http.js';
+import { StorageService } from '../../common/storage.js';
 import { buildAmortizationSchedule } from '../../common/math/financial-math.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
@@ -20,7 +19,10 @@ import {
 
 @Injectable()
 export class CreditService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   // ── Tipos de crédito ──
   listTypes() {
@@ -50,7 +52,7 @@ export class CreditService {
     await this.getType(id);
     const kind = assertFileKind(file.buffer, ['png', 'jpg'], 'image');
     const name = `credit-${id}-${randomUUID()}.${kind}`;
-    await saveFile(join(PUBLIC_UPLOADS, 'credit', name), file.buffer);
+    await this.storage.save(publicFilePath('credit', name), file.buffer);
     return this.prisma.creditType.update({
       where: { id },
       data: { imageUrl: `/uploads/credit/${name}` },

@@ -1,13 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import {
   assertFileKind,
   assertMinMax,
   assertRange,
-  PUBLIC_UPLOADS,
-  saveFile,
+  publicFilePath,
 } from '../../common/http.js';
+import { StorageService } from '../../common/storage.js';
 import {
   PAYOUT_PERIOD_DAYS,
   simulateInvestment,
@@ -22,7 +21,10 @@ import {
 
 @Injectable()
 export class InvestmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   listPlans() {
     return this.prisma.investmentPlan.findMany({ orderBy: { id: 'asc' } });
@@ -51,7 +53,7 @@ export class InvestmentService {
     await this.getPlan(id);
     const kind = assertFileKind(file.buffer, ['png', 'jpg'], 'image');
     const name = `investment-${id}-${randomUUID()}.${kind}`;
-    await saveFile(join(PUBLIC_UPLOADS, 'investment', name), file.buffer);
+    await this.storage.save(publicFilePath('investment', name), file.buffer);
     return this.prisma.investmentPlan.update({
       where: { id },
       data: { imageUrl: `/uploads/investment/${name}` },

@@ -19,8 +19,6 @@ import {
 } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { Matches } from 'class-validator';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
 import { Prisma } from '../generated/prisma/client.js';
 import { D, DecimalInput } from './math/decimal.util.js';
 
@@ -118,13 +116,19 @@ function toHttp(error: unknown): unknown {
 
 // ───────────────────────── Archivos subidos ─────────────────────────
 
-// ponytail: disco local; migrar a S3/R2 si se despliega en más de una instancia.
-const UPLOADS_ROOT = join(process.cwd(), 'uploads');
-/** Servido estáticamente en /uploads (logo institucional). */
-export const PUBLIC_UPLOADS = join(UPLOADS_ROOT, 'public');
-/** Nunca servido estáticamente (documentos con datos personales). */
-export const PRIVATE_UPLOADS = join(UPLOADS_ROOT, 'private');
+/**
+ * Rutas lógicas de los archivos subidos. No son rutas de disco: las guarda
+ * StorageService en Postgres (ver common/storage.ts). El prefijo decide quién
+ * puede leerlas: `public/` se sirve en /uploads sin autenticar, `private/` solo
+ * por rutas que comprueban al dueño.
+ */
+export const PUBLIC_PREFIX = 'public';
+export const PRIVATE_PREFIX = 'private';
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+/** Ruta de una imagen pública de catálogo (`credit`, `investment`). */
+export const publicFilePath = (folder: string, name: string) =>
+  `${PUBLIC_PREFIX}/${folder}/${name}`;
 
 const SIGNATURES = { png: '89504e47', jpg: 'ffd8ff', pdf: '25504446' } as const;
 export type FileKind = keyof typeof SIGNATURES;
@@ -167,20 +171,15 @@ export function decodeImageBase64(value: string, field: string): Buffer {
 }
 
 /**
- * Ruta en disco de un documento de onboarding. `id` llega validado como UUID en
- * los controladores, así que no hay path traversal posible.
+ * Documento de onboarding. `id` llega validado como UUID en los controladores,
+ * así que no hay forma de escaparse a otra carpeta.
  */
 export const onboardingDocumentPath = (id: string, kind: string) =>
-  join(PRIVATE_UPLOADS, 'onboarding', id, kind);
+  `${PRIVATE_PREFIX}/onboarding/${id}/${kind}`;
 
-/** Ruta en disco de un archivo de identidad de la cuenta (cédula, selfie de referencia). */
+/** Archivo de identidad de la cuenta (cédula, selfie de referencia). */
 export const userDocumentPath = (userId: string, kind: string) =>
-  join(PRIVATE_UPLOADS, 'users', userId, kind);
-
-export async function saveFile(path: string, buffer: Buffer) {
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, buffer);
-}
+  `${PRIVATE_PREFIX}/users/${userId}/${kind}`;
 
 // ───────────────────────── PDF ─────────────────────────
 

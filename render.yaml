@@ -1,0 +1,63 @@
+# Blueprint de Render para la API. El frontend va en Vercel (ver DEPLOY.md).
+# Render lo lee al crear el servicio con "New > Blueprint"; los valores marcados
+# con `sync: false` se escriben a mano en el panel y no se versionan.
+services:
+  - type: web
+    name: simulador-financiero-api
+    runtime: node
+    plan: free
+    rootDir: backend
+
+    # --include=dev es obligatorio: Render fija NODE_ENV=production y sin él npm
+    # se salta las devDependencies, entre ellas el CLI de Nest y TypeScript, y
+    # `nest build` falla con "nest: not found".
+    # Las migraciones corren aquí porque el plan gratuito no tiene preDeploy.
+    buildCommand: npm ci --include=dev && npm run build && npm run db:deploy
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+
+    envVars:
+      # Node 24: en 22 el CLI de Nest revienta al cargar ora 9 (ESM) desde CJS.
+      - key: NODE_VERSION
+        value: "24"
+      # El plan gratuito da 512 MB; sin el tope, V8 crece hasta que el contenedor
+      # muere sin aviso en vez de recolectar basura.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=460
+      # Render termina TLS en su balanceador: sin esto Express ve la IP del proxy
+      # y el límite por IP trata a todos los usuarios como uno solo.
+      - key: TRUST_PROXY
+        value: "1"
+
+      # Neon: DATABASE_URL con -pooler, DIRECT_URL sin él (migraciones).
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+
+      # Dominio del frontend en Vercel, separado por comas si hay varios.
+      # Lo usan CORS y la comprobación de origen (CSRF).
+      - key: CORS_ORIGIN
+        sync: false
+
+      # openssl rand -hex 32, cada una distinta.
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_API_KEY
+        sync: false
+
+      # El navegador solo acepta cookies de terceros con Secure; en https va solo,
+      # pero se deja explícito porque la sesión depende de ello.
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: lax
+
+      # Administrador inicial: se crea al correr `npm run db:seed` una vez.
+      - key: ADMIN_SEED_EMAIL
+        sync: false
+      - key: ADMIN_SEED_PASSWORD
+        sync: false
+
+      - key: BIOMETRIC_PROVIDER
+        value: faceapi
