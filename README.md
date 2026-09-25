@@ -4,13 +4,20 @@ Sistema web completo para instituciones financieras (Bancos y Cooperativas de Ah
 
 ---
 
-## 🔑 Credenciales de Acceso (Administrador)
+## 🔑 Acceso de Administrador
 
-Para ingresar al panel de administración e inspeccionar/aprobar solicitudes o configurar la institución:
+No hay ninguna cuenta de administrador precargada: la crea `npm run db:seed` a partir de lo que declares en `backend/.env`. Define estas variables **antes** de ejecutar el seed:
+
+```dotenv
+ADMIN_SEED_EMAIL=tu-correo@ejemplo.com
+# Mínimo 8 caracteres; nunca se versiona.
+ADMIN_SEED_PASSWORD=una-clave-larga-y-propia
+ADMIN_SEED_NAME=Administrador
+```
+
+Sin `ADMIN_SEED_EMAIL` y `ADMIN_SEED_PASSWORD` el seed no crea cuenta alguna y no podrás entrar al panel.
 
 * **URL de Login**: [http://localhost:3000/login](http://localhost:3000/login) o [http://localhost:3000/admin](http://localhost:3000/admin)
-* **Correo Electrónico**: `admin@admin.com`
-* **Contraseña**: `admin`
 
 ---
 
@@ -40,10 +47,13 @@ npm install
 # 3. Generar el cliente de Prisma
 npx prisma generate
 
-# 4. Sincronizar la base de datos (PostgreSQL Neon)
-npx prisma db push
+# 4. Aplicar las migraciones versionadas (mismo esquema que en producción)
+npm run db:deploy
 
-# 5. Iniciar el servidor backend en modo desarrollo
+# 5. Crear el administrador inicial y los catálogos (idempotente)
+npm run db:seed
+
+# 6. Iniciar el servidor backend en modo desarrollo
 npm run start:dev
 ```
 
