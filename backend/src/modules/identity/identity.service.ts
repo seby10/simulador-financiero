@@ -13,6 +13,7 @@ import {
   saveFile,
   userDocumentPath,
 } from '../../common/http.js';
+import { LockNamespace, withAdvisoryLock } from '../../common/locks.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
   BiometricStatus,
@@ -43,6 +44,9 @@ const maxAttempts = () => {
 };
 
 const EPOCH = new Date(0);
+
+/** Marca de un intento apartado al que aún no le respondió el proveedor. */
+const PENDING_PROVIDER = 'reservado';
 
 /**
  * Confirmación de identidad de la cuenta: el cliente carga su cédula y se toma
@@ -87,14 +91,10 @@ export class IdentityService {
     );
 
     const limit = maxAttempts();
-    const used = await this.attemptsUsed(user);
-    if (used >= limit) {
-      await this.lock(userId);
-      throw new HttpException(
-        'Se agotaron los intentos de verificación. Un asesor revisará tu cuenta.',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
+    // El intento se aparta antes de evaluar: contar ahora y anotar el resultado
+    // después dejaría pasar a varias peticiones simultáneas, que verían todas el
+    // mismo cupo libre y gastarían más intentos de los permitidos.
+    const { attemptId, used } = await this.reserveAttempt(user, limit);
 
     // El DTO exige consent: true; se registra la primera vez que se acepta.
     if (!user.biometricConsentAt) {
@@ -106,14 +106,17 @@ export class IdentityService {
 
     // Si la captura no tiene un rostro válido el proveedor responde 400 y el
     // intento no cuenta: es un problema de la foto, no un rostro distinto.
-    const evaluation = await this.biometrics.evaluate(
-      LivenessPurpose.IDENTITY,
-      capture,
-      document,
-    );
-    await this.prisma.identityVerification.create({
+    const evaluation = await this.biometrics
+      .evaluate(LivenessPurpose.IDENTITY, capture, document)
+      .catch(async (error: unknown) => {
+        await this.prisma.identityVerification.delete({
+          where: { id: attemptId },
+        });
+        throw error;
+      });
+    await this.prisma.identityVerification.update({
+      where: { id: attemptId },
       data: {
-        userId,
         livenessScore: evaluation.livenessScore.toFixed(2),
         matchScore: evaluation.matchScore.toFixed(2),
         passed: evaluation.passed,
@@ -138,7 +141,7 @@ export class IdentityService {
       if (count === 0) {
         throw new ConflictException('La identidad ya fue verificada');
       }
-    } else if (used + 1 >= limit) {
+    } else if (used >= limit) {
       await this.lock(userId);
     }
 
@@ -149,6 +152,52 @@ export class IdentityService {
       livenessScore: evaluation.livenessScore.toFixed(2),
       failureReason: evaluation.failureReason,
     };
+  }
+
+  /**
+   * Aparta un intento: bajo el cerrojo de la cuenta cuenta los gastados y, si
+   * queda cupo, inserta ya la fila que lo consume. La fila nace en blanco y la
+   * rellena `verify` con el veredicto del proveedor; si este rechaza la foto se
+   * borra y el intento no se cobra. `used` incluye el recién apartado.
+   */
+  private reserveAttempt(
+    user: Awaited<ReturnType<IdentityService['load']>>,
+    limit: number,
+  ) {
+    return withAdvisoryLock(
+      this.prisma,
+      LockNamespace.IdentityAttempts,
+      user.id,
+      async (tx) => {
+        const used = await tx.identityVerification.count({
+          where: {
+            userId: user.id,
+            createdAt: { gt: user.identityUnlockedAt ?? EPOCH },
+          },
+        });
+        if (used >= limit) {
+          await tx.user.updateMany({
+            where: { id: user.id, identityStatus: IdentityStatus.PENDING },
+            data: { identityStatus: IdentityStatus.LOCKED },
+          });
+          throw new HttpException(
+            'Se agotaron los intentos de verificación. Un asesor revisará tu cuenta.',
+            HttpStatus.TOO_MANY_REQUESTS,
+          );
+        }
+        const { id } = await tx.identityVerification.create({
+          data: {
+            userId: user.id,
+            livenessScore: '0',
+            matchScore: '0',
+            passed: false,
+            provider: PENDING_PROVIDER,
+          },
+          select: { id: true },
+        });
+        return { attemptId: id, used: used + 1 };
+      },
+    );
   }
 
   /** Un administrador revisó el caso: la cuenta vuelve a tener todos sus intentos. */
