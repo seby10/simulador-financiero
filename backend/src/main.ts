@@ -87,6 +87,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, openApi, {
     swaggerOptions: { withCredentials: true },
   });
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
 }
 await bootstrap();
