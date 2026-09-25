@@ -12,7 +12,7 @@ import {
   ADMIN_SECURITY,
   SESSION_SECURITY,
 } from './common/auth.js';
-import { csrfOrigin } from './common/csrf.js';
+import { corsOrigins, csrfOrigin } from './common/csrf.js';
 
 try {
   process.loadEnvFile();
@@ -38,7 +38,7 @@ async function bootstrap() {
     }),
   );
   app.enableCors({
-    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
+    origin: corsOrigins(),
     // Las cookies de sesión solo viajan si el navegador tiene permiso explícito.
     credentials: true,
   });

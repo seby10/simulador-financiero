@@ -14,17 +14,34 @@ const originOf = (url: string | undefined) => {
   }
 };
 
-/** Orígenes del frontend (CORS_ORIGIN) más el del propio backend (Swagger UI). */
-const allowed = (request: Request) => {
-  const configured = (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
+/**
+ * Orígenes del frontend declarados en CORS_ORIGIN, normalizados: una barra final
+ * o un espacio (`https://app.vercel.app/`) no deben dejar fuera al propio sitio.
+ * Lo usan CORS y la comprobación de origen, para que nunca discrepen.
+ */
+export const corsOrigins = () =>
+  (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
     .split(',')
-    .map((value) => value.trim())
+    .map((value) => originOf(value.trim()))
+    .filter((value): value is string => Boolean(value));
+
+const hostOf = (origin: string) => new URL(origin).host;
+
+/**
+ * Hosts que son "este mismo sitio": el del backend (Swagger UI) y el que
+ * atendió al navegador cuando la petición llega reenviada por un proxy (los
+ * rewrites de Next en Vercel ponen su dominio en X-Forwarded-Host). Una web
+ * ajena no controla ninguno de los dos: el formulario de evil.com llega con
+ * Origin evil.com, y ese no coincide con el host al que apuntó.
+ */
+const sameSiteHosts = (request: Request) =>
+  [request.get('host'), request.get('x-forwarded-host')?.split(',')[0]]
+    .map((host) => host?.trim().toLowerCase())
     .filter(Boolean);
-  const host = request.get('host');
-  return new Set(
-    host ? [...configured, `${request.protocol}://${host}`] : configured,
-  );
-};
+
+const isAllowed = (request: Request, origin: string) =>
+  corsOrigins().includes(origin) ||
+  sameSiteHosts(request).includes(hostOf(origin));
 
 /**
  * El navegador adjunta las cookies de sesión a cualquier petición que salga
@@ -52,7 +69,7 @@ export function csrfOrigin(
   // tampoco hay Referer— quien llama no es una página web (curl, otro servidor).
   const origin =
     originOf(request.get('origin')) ?? originOf(request.get('referer'));
-  if (origin && !allowed(request).has(origin)) {
+  if (origin && !isAllowed(request, origin)) {
     throw new ForbiddenException(`Origen no permitido: ${origin}`);
   }
   next();
