@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { ACCESS_COOKIE } from './auth.js';
-import { csrfOrigin } from './csrf.js';
+import { corsOrigins, csrfOrigin } from './csrf.js';
 
 const FRONTEND = 'http://localhost:3000';
 const BACKEND_HOST = 'localhost:3001';
@@ -9,11 +9,13 @@ const requestWith = ({
   method = 'POST',
   origin,
   referer,
+  forwardedHost,
   cookies = { [ACCESS_COOKIE]: 'un-token' },
 }: {
   method?: string;
   origin?: string;
   referer?: string;
+  forwardedHost?: string;
   cookies?: Record<string, string>;
 }) =>
   ({
@@ -21,7 +23,12 @@ const requestWith = ({
     cookies,
     protocol: 'http',
     get: (name: string) =>
-      ({ origin, referer, host: BACKEND_HOST })[name.toLowerCase()],
+      ({
+        origin,
+        referer,
+        host: BACKEND_HOST,
+        'x-forwarded-host': forwardedHost,
+      })[name.toLowerCase()],
   }) as unknown as Request;
 
 const run = (request: Request) => {
@@ -77,6 +84,31 @@ describe('csrfOrigin', () => {
 
   it('deja pasar a un cliente que no es navegador (sin Origin ni Referer)', () => {
     expect(run(requestWith({}))).toBe(true);
+  });
+
+  // El caso del despliegue: CORS_ORIGIN escrito con barra final.
+  it('acepta CORS_ORIGIN con barra final o espacios', () => {
+    process.env.CORS_ORIGIN = ' https://fiado.vercel.app/ ,otro';
+    expect(run(requestWith({ origin: 'https://fiado.vercel.app' }))).toBe(true);
+    expect(corsOrigins()).toEqual(['https://fiado.vercel.app']);
+  });
+
+  // Rewrites de Next: el navegador habló con el dominio de Vercel.
+  it('acepta el sitio que atendió la petición reenviada por un proxy', () => {
+    process.env.CORS_ORIGIN = '';
+    const request = requestWith({
+      origin: 'https://fiado.vercel.app',
+      forwardedHost: 'fiado.vercel.app, render-lb',
+    });
+    expect(run(request)).toBe(true);
+  });
+
+  it('rechaza otro origen aunque la petición venga reenviada', () => {
+    const request = requestWith({
+      origin: 'https://sitio-malicioso.example',
+      forwardedHost: 'fiado.vercel.app',
+    });
+    expect(() => run(request)).toThrow('Origen no permitido');
   });
 
   it('ignora un Referer que no es una URL', () => {
