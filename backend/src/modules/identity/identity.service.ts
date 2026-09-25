@@ -6,14 +6,13 @@ import {
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { readFile } from 'node:fs/promises';
 import {
   assertFileKind,
   onboardingDocumentPath,
-  saveFile,
   userDocumentPath,
 } from '../../common/http.js';
 import { LockNamespace, withAdvisoryLock } from '../../common/locks.js';
+import { StorageService } from '../../common/storage.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
   BiometricStatus,
@@ -59,6 +58,7 @@ export class IdentityService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly biometrics: BiometricsService,
+    private readonly storage: StorageService,
   ) {}
 
   async status(userId: string) {
@@ -75,20 +75,21 @@ export class IdentityService {
     // La cédula es la referencia facial: tiene que ser una foto, no un PDF.
     assertFileKind(file.buffer, ['png', 'jpg'], ID_FRONT);
     await this.biometrics.inspectReference(file.buffer);
-    await saveFile(userDocumentPath(userId, ID_FRONT), file.buffer);
+    await this.storage.save(userDocumentPath(userId, ID_FRONT), file.buffer);
     return this.describe(user);
   }
 
   async verify(userId: string, capture: LiveCaptureDto) {
     const user = await this.load(userId);
     this.assertPending(user.identityStatus);
-    const document = await readFile(userDocumentPath(userId, ID_FRONT)).catch(
-      () => {
-        throw new BadRequestException(
-          'Carga primero la foto del lado frontal de tu cédula',
-        );
-      },
+    const document = await this.storage.read(
+      userDocumentPath(userId, ID_FRONT),
     );
+    if (!document) {
+      throw new BadRequestException(
+        'Carga primero la foto del lado frontal de tu cédula',
+      );
+    }
 
     const limit = maxAttempts();
     // El intento se aparta antes de evaluar: contar ahora y anotar el resultado
@@ -126,7 +127,7 @@ export class IdentityService {
     });
 
     if (evaluation.passed) {
-      await saveFile(
+      await this.storage.save(
         userDocumentPath(userId, REFERENCE_SELFIE),
         evaluation.selfie,
       );
@@ -222,9 +223,9 @@ export class IdentityService {
    * cuentas anteriores al enrolamiento, la de su última solicitud verificada.
    */
   async referenceFor(userId: string): Promise<Buffer | null> {
-    const own = await readFile(
+    const own = await this.storage.read(
       userDocumentPath(userId, REFERENCE_SELFIE),
-    ).catch(() => null);
+    );
     if (own) return own;
     const application = await this.prisma.investmentApplication.findFirst({
       where: { userId, biometricStatus: BiometricStatus.VERIFIED },
@@ -232,9 +233,9 @@ export class IdentityService {
       select: { id: true },
     });
     if (!application) return null;
-    return readFile(
+    return this.storage.read(
       onboardingDocumentPath(application.id, SELFIE_DOCUMENT),
-    ).catch(() => null);
+    );
   }
 
   private load(userId: string) {
@@ -263,10 +264,7 @@ export class IdentityService {
     const limit = maxAttempts();
     const [used, hasDocument] = await Promise.all([
       this.attemptsUsed(user),
-      readFile(userDocumentPath(user.id, ID_FRONT)).then(
-        () => true,
-        () => false,
-      ),
+      this.storage.exists(userDocumentPath(user.id, ID_FRONT)),
     ]);
     return {
       status: user.identityStatus,

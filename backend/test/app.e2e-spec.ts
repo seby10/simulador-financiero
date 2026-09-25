@@ -2,11 +2,9 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { randomInt, randomUUID } from 'node:crypto';
-import { rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
-import { PRIVATE_UPLOADS } from '../src/common/http.js';
+import { PRIVATE_PREFIX } from '../src/common/http.js';
 import { PrismaService } from '../src/database/prisma.service.js';
 
 /** Cédula válida al azar (provincia 17, verificador módulo 10) para no chocar entre pruebas. */
@@ -204,12 +202,11 @@ describe('API (e2e)', () => {
       .set('x-admin-key', process.env.ADMIN_API_KEY!);
 
   const cleanUp = async (id: string) => {
-    await app
-      .get(PrismaService)
-      .investmentApplication.delete({ where: { id } });
-    await rm(join(PRIVATE_UPLOADS, 'onboarding', id), {
-      recursive: true,
-      force: true,
+    const prisma = app.get(PrismaService);
+    await prisma.investmentApplication.delete({ where: { id } });
+    // Los documentos viven en la base, no en disco.
+    await prisma.storedFile.deleteMany({
+      where: { path: { startsWith: `${PRIVATE_PREFIX}/onboarding/${id}/` } },
     });
   };
 

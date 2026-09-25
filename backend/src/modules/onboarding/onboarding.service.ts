@@ -4,15 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { readFile } from 'node:fs/promises';
 import {
   assertFileKind,
   detectFileKind,
   type FileKind,
   MIME_TYPES,
   onboardingDocumentPath,
-  saveFile,
 } from '../../common/http.js';
+import { StorageService } from '../../common/storage.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
   ApplicationStatus,
@@ -50,6 +49,7 @@ export class OnboardingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly investment: InvestmentService,
+    private readonly storage: StorageService,
   ) {}
 
   async apply(dto: ApplyDto, userId: string) {
@@ -137,7 +137,7 @@ export class OnboardingService {
     );
     await Promise.all(
       uploads.map(({ kind, file }) =>
-        saveFile(onboardingDocumentPath(id, kind), file.buffer),
+        this.storage.save(onboardingDocumentPath(id, kind), file.buffer),
       ),
     );
 
@@ -166,11 +166,8 @@ export class OnboardingService {
     if (!READABLE_DOCUMENTS.includes(kind))
       throw new NotFoundException('Documento no válido');
     await this.get(id);
-    const buffer = await readFile(onboardingDocumentPath(id, kind)).catch(
-      () => {
-        throw new NotFoundException('Documento no cargado');
-      },
-    );
+    const buffer = await this.storage.read(onboardingDocumentPath(id, kind));
+    if (!buffer) throw new NotFoundException('Documento no cargado');
     const fileKind = detectFileKind(buffer) ?? 'pdf';
     return {
       buffer,

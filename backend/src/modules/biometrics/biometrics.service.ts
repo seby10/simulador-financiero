@@ -8,13 +8,12 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { readFile } from 'node:fs/promises';
 import {
   assertFileKind,
   decodeImageBase64,
   onboardingDocumentPath,
-  saveFile,
 } from '../../common/http.js';
+import { StorageService } from '../../common/storage.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import {
@@ -74,6 +73,7 @@ export class BiometricsService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(BIOMETRIC_PROVIDER) private readonly provider: BiometricProvider,
+    private readonly storage: StorageService,
   ) {}
 
   /** Abre una sesión de prueba de vida: dos gestos al azar, un solo uso, 3 minutos. */
@@ -310,7 +310,7 @@ export class BiometricsService {
     selfie: Buffer,
     matchScore: number,
   ) {
-    await saveFile(
+    await this.storage.save(
       onboardingDocumentPath(applicationId, SELFIE_DOCUMENT),
       selfie,
     );
@@ -353,13 +353,14 @@ export class BiometricsService {
   }
 
   private async readReference(applicationId: string) {
-    const reference = await readFile(
+    const reference = await this.storage.read(
       onboardingDocumentPath(applicationId, REFERENCE_DOCUMENT),
-    ).catch(() => {
+    );
+    if (!reference) {
       throw new BadRequestException(
         `Cargue ${REFERENCE_DOCUMENT} antes de la verificación biométrica`,
       );
-    });
+    }
     // Un PDF no tiene rostro que comparar: la cédula frontal debe ser una foto.
     assertFileKind(reference, ['png', 'jpg'], REFERENCE_DOCUMENT);
     return reference;
