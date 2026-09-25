@@ -1,9 +1,12 @@
--- Las columnas de User, InstitutionConfig, CreditType e InvestmentPlan llegaron a
--- algunas bases con `prisma db push` antes de existir esta migración: IF NOT EXISTS
--- permite aplicarla igual en esas y en una base nueva.
+-- Parte del esquema llegó a algunas bases con `prisma db push` antes de existir
+-- esta migración. Por eso cada sentencia es idempotente (IF NOT EXISTS, o DROP
+-- previo en las restricciones): se aplica igual en esas bases y en una nueva.
 
 -- CreateEnum
-CREATE TYPE "BiometricStatus" AS ENUM ('PENDING', 'VERIFIED', 'FAILED');
+DO $$ BEGIN
+  CREATE TYPE "BiometricStatus" AS ENUM ('PENDING', 'VERIFIED', 'FAILED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AlterTable
 ALTER TABLE "CreditType" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
@@ -37,7 +40,7 @@ ADD COLUMN IF NOT EXISTS "lastName" TEXT,
 ADD COLUMN IF NOT EXISTS "phone" TEXT;
 
 -- CreateTable
-CREATE TABLE "BiometricPasswordReset" (
+CREATE TABLE IF NOT EXISTS "BiometricPasswordReset" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "passed" BOOLEAN NOT NULL,
@@ -65,9 +68,11 @@ CREATE INDEX IF NOT EXISTS "InvestmentApplication_userId_idx" ON "InvestmentAppl
 CREATE UNIQUE INDEX IF NOT EXISTS "User_idNumber_key" ON "User"("idNumber");
 
 -- AddForeignKey
+ALTER TABLE "BiometricPasswordReset" DROP CONSTRAINT IF EXISTS "BiometricPasswordReset_userId_fkey";
 ALTER TABLE "BiometricPasswordReset" ADD CONSTRAINT "BiometricPasswordReset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "InvestmentApplication" DROP CONSTRAINT IF EXISTS "InvestmentApplication_userId_fkey";
 ALTER TABLE "InvestmentApplication" ADD CONSTRAINT "InvestmentApplication_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 
