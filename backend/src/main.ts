@@ -13,6 +13,7 @@ import {
   SESSION_SECURITY,
 } from './common/auth.js';
 import { corsOrigins, csrfOrigin } from './common/csrf.js';
+import { validationExceptionFactory } from './common/validation/messages.js';
 
 try {
   process.loadEnvFile();
@@ -52,6 +53,11 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      // Un mensaje por campo: un texto vacío fallaba a la vez por obligatorio,
+      // por tipo y por longitud, y el formulario mostraba los tres.
+      stopAtFirstError: true,
+      // Sin esto los errores salen en inglés y con el nombre de la propiedad.
+      exceptionFactory: validationExceptionFactory,
     }),
   );
   app.enableShutdownHooks();

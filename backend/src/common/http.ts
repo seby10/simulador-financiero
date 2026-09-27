@@ -21,6 +21,7 @@ import { Transform } from 'class-transformer';
 import { Matches } from 'class-validator';
 import { Prisma } from '../generated/prisma/client.js';
 import { D, DecimalInput } from './math/decimal.util.js';
+import { Field, fileKindList } from './validation/messages.js';
 
 /**
  * Monto/tasa positiva como string decimal. Acepta number JSON y lo convierte a string
@@ -44,34 +45,39 @@ export const IsDecimalString = ({
     Transform(({ value }) =>
       typeof value === 'number' ? value.toString() : value,
     ),
-    Matches(new RegExp(pattern), { message: `$property debe ser un ${rule}` }),
+    // El mensaje omite el límite de enteros: al usuario le importa el formato.
+    Matches(new RegExp(pattern), {
+      message: `$property debe ser un número positivo, con un máximo de ${decimals} decimales`,
+    }),
   );
 };
 
 export function assertRange(
-  label: string,
+  field: string,
   value: DecimalInput,
   min: DecimalInput,
   max: DecimalInput,
 ) {
   if (D(value).lt(D(min)) || D(value).gt(D(max))) {
     throw new BadRequestException(
-      `${label} debe estar entre ${min.toString()} y ${max.toString()}`,
+      `${Field(field)} debe estar entre ${min.toString()} y ${max.toString()}`,
     );
   }
 }
 
 export function assertMinMax(
-  label: string,
+  field: string,
   min: DecimalInput,
   max: DecimalInput,
 ) {
   if (D(min).lte(0)) {
-    throw new BadRequestException(`${label}: el mínimo debe ser mayor a 0`);
+    throw new BadRequestException(
+      `${Field(field)}: el mínimo debe ser mayor a 0`,
+    );
   }
   if (D(min).gt(D(max))) {
     throw new BadRequestException(
-      `${label}: el mínimo no puede superar al máximo`,
+      `${Field(field)}: el mínimo no puede superar al máximo`,
     );
   }
 }
@@ -155,7 +161,9 @@ export function assertFileKind(
 ): FileKind {
   const kind = detectFileKind(buffer);
   if (!kind || !allowed.includes(kind)) {
-    throw new BadRequestException(`${field} debe ser ${allowed.join(', ')}`);
+    throw new BadRequestException(
+      `${Field(field)} debe ser un archivo ${fileKindList(allowed)}`,
+    );
   }
   return kind;
 }

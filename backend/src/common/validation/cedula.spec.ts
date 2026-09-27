@@ -28,7 +28,7 @@ describe('@IsCedula', () => {
   it('valida strings y rechaza otros tipos con mensaje en español', () => {
     expect(errorsFor('1710034065')).toHaveLength(0);
     expect(errorsFor(1710034065)[0].constraints).toEqual({
-      isCedula: 'id debe ser una cédula ecuatoriana válida',
+      isCedula: 'id no es una cédula ecuatoriana válida',
     });
   });
 });

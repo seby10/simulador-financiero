@@ -16,11 +16,14 @@ export class UpdateInstitutionDto {
   /** @example "Cooperativa de Ahorro y Crédito Andina" */
   @IsString() @IsNotEmpty() @MaxLength(200) institutionName: string;
   /** @example "1790000000001" */
-  @Matches(/^\d{13}$/, { message: 'ruc debe tener 13 dígitos' }) ruc: string;
+  @Matches(/^\d{13}$/, { message: '$property debe tener 13 dígitos' })
+  ruc: string;
   @IsString() @IsNotEmpty() @MaxLength(200) legalRepresentative: string;
   @IsString() @IsNotEmpty() @MaxLength(300) address: string;
   /** @example "+593 2 250 0000" */
-  @Matches(/^\+?[\d\s-]{7,20}$/, { message: 'phone no es válido' })
+  @Matches(/^\+?[\d\s-]{7,20}$/, {
+    message: '$property no tiene un formato válido',
+  })
   phone: string;
   @IsEmail() email: string;
   /** Texto legal impreso en los PDF. */
