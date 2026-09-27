@@ -7,7 +7,8 @@ import { Calculator, ChevronRight, FileText, CheckCircle2, AlertCircle } from "l
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import FaqAccordion from "@/components/faq-accordion";
-import { API_URL } from "@/lib/api";
+import PayoutSchedule, { type InvestmentSimulation } from "@/components/simulator/payout-schedule";
+import { API_URL, downloadInvestmentPdf, errorMessage, readApiError } from "@/lib/api";
 
 type InvestmentPlan = {
   id: number;
@@ -20,21 +21,6 @@ type InvestmentPlan = {
   allowsMonthlyPayout: boolean;
   requiredDocuments: string[];
   imageUrl?: string;
-};
-
-type SimulationResult = {
-  plan: { id: number; name: string };
-  amount: string;
-  teaPct: string;
-  termDays: number;
-  payoutMethod: 'AT_MATURITY' | 'MONTHLY';
-  grossInterest: string;
-  withholdingRatePct: string;
-  withholding: string;
-  netInterest: string;
-  monthlyPayment: string | null;
-  totalToReceive: string;
-  payoutSchedule: any[];
 };
 
 export const dynamic = 'force-dynamic';
@@ -50,9 +36,21 @@ export default function InvestmentsSimulatorPage() {
   const [payoutMethod, setPayoutMethod] = useState<'AT_MATURITY' | 'MONTHLY'>('AT_MATURITY');
 
   // Simulation State
-  const [result, setResult] = useState<SimulationResult | null>(null);
+  const [result, setResult] = useState<InvestmentSimulation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Cronograma y descarga del certificado
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+
+  // Un resultado solo describe los datos con los que se calculó: si cambian, se descarta.
+  const resetResult = () => {
+    setResult(null);
+    setShowSchedule(false);
+    setPdfError("");
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/investment/plans`)
@@ -70,7 +68,7 @@ export default function InvestmentsSimulatorPage() {
     if (!activePlanId) return;
     setLoading(true);
     setError("");
-    setResult(null);
+    resetResult();
     try {
       const res = await fetch(`${API_URL}/investment/simulate`, {
         method: "POST",
@@ -84,16 +82,39 @@ export default function InvestmentsSimulatorPage() {
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.message || "Error al simular. Verifica los montos y plazos permitidos.");
+        throw new Error(
+          await readApiError(res, "Error al simular. Verifica los montos y plazos permitidos."),
+        );
       }
 
       const data = await res.json();
       setResult(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, "Error al simular. Verifica los montos y plazos permitidos."));
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * El certificado se pide con los datos que devolvió la simulación, no con los del
+   * formulario: así el PDF siempre coincide con las cifras que está viendo el cliente.
+   */
+  const handleDownloadPdf = async () => {
+    if (!result) return;
+    setDownloadingPdf(true);
+    setPdfError("");
+    try {
+      await downloadInvestmentPdf({
+        planId: result.plan.id,
+        amount: result.amount,
+        termDays: result.termDays,
+        payoutMethod: result.payoutMethod,
+      });
+    } catch (err) {
+      setPdfError(errorMessage(err, "No se pudo generar el certificado en PDF."));
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -124,7 +145,7 @@ export default function InvestmentsSimulatorPage() {
               key={plan.id}
               onClick={() => {
                 setActivePlanId(plan.id);
-                setResult(null);
+                resetResult();
               }}
               className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${activePlanId === plan.id
                   ? "bg-[#f1a501] text-white shadow-lg shadow-amber-500/25 scale-105"
@@ -190,7 +211,10 @@ export default function InvestmentsSimulatorPage() {
                       <input
                         type="number"
                         value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        onChange={(e) => {
+                          setAmount(e.target.value);
+                          resetResult();
+                        }}
                         className="w-full pl-9 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none text-slate-900 font-semibold text-base transition-all"
                         placeholder={`Mínimo: $${activePlan.minAmount}`}
                       />
@@ -208,7 +232,10 @@ export default function InvestmentsSimulatorPage() {
                     <input
                       type="number"
                       value={termDays}
-                      onChange={(e) => setTermDays(e.target.value)}
+                      onChange={(e) => {
+                        setTermDays(e.target.value);
+                        resetResult();
+                      }}
                       className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none text-slate-900 font-semibold text-base transition-all"
                       placeholder="Ej: 360"
                     />
@@ -225,7 +252,10 @@ export default function InvestmentsSimulatorPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => setPayoutMethod('AT_MATURITY')}
+                        onClick={() => {
+                          setPayoutMethod('AT_MATURITY');
+                          resetResult();
+                        }}
                         className={`py-3 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all ${payoutMethod === 'AT_MATURITY'
                             ? 'border-[#f1a501] bg-amber-50/50 text-[#14183e] shadow-sm'
                             : 'border-slate-200 text-slate-500 hover:border-slate-300'
@@ -235,7 +265,10 @@ export default function InvestmentsSimulatorPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPayoutMethod('MONTHLY')}
+                        onClick={() => {
+                          setPayoutMethod('MONTHLY');
+                          resetResult();
+                        }}
                         disabled={!activePlan.allowsMonthlyPayout}
                         className={`py-3 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${payoutMethod === 'MONTHLY'
                             ? 'border-[#f1a501] bg-amber-50/50 text-[#14183e] shadow-sm'
@@ -313,6 +346,15 @@ export default function InvestmentsSimulatorPage() {
 
                       <button
                         type="button"
+                        onClick={() => setShowSchedule(true)}
+                        className="w-full mt-4 bg-white border-2 border-slate-200 hover:border-[#f1a501] hover:bg-amber-50/40 text-[#14183e] py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2"
+                      >
+                        <FileText className="w-5 h-5 text-[#f1a501]" />
+                        Ver Cronograma y Descargar PDF
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={async () => {
                           if (!result || !activePlanId) return;
                           const params = new URLSearchParams({
@@ -349,6 +391,20 @@ export default function InvestmentsSimulatorPage() {
             </div>
           </div>
         </div>
+
+        {/* Cronograma de pagos: en pantalla y con descarga del certificado en PDF */}
+        {result && showSchedule && (
+          <PayoutSchedule
+            result={result}
+            onClose={() => {
+              setShowSchedule(false);
+              setPdfError("");
+            }}
+            onDownloadPdf={handleDownloadPdf}
+            downloading={downloadingPdf}
+            error={pdfError}
+          />
+        )}
 
         {/* FAQ Section */}
         <FaqAccordion
