@@ -19,25 +19,39 @@ const volkhov = Volkhov({
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Simulador Financiero",
-  description: "Módulo de verificación facial de identidad y análisis de vivacidad",
-};
+/**
+ * Configuración institucional. Next deduplica los fetch idénticos dentro del
+ * mismo render, así que el layout y generateMetadata comparten una sola ida.
+ */
+async function institutionConfig() {
+  try {
+    const res = await fetch(`${API_URL}/institution`, { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch (error) {
+    console.error("Failed to fetch institution config", error);
+  }
+  return null;
+}
+
+/**
+ * El icono del navegador es el logo que se sube en administración. Si todavía
+ * no hay ninguno, queda el de public/favicon.ico.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await institutionConfig();
+  return {
+    title: "Simulador Financiero",
+    description: "Módulo de verificación facial de identidad y análisis de vivacidad",
+    icons: { icon: config?.logoUrl || "/favicon.ico" },
+  };
+}
 
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  let config = null;
-  try {
-    const res = await fetch(`${API_URL}/institution`, { cache: 'no-store' });
-    if (res.ok) {
-      config = await res.json();
-    }
-  } catch (error) {
-    console.error("Failed to fetch institution config", error);
-  }
+  const config = await institutionConfig();
 
   const primaryColor = config?.primaryColor || "#1e293b";
   const secondaryColor = config?.secondaryColor || "#df6951";
