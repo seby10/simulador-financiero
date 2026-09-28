@@ -115,10 +115,10 @@ export default function CreditSimulatorForm() {
     <div className="w-full flex flex-col relative">
       {/* 1. Header Banner */}
       <div className="pt-10 pb-6 text-center max-w-3xl mx-auto px-4">
-        <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951] mb-2">
+        <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-secondary mb-2">
           HERRAMIENTA DE SIMULACIÓN
         </p>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#14183e] font-serif-title leading-tight mb-4">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-brand-primary font-serif-title leading-tight mb-4">
           Simulador de Crédito
         </h1>
         <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
@@ -137,8 +137,8 @@ export default function CreditSimulatorForm() {
               setSimulationResult(null);
             }}
             className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${creditTypeId === type.id.toString()
-              ? "bg-[#df6951] text-white shadow-lg shadow-orange-500/25 scale-105"
-              : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
+              ? "bg-brand-secondary text-white shadow-lg shadow-brand-secondary/25 scale-105"
+              : "bg-white/90 hover:bg-brand-card-bg text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
               }`}
           >
             {type.name}
@@ -151,19 +151,19 @@ export default function CreditSimulatorForm() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
           {/* Left Feature Image Card */}
-          <div className="lg:col-span-5 relative group rounded-[32px] overflow-hidden shadow-xl border border-slate-100 bg-white">
+          <div className="lg:col-span-5 relative group rounded-[32px] overflow-hidden shadow-xl border border-slate-100 bg-brand-card-bg">
             <div className="relative h-[340px] lg:h-[480px] w-full overflow-hidden">
               <img
                 src={currentImage}
                 alt={activeCreditType?.name || "Simulación"}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#14183e]/85 via-[#14183e]/20 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-primary/85 via-brand-primary/20 to-transparent"></div>
             </div>
 
             {/* Floating Info Overlay */}
             <div className="absolute bottom-6 left-6 right-6 text-white p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#f1a501] block mb-1">
+              <span className="text-xs font-bold uppercase tracking-widest text-brand-accent block mb-1">
                 TASA REFERENCIAL
               </span>
               <h3 className="text-2xl font-bold font-serif-title text-white">
@@ -176,9 +176,9 @@ export default function CreditSimulatorForm() {
           </div>
 
           {/* Right Form Container */}
-          <div className="lg:col-span-7 bg-white rounded-[32px] p-6 sm:p-10 shadow-xl border border-slate-100">
+          <div className="lg:col-span-7 bg-brand-card-bg rounded-[32px] p-6 sm:p-10 shadow-xl border border-slate-100">
             <div className="mb-6">
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#14183e] font-serif-title mb-2">
+              <h2 className="text-2xl sm:text-3xl font-bold text-brand-primary font-serif-title mb-2">
                 {activeCreditType?.name}
               </h2>
               <p className="text-slate-500 text-xs sm:text-sm">
@@ -206,7 +206,7 @@ export default function CreditSimulatorForm() {
                     min={activeCreditType?.minAmount || "0"}
                     max={activeCreditType?.maxAmount}
                     step="0.01"
-                    className="w-full pl-9 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-900 font-semibold text-base transition-all"
+                    className="w-full pl-9 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary outline-none text-slate-900 font-semibold text-base transition-all"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     placeholder={`Min: $${activeCreditType?.minAmount} - Max: $${activeCreditType?.maxAmount}`}
@@ -228,7 +228,7 @@ export default function CreditSimulatorForm() {
                   type="number"
                   min={activeCreditType?.minTermMonths || "1"}
                   max={activeCreditType?.maxTermMonths}
-                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-900 font-semibold text-base transition-all"
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary outline-none text-slate-900 font-semibold text-base transition-all"
                   value={termMonths}
                   onChange={e => setTermMonths(e.target.value)}
                   placeholder={`Ej: 24 (Máximo ${activeCreditType?.maxTermMonths} meses)`}
@@ -242,7 +242,7 @@ export default function CreditSimulatorForm() {
                   Sistema de Amortización
                 </label>
                 <select
-                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-900 font-semibold text-base transition-all cursor-pointer"
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary outline-none text-slate-900 font-semibold text-base transition-all cursor-pointer"
                   value={method}
                   onChange={e => setMethod(e.target.value as any)}
                 >
@@ -270,7 +270,7 @@ export default function CreditSimulatorForm() {
                               setOptionalFeeIds(optionalFeeIds.filter(id => id !== fee.id));
                             }
                           }}
-                          className="w-4 h-4 rounded text-[#df6951] focus:ring-[#df6951]"
+                          className="w-4 h-4 rounded text-brand-secondary focus:ring-brand-secondary"
                         />
                         <span>{fee.name} ({fee.feeType === 'PERCENTAGE' ? `${fee.value}%` : `$${fee.value}`})</span>
                       </label>
@@ -284,7 +284,7 @@ export default function CreditSimulatorForm() {
                 <button
                   type="submit"
                   disabled={loadingSimulation || !amount || !termMonths || !creditTypeId}
-                  className="flex-1 bg-[#df6951] hover:bg-[#c85640] text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-brand-secondary hover:bg-brand-secondary-dark text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-brand-secondary/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>{loadingSimulation ? "Calculando..." : "Calcular Cuotas"}</span>
                   <ChevronRight className="w-5 h-5" />

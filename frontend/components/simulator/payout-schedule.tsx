@@ -72,11 +72,11 @@ export default function PayoutSchedule({
   const showTotals = schedule.length > 1;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#14183e]/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col rounded-[28px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-brand-primary/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-brand-card-bg w-full max-w-5xl max-h-[90vh] flex flex-col rounded-[28px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
 
         {/* Modal Header */}
-        <div className="bg-[#14183e] px-6 md:px-8 py-5 flex justify-between items-center shrink-0">
+        <div className="bg-brand-primary px-6 md:px-8 py-5 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <span className="font-serif-title text-xl font-bold text-white">Cronograma de Pagos</span>
           </div>
@@ -85,7 +85,7 @@ export default function PayoutSchedule({
               <button
                 onClick={onDownloadPdf}
                 disabled={downloading}
-                className="bg-[#f1a501] hover:bg-amber-600 text-white px-4 py-2 rounded-full transition-all text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="bg-brand-accent hover:bg-brand-accent-dark text-white px-4 py-2 rounded-full transition-all text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {downloading ? "Generando..." : "Descargar PDF"}
               </button>
@@ -115,14 +115,14 @@ export default function PayoutSchedule({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200/80">
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Capital invertido:</span>
-              <div className="text-lg font-extrabold text-[#14183e]">
+              <div className="text-lg font-extrabold text-brand-primary">
                 ${result.amount} USD
               </div>
             </div>
 
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Plazo:</span>
-              <div className="text-lg font-extrabold text-[#14183e]">
+              <div className="text-lg font-extrabold text-brand-primary">
                 {result.termDays} días
               </div>
               <span className="text-xs text-[#5e6282]">Vence: {dayDate(result.termDays)}</span>
@@ -130,7 +130,7 @@ export default function PayoutSchedule({
 
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Tasa efectiva anual:</span>
-              <div className="text-lg font-extrabold text-[#f1a501]">
+              <div className="text-lg font-extrabold text-brand-accent">
                 {Number(result.teaPct).toFixed(2)}%
               </div>
               <span className="text-xs text-[#5e6282]">{result.plan.name}</span>
@@ -138,13 +138,13 @@ export default function PayoutSchedule({
 
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Liquidación:</span>
-              <div className="text-lg font-extrabold text-[#14183e]">
+              <div className="text-lg font-extrabold text-brand-primary">
                 {PAYOUT_LABEL[result.payoutMethod]}
               </div>
             </div>
           </div>
 
-          <h3 className="text-center text-[#14183e] text-lg font-bold font-serif-title tracking-wide mb-6">
+          <h3 className="text-center text-brand-primary text-lg font-bold font-serif-title tracking-wide mb-6">
             DETALLE DE PAGOS DE INTERESES
           </h3>
 
@@ -163,7 +163,7 @@ export default function PayoutSchedule({
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-center whitespace-nowrap">
-                <thead className="text-[#14183e] font-bold bg-slate-100/80 border-b border-slate-200">
+                <thead className="text-brand-primary font-bold bg-slate-100/80 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-4 font-semibold">No.</th>
                     <th className="px-4 py-4 font-semibold">Día</th>
@@ -177,7 +177,7 @@ export default function PayoutSchedule({
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-600">
                   {schedule.map((row, idx) => (
-                    <tr key={row.period} className={idx % 2 === 0 ? "bg-white" : "bg-cyan-50/30"}>
+                    <tr key={row.period} className={idx % 2 === 0 ? "bg-brand-card-bg" : "bg-cyan-50/30"}>
                       <td className="px-4 py-3">{row.period}</td>
                       <td className="px-4 py-3">{row.day}</td>
                       <td className="px-4 py-3">{dayDate(row.day)}</td>
@@ -191,13 +191,13 @@ export default function PayoutSchedule({
 
                   {/* Totales tomados del resumen de la API: son los mismos que imprime el certificado. */}
                   {showTotals && (
-                    <tr className="bg-white font-bold text-slate-800 border-t-2 border-slate-200">
+                    <tr className="bg-brand-card-bg font-bold text-slate-800 border-t-2 border-slate-200">
                       <td colSpan={3} className="px-4 py-4 text-center">TOTALES</td>
                       <td className="px-4 py-4 text-right pr-6">{usd(result.grossInterest)}</td>
                       <td className="px-4 py-4 text-right pr-6">{usd(result.withholding)}</td>
                       <td className="px-4 py-4 text-right pr-6">{usd(result.netInterest)}</td>
                       <td className="px-4 py-4 text-right pr-6">{usd(result.amount)}</td>
-                      <td className="px-4 py-4 text-right pr-6 text-[#f1a501]">{usd(result.totalToReceive)}</td>
+                      <td className="px-4 py-4 text-right pr-6 text-brand-accent">{usd(result.totalToReceive)}</td>
                     </tr>
                   )}
                 </tbody>

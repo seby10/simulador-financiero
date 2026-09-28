@@ -5,6 +5,7 @@ import { Save, Building2, Palette, Image as ImageIcon, Layout, Navigation, Credi
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/modal";
 import { API_URL } from "@/lib/api";
+import { BRAND_DEFAULTS, type BrandField, brandColor } from "@/lib/branding";
 
 type InstitutionConfig = {
   institutionName: string;
@@ -28,6 +29,83 @@ type InstitutionConfig = {
   heroTitle: string;
   heroSubtitle: string;
 };
+
+/** Los nueve colores que el sitio público lee, agrupados como se editan. */
+const COLOR_GROUPS: {
+  title: string;
+  icon: typeof Sparkles;
+  fields: { field: BrandField; label: string }[];
+}[] = [
+  {
+    title: "1. Paleta de Marca Principal",
+    icon: Sparkles,
+    fields: [
+      { field: "primaryColor", label: "Color Principal (Títulos, Botones)" },
+      { field: "secondaryColor", label: "Color Secundario (CTA, Badges)" },
+      { field: "accentColor", label: "Color de Acento / Éxito" },
+    ],
+  },
+  {
+    title: "2. Cabecera (Navbar)",
+    icon: Navigation,
+    fields: [
+      { field: "navbarBgColor", label: "Fondo del Navbar" },
+      { field: "navbarTextColor", label: "Texto del Menú Navbar" },
+    ],
+  },
+  {
+    title: "3. Estructura de Páginas & Tarjetas",
+    icon: CreditCard,
+    fields: [
+      { field: "pageBgColor", label: "Fondo General de la Página" },
+      { field: "cardBgColor", label: "Fondo de las Tarjetas" },
+    ],
+  },
+  {
+    title: "4. Pie de Página (Footer)",
+    icon: Layout,
+    fields: [
+      { field: "footerBgColor", label: "Fondo del Footer" },
+      { field: "footerTextColor", label: "Texto del Footer" },
+    ],
+  },
+];
+
+/**
+ * Selector de un color de marca. El selector nativo solo entiende `#rrggbb`,
+ * así que el campo de texto acepta lo que se escriba y solo se lo pasa cuando
+ * ya es un color válido; de lo contrario, borrar un carácter lo reiniciaba.
+ */
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-slate-700 mb-1">{label}</label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label={label}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function InstitutionAdminPage() {
   const router = useRouter();
@@ -100,15 +178,14 @@ export default function InstitutionAdminPage() {
           phone: config.phone,
           email: config.email,
           disclaimerText: config.disclaimerText,
-          primaryColor: config.primaryColor || '#003b70',
-          secondaryColor: config.secondaryColor || '#35b8db',
-          accentColor: config.accentColor || '#10b981',
-          navbarBgColor: config.navbarBgColor || '#ffffff',
-          navbarTextColor: config.navbarTextColor || '#1e293b',
-          pageBgColor: config.pageBgColor || '#f8fafc',
-          cardBgColor: config.cardBgColor || '#ffffff',
-          footerBgColor: config.footerBgColor || '#003b70',
-          footerTextColor: config.footerTextColor || '#e2e8f0',
+          // Un color inválido a medio escribir no debe llegar a la API ni
+          // pisar lo guardado: brandColor deja el de fábrica en ese caso.
+          ...Object.fromEntries(
+            (Object.keys(BRAND_DEFAULTS) as BrandField[]).map((field) => [
+              field,
+              brandColor(config, field),
+            ]),
+          ),
           heroTitle: config.heroTitle || 'El respaldo financiero que necesitas.',
           heroSubtitle: config.heroSubtitle || 'Crecemos junto a ti.',
           heroImageUrl: config.heroImageUrl || '',
@@ -235,199 +312,23 @@ export default function InstitutionAdminPage() {
             <p className="text-xs text-slate-500 mb-6">Ajusta cada color del sitio web para que coincida perfectamente con tu manual de marca.</p>
 
             <div className="space-y-6">
-              {/* 1. Colores de Marca */}
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-brand-secondary" /> 1. Paleta de Marca Principal
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Color Principal (Títulos, Botones)</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.primaryColor || '#003b70'}
-                        onChange={e => setConfig({...config, primaryColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+              {COLOR_GROUPS.map(({ title, icon: Icon, fields }) => (
+                <div key={title} className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-brand-secondary" /> {title}
+                  </h4>
+                  <div className={`grid grid-cols-1 gap-4 ${fields.length > 2 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+                    {fields.map(({ field, label }) => (
+                      <ColorField
+                        key={field}
+                        label={label}
+                        value={brandColor(config, field)}
+                        onChange={(value) => setConfig({ ...config, [field]: value })}
                       />
-                      <input 
-                        type="text" 
-                        value={config.primaryColor || '#003b70'}
-                        onChange={e => setConfig({...config, primaryColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Color Secundario (CTA, Badges)</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.secondaryColor || '#35b8db'}
-                        onChange={e => setConfig({...config, secondaryColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.secondaryColor || '#35b8db'}
-                        onChange={e => setConfig({...config, secondaryColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Color de Acento / Éxito</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.accentColor || '#10b981'}
-                        onChange={e => setConfig({...config, accentColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.accentColor || '#10b981'}
-                        onChange={e => setConfig({...config, accentColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-
-              {/* 2. Encabezado & Navegación (Navbar) */}
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
-                  <Navigation className="w-4 h-4 text-brand-secondary" /> 2. Cabecera (Navbar)
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo del Navbar</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.navbarBgColor || '#ffffff'}
-                        onChange={e => setConfig({...config, navbarBgColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.navbarBgColor || '#ffffff'}
-                        onChange={e => setConfig({...config, navbarBgColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Texto del Menú Navbar</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.navbarTextColor || '#1e293b'}
-                        onChange={e => setConfig({...config, navbarTextColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.navbarTextColor || '#1e293b'}
-                        onChange={e => setConfig({...config, navbarTextColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. Fondo General & Tarjetas */}
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-brand-secondary" /> 3. Estructura de Páginas & Tarjetas
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo General de la Página</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.pageBgColor || '#f8fafc'}
-                        onChange={e => setConfig({...config, pageBgColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.pageBgColor || '#f8fafc'}
-                        onChange={e => setConfig({...config, pageBgColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo de las Tarjetas</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.cardBgColor || '#ffffff'}
-                        onChange={e => setConfig({...config, cardBgColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.cardBgColor || '#ffffff'}
-                        onChange={e => setConfig({...config, cardBgColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 4. Pie de Página (Footer) */}
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
-                  <Layout className="w-4 h-4 text-brand-secondary" /> 4. Pie de Página (Footer)
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fondo del Footer</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.footerBgColor || '#003b70'}
-                        onChange={e => setConfig({...config, footerBgColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.footerBgColor || '#003b70'}
-                        onChange={e => setConfig({...config, footerBgColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Texto del Footer</label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="color" 
-                        value={config.footerTextColor || '#e2e8f0'}
-                        onChange={e => setConfig({...config, footerTextColor: e.target.value})}
-                        className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
-                      />
-                      <input 
-                        type="text" 
-                        value={config.footerTextColor || '#e2e8f0'}
-                        onChange={e => setConfig({...config, footerTextColor: e.target.value})}
-                        className="w-full px-2.5 py-1.5 border rounded-lg uppercase font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 

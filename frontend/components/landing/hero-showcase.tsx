@@ -44,20 +44,20 @@ export default function HeroShowcase({
 
       {/* Tarjeta principal: simulación */}
       <div
-        className="relative bg-white rounded-[28px] shadow-2xl shadow-orange-900/10 border border-slate-100 p-6 sm:p-7 animate-fade-up"
+        className="relative bg-brand-card-bg rounded-[28px] shadow-2xl shadow-orange-900/10 border border-slate-100 p-6 sm:p-7 animate-fade-up"
         style={{ animationDelay: "250ms" }}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-[#f1a501] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-brand-accent-soft text-brand-accent flex items-center justify-center">
               <Calculator className="w-5 h-5" />
             </div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Simulación</p>
-              <p className="text-sm font-bold text-[#14183e]">Crédito {credit.name}</p>
+              <p className="text-sm font-bold text-brand-primary">Crédito {credit.name}</p>
             </div>
           </div>
-          <span className="hidden min-[420px]:inline text-[11px] font-semibold text-[#df6951] bg-orange-50 px-2.5 py-1 rounded-full whitespace-nowrap">
+          <span className="hidden min-[420px]:inline text-[11px] font-semibold text-brand-secondary bg-brand-secondary-soft px-2.5 py-1 rounded-full whitespace-nowrap">
             Sistema francés
           </span>
         </div>
@@ -65,11 +65,11 @@ export default function HeroShowcase({
         <div className="mt-6 grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-slate-400 font-medium">Monto</p>
-            <p className="text-2xl font-extrabold text-[#14183e] tracking-tight">{money(credit.amount)}</p>
+            <p className="text-2xl font-extrabold text-brand-primary tracking-tight">{money(credit.amount)}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-slate-400 font-medium">Cuota mensual</p>
-            <p className="text-2xl font-extrabold text-[#df6951] tracking-tight">{money(payment, 2)}</p>
+            <p className="text-2xl font-extrabold text-brand-secondary tracking-tight">{money(payment, 2)}</p>
           </div>
         </div>
         <p className="mt-1 text-xs text-slate-500">
@@ -86,7 +86,7 @@ export default function HeroShowcase({
             {bars.map(({ month, ratio }, index) => (
               <div key={month} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
                 <div
-                  className="w-full rounded-t-lg bg-gradient-to-t from-[#f1a501] to-[#df6951] animate-grow-bar"
+                  className="w-full rounded-t-lg bg-gradient-to-t from-brand-accent to-brand-secondary animate-grow-bar"
                   style={{
                     height: `${Math.max(ratio * 100, 4)}%`,
                     opacity: 0.55 + ratio * 0.45,
@@ -105,7 +105,7 @@ export default function HeroShowcase({
         className="absolute -left-4 sm:-left-14 -top-14 animate-fade-up"
         style={{ animationDelay: "900ms" }}
       >
-        <div className="animate-float bg-white rounded-2xl shadow-xl border border-slate-100 pl-3 pr-4 py-3 flex items-center gap-3">
+        <div className="animate-float bg-brand-card-bg rounded-2xl shadow-xl border border-slate-100 pl-3 pr-4 py-3 flex items-center gap-3">
           <div className="relative w-10 h-10">
             <span className="absolute inset-0 rounded-full bg-emerald-400/40 animate-pulse-ring" />
             <div className="relative w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center overflow-hidden">
@@ -114,7 +114,7 @@ export default function HeroShowcase({
             </div>
           </div>
           <div>
-            <p className="text-xs font-bold text-[#14183e] flex items-center gap-1">
+            <p className="text-xs font-bold text-brand-primary flex items-center gap-1">
               Identidad verificada <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             </p>
             <p className="text-[11px] text-slate-500">Rostro + prueba de vida</p>
@@ -128,7 +128,7 @@ export default function HeroShowcase({
           className="absolute -right-3 sm:-right-10 -bottom-7 animate-fade-up"
           style={{ animationDelay: "1150ms" }}
         >
-          <div className="animate-float-slow bg-[#14183e] text-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3">
+          <div className="animate-float-slow bg-brand-primary text-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-white/10 text-amber-300 flex items-center justify-center">
               <PiggyBank className="w-5 h-5" />
             </div>

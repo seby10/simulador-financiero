@@ -11,7 +11,7 @@ export function IdCardSilhouette({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 320 202" className={className} aria-hidden="true">
       {/* Esquinas de encuadre */}
-      <g stroke="#df6951" strokeWidth="4" strokeLinecap="round" fill="none">
+      <g stroke="var(--brand-secondary)" strokeWidth="4" strokeLinecap="round" fill="none">
         <path d="M6 32V10a4 4 0 0 1 4-4h22" />
         <path d="M288 6h22a4 4 0 0 1 4 4v22" />
         <path d="M314 170v22a4 4 0 0 1-4 4h-22" />

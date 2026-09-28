@@ -43,12 +43,12 @@ export default function NavLinks() {
 
   return (
     <>
-      <nav className="hidden md:flex items-center gap-10 text-sm font-normal text-[#212832]">
+      <nav className="hidden md:flex items-center gap-10 text-sm font-normal text-brand-navbar-text">
         {links.map(({ href, label }) => (
           <Link
             key={href}
             href={href}
-            className={`relative py-2 font-medium transition-colors hover:text-[#df6951] after:absolute after:left-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-[#df6951] after:transition-all after:duration-300 ${isActive(href) ? "text-[#df6951] after:w-full" : "after:w-0 hover:after:w-full"
+            className={`relative py-2 font-medium transition-colors hover:text-brand-secondary after:absolute after:left-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-brand-secondary after:transition-all after:duration-300 ${isActive(href) ? "text-brand-secondary after:w-full" : "after:w-0 hover:after:w-full"
               }`}
           >
             {label}
@@ -58,7 +58,7 @@ export default function NavLinks() {
         {identityPending && (
           <Link
             href={IDENTITY_PATH}
-            className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-white bg-[#df6951] hover:bg-[#c85640] px-3.5 py-2 rounded-full shadow-md animate-pulse"
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-brand-secondary-fg bg-brand-secondary hover:bg-brand-secondary-dark px-3.5 py-2 rounded-full shadow-md animate-pulse"
             title="Confirma tu identidad para habilitar tu cuenta"
           >
             <ShieldAlert className="w-4 h-4" />
@@ -89,7 +89,7 @@ export default function NavLinks() {
         ) : (
           <Link
             href="/login"
-            className="ml-2 border border-[#212832] text-[#212832] hover:bg-[#212832] hover:text-white font-medium text-sm px-5 py-1.5 rounded-[6px] transition-all"
+            className="ml-2 border border-brand-navbar-text text-brand-navbar-text hover:bg-brand-navbar-text hover:text-brand-navbar-bg font-medium text-sm px-5 py-1.5 rounded-[6px] transition-all"
           >
             Iniciar Sesión
           </Link>
@@ -101,7 +101,7 @@ export default function NavLinks() {
         {identityPending && (
           <Link
             href={IDENTITY_PATH}
-            className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-white bg-[#df6951] px-3.5 py-2 rounded-full shadow-md animate-pulse"
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-brand-secondary-fg bg-brand-secondary px-3.5 py-2 rounded-full shadow-md animate-pulse"
           >
             <ShieldAlert className="w-4 h-4" />
             Confirma tu identidad
@@ -110,7 +110,7 @@ export default function NavLinks() {
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
-          className="w-11 h-11 -mr-2 rounded-xl flex items-center justify-center text-[#181e2b] hover:bg-slate-900/5 transition-colors"
+          className="w-11 h-11 -mr-2 rounded-xl flex items-center justify-center text-brand-navbar-text hover:bg-slate-900/5 transition-colors"
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
           aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
@@ -121,7 +121,7 @@ export default function NavLinks() {
 
       <div
         id="mobile-menu"
-        className={`md:hidden absolute left-3 right-3 top-full mt-1 origin-top rounded-2xl bg-white shadow-2xl border border-slate-100 p-3 transition-all duration-200 ${menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+        className={`md:hidden absolute left-3 right-3 top-full mt-1 origin-top rounded-2xl bg-brand-card-bg shadow-2xl border border-slate-100 p-3 transition-all duration-200 ${menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
           }`}
       >
         <ul className="flex flex-col">
@@ -131,7 +131,7 @@ export default function NavLinks() {
                 href={href}
                 onClick={() => setMenuOpen(false)}
                 tabIndex={menuOpen ? 0 : -1}
-                className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${isActive(href) ? "bg-orange-50 text-[#df6951]" : "text-[#181e2b] hover:bg-slate-50"
+                className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${isActive(href) ? "bg-brand-secondary-soft text-brand-secondary" : "text-brand-primary hover:bg-slate-50"
                   }`}
               >
                 {label}
@@ -144,7 +144,7 @@ export default function NavLinks() {
                 href={IDENTITY_PATH}
                 onClick={() => setMenuOpen(false)}
                 tabIndex={menuOpen ? 0 : -1}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl text-base font-semibold text-[#df6951] bg-orange-50"
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-base font-semibold text-brand-secondary bg-brand-secondary-soft"
               >
                 <ShieldAlert className="w-5 h-5" /> Confirmar mi identidad
               </Link>
@@ -175,7 +175,7 @@ export default function NavLinks() {
               href="/login"
               onClick={() => setMenuOpen(false)}
               tabIndex={menuOpen ? 0 : -1}
-              className="block text-center bg-[#181e2b] text-white font-semibold py-3 rounded-xl"
+              className="block text-center bg-brand-primary text-brand-primary-fg font-semibold py-3 rounded-xl"
             >
               Iniciar Sesión
             </Link>

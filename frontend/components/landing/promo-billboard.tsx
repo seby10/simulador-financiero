@@ -40,7 +40,7 @@ export default function PromoBillboard({ promos }: { promos: Promo[] }) {
       aria-label="Productos destacados"
     >
       {/* Cartelera */}
-      <div className="relative h-[520px] sm:h-[460px] lg:h-[480px] rounded-[32px] overflow-hidden shadow-2xl shadow-slate-900/20 bg-[#14183e]">
+      <div className="relative h-[520px] sm:h-[460px] lg:h-[480px] rounded-[32px] overflow-hidden shadow-2xl shadow-slate-900/20 bg-brand-primary">
         {promos.map((promo, index) => {
           const isActive = index === active;
           return (
@@ -57,8 +57,8 @@ export default function PromoBillboard({ promos }: { promos: Promo[] }) {
                 alt=""
                 className={`absolute inset-0 w-full h-full object-cover ${isActive ? "animate-kenburns" : ""}`}
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0d1030]/95 via-[#14183e]/80 to-[#14183e]/10" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d1030]/70 via-transparent to-transparent sm:hidden" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-primary/95 via-brand-primary/80 to-brand-primary/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-primary/70 via-transparent to-transparent sm:hidden" />
 
               {isActive && (
                 <div className="relative h-full flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-10 p-7 sm:p-12 lg:p-14 text-white">
@@ -68,7 +68,7 @@ export default function PromoBillboard({ promos }: { promos: Promo[] }) {
                         {promo.tag}
                       </span>
                       {promo.badge && (
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider bg-[#df6951] text-white px-2.5 py-1 rounded-full shadow-lg shadow-orange-500/40">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider bg-brand-secondary text-white px-2.5 py-1 rounded-full shadow-lg shadow-brand-secondary/40">
                           {promo.badge}
                         </span>
                       )}
@@ -91,7 +91,7 @@ export default function PromoBillboard({ promos }: { promos: Promo[] }) {
                       <Link
                         href={promo.href}
                         tabIndex={isActive ? 0 : -1}
-                        className="group inline-flex items-center gap-2 bg-[#f1a501] hover:bg-amber-400 text-[#14183e] font-bold text-sm sm:text-base py-3.5 px-7 rounded-2xl shadow-xl shadow-amber-500/30 hover:-translate-y-0.5 transition-all"
+                        className="group inline-flex items-center gap-2 bg-brand-accent hover:bg-brand-accent-dark text-brand-primary font-bold text-sm sm:text-base py-3.5 px-7 rounded-2xl shadow-xl shadow-brand-accent/30 hover:-translate-y-0.5 transition-all"
                       >
                         {promo.cta}
                         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -153,7 +153,7 @@ export default function PromoBillboard({ promos }: { promos: Promo[] }) {
               <span className="block h-1 rounded-full bg-slate-200 overflow-hidden">
                 <span
                   key={isActive ? `on-${active}` : "off"}
-                  className={`block h-full rounded-full bg-gradient-to-r from-[#f1a501] to-[#df6951] ${
+                  className={`block h-full rounded-full bg-gradient-to-r from-brand-accent to-brand-secondary ${
                     isActive ? "animate-progress" : index < active ? "w-full opacity-40" : "w-0"
                   }`}
                   style={
@@ -165,10 +165,10 @@ export default function PromoBillboard({ promos }: { promos: Promo[] }) {
                 />
               </span>
               <span className="hidden sm:flex items-baseline justify-between gap-2 mt-2.5">
-                <span className={`text-sm font-semibold truncate transition-colors ${isActive ? "text-[#14183e]" : "text-slate-400 group-hover:text-slate-600"}`}>
+                <span className={`text-sm font-semibold truncate transition-colors ${isActive ? "text-brand-primary" : "text-slate-400 group-hover:text-slate-600"}`}>
                   {promo.title}
                 </span>
-                <span className={`text-xs font-bold ${isActive ? "text-[#df6951]" : "text-slate-300"}`}>
+                <span className={`text-xs font-bold ${isActive ? "text-brand-secondary" : "text-slate-300"}`}>
                   {promo.rate}%
                 </span>
               </span>

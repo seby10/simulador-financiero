@@ -209,11 +209,11 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#f1a501]">
+            <span className="text-xs font-bold uppercase tracking-widest text-brand-accent">
               ADMINISTRACIÓN DE SISTEMA
             </span>
           </div>
-          <h1 className="text-3xl font-black text-[#14183e] font-serif-title">
+          <h1 className="text-3xl font-black text-brand-primary font-serif-title">
             Gestión de Usuarios
           </h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -223,7 +223,7 @@ export default function AdminUsersPage() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-[#df6951] hover:bg-[#c85640] text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-orange-500/20 hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+          className="bg-brand-secondary hover:bg-brand-secondary-dark text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-brand-secondary/20 hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
         >
           <UserPlus className="w-4 h-4" />
           Nuevo Usuario
@@ -235,9 +235,9 @@ export default function AdminUsersPage() {
         <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-md flex items-center justify-between hover:shadow-lg transition-all">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Total Usuarios</p>
-            <p className="text-3xl font-black text-[#14183e]">{totalUsers}</p>
+            <p className="text-3xl font-black text-brand-primary">{totalUsers}</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#14183e]/5 flex items-center justify-center text-[#14183e]">
+          <div className="w-12 h-12 rounded-2xl bg-brand-primary/5 flex items-center justify-center text-brand-primary">
             <Users className="w-6 h-6" />
           </div>
         </div>
@@ -245,9 +245,9 @@ export default function AdminUsersPage() {
         <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-md flex items-center justify-between hover:shadow-lg transition-all">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Clientes / Inversionistas</p>
-            <p className="text-3xl font-black text-[#f1a501]">{totalCustomers}</p>
+            <p className="text-3xl font-black text-brand-accent">{totalCustomers}</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-[#f1a501]">
+          <div className="w-12 h-12 rounded-2xl bg-brand-accent-soft flex items-center justify-center text-brand-accent">
             <UserCheck className="w-6 h-6" />
           </div>
         </div>
@@ -255,9 +255,9 @@ export default function AdminUsersPage() {
         <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-md flex items-center justify-between hover:shadow-lg transition-all">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Administradores</p>
-            <p className="text-3xl font-black text-[#df6951]">{totalAdmins}</p>
+            <p className="text-3xl font-black text-brand-secondary">{totalAdmins}</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-[#df6951]">
+          <div className="w-12 h-12 rounded-2xl bg-brand-secondary-soft flex items-center justify-center text-brand-secondary">
             <Shield className="w-6 h-6" />
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function AdminUsersPage() {
             placeholder="Buscar por nombre, correo o cédula..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#f1a501] focus:border-transparent font-medium"
+            className="w-full pl-11 pr-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent font-medium"
           />
         </div>
 
@@ -292,7 +292,7 @@ export default function AdminUsersPage() {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
-              className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-[#14183e] bg-slate-50 outline-none cursor-pointer"
+              className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-brand-primary bg-slate-50 outline-none cursor-pointer"
             >
               <option value="ALL">Todos los roles</option>
               <option value="CUSTOMER">Clientes</option>
@@ -305,7 +305,7 @@ export default function AdminUsersPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-[#14183e] bg-slate-50 outline-none cursor-pointer"
+              className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-brand-primary bg-slate-50 outline-none cursor-pointer"
             >
               <option value="ALL">Todos los estados</option>
               <option value="ACTIVE">Activos</option>
@@ -327,7 +327,7 @@ export default function AdminUsersPage() {
       <div className="bg-white rounded-[32px] border border-slate-100 shadow-xl overflow-hidden">
         {loading ? (
           <div className="p-16 text-center text-slate-500 space-y-3">
-            <span className="animate-spin inline-block w-8 h-8 border-3 border-[#f1a501] border-t-transparent rounded-full" />
+            <span className="animate-spin inline-block w-8 h-8 border-3 border-brand-accent border-t-transparent rounded-full" />
             <p className="font-semibold text-sm">Cargando lista de usuarios...</p>
           </div>
         ) : error ? (
@@ -337,7 +337,7 @@ export default function AdminUsersPage() {
         ) : filteredUsers.length === 0 ? (
           <div className="p-16 text-center text-slate-500 space-y-2">
             <Users className="w-12 h-12 mx-auto text-slate-300" />
-            <p className="font-bold text-[#14183e] text-lg font-serif-title">No se encontraron usuarios</p>
+            <p className="font-bold text-brand-primary text-lg font-serif-title">No se encontraron usuarios</p>
             <p className="text-xs text-slate-400">Intenta cambiar los filtros o el término de búsqueda.</p>
           </div>
         ) : (
@@ -361,11 +361,11 @@ export default function AdminUsersPage() {
                     {/* User Profile */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#14183e] to-slate-700 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-primary to-slate-700 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
                           {u.fullName.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-extrabold text-[#14183e]">{u.fullName}</p>
+                          <p className="font-extrabold text-brand-primary">{u.fullName}</p>
                           <p className="text-xs text-slate-400 font-mono">
                             Registrado: {new Date(u.createdAt).toLocaleDateString("es-EC")}
                           </p>
@@ -392,7 +392,7 @@ export default function AdminUsersPage() {
 
                     {/* Applications Count */}
                     <td className="py-4 px-6">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-[#f1a501] border border-amber-200/80">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand-accent-soft text-brand-accent border border-amber-200/80">
                         <FileText className="w-3.5 h-3.5" />
                         {u._count?.applications || 0} Pólizas
                       </span>
@@ -405,7 +405,7 @@ export default function AdminUsersPage() {
                         onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
                         className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border outline-none cursor-pointer ${
                           u.role === "ADMIN"
-                            ? "bg-orange-50 text-[#df6951] border-orange-200"
+                            ? "bg-brand-secondary-soft text-brand-secondary border-orange-200"
                             : "bg-blue-50 text-blue-700 border-blue-200"
                         }`}
                       >
@@ -476,7 +476,7 @@ export default function AdminUsersPage() {
       {/* Modal for Creating New User */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#14183e]/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-primary/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setIsModalOpen(false)}
         >
           <div
@@ -484,10 +484,10 @@ export default function AdminUsersPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="bg-[#14183e] p-6 text-white flex items-center justify-between">
+            <div className="bg-brand-primary p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-[#f1a501]" />
+                  <UserPlus className="w-5 h-5 text-brand-accent" />
                 </div>
                 <div>
                   <h3 className="font-bold font-serif-title text-xl">Crear Nuevo Usuario</h3>
@@ -530,7 +530,7 @@ export default function AdminUsersPage() {
                     placeholder="10 dígitos"
                     value={modalForm.idNumber}
                     onChange={(e) => setModalForm({ ...modalForm, idNumber: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono font-medium focus:ring-2 focus:ring-[#f1a501] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono font-medium focus:ring-2 focus:ring-brand-accent outline-none"
                   />
                 </div>
 
@@ -541,7 +541,7 @@ export default function AdminUsersPage() {
                   <select
                     value={modalForm.role}
                     onChange={(e) => setModalForm({ ...modalForm, role: e.target.value as UserRole })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-[#14183e] bg-slate-50 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-brand-primary bg-slate-50 outline-none"
                   >
                     <option value="CUSTOMER">Cliente / Inversionista</option>
                     <option value="ADMIN">Administrador</option>
@@ -558,7 +558,7 @@ export default function AdminUsersPage() {
                     placeholder="Ej: María José"
                     value={modalForm.firstName}
                     onChange={(e) => setModalForm({ ...modalForm, firstName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-[#f1a501] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-accent outline-none"
                   />
                 </div>
 
@@ -572,7 +572,7 @@ export default function AdminUsersPage() {
                     placeholder="Ej: Andrade"
                     value={modalForm.lastName}
                     onChange={(e) => setModalForm({ ...modalForm, lastName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-[#f1a501] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-accent outline-none"
                   />
                 </div>
 
@@ -586,7 +586,7 @@ export default function AdminUsersPage() {
                     placeholder="ejemplo@correo.com"
                     value={modalForm.email}
                     onChange={(e) => setModalForm({ ...modalForm, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-[#f1a501] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-accent outline-none"
                   />
                 </div>
 
@@ -600,7 +600,7 @@ export default function AdminUsersPage() {
                     placeholder="0991234567"
                     value={modalForm.phone}
                     onChange={(e) => setModalForm({ ...modalForm, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-[#f1a501] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-accent outline-none"
                   />
                 </div>
 
@@ -615,7 +615,7 @@ export default function AdminUsersPage() {
                     minLength={8}
                     value={modalForm.password}
                     onChange={(e) => setModalForm({ ...modalForm, password: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-[#f1a501] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-accent outline-none"
                   />
                 </div>
               </div>
@@ -631,7 +631,7 @@ export default function AdminUsersPage() {
                 <button
                   type="submit"
                   disabled={modalSaving}
-                  className="px-6 py-2.5 rounded-full text-xs font-bold text-white bg-[#df6951] hover:bg-[#c85640] shadow-md transition-all disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-full text-xs font-bold text-white bg-brand-secondary hover:bg-brand-secondary-dark shadow-md transition-all disabled:opacity-50"
                 >
                   {modalSaving ? "Guardando..." : "Crear Usuario"}
                 </button>

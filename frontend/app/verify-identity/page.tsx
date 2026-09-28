@@ -152,9 +152,9 @@ function VerifyIdentityContent() {
     <div className="min-h-screen flex flex-col font-sans text-slate-800">
       <Navbar />
       <main className="flex-1 flex items-start justify-center p-4 pb-12 relative z-10">
-        <div className="w-full max-w-xl bg-white rounded-[32px] shadow-2xl shadow-amber-900/10 border border-amber-200/50 overflow-hidden">
-          <div className="bg-[#14183e] text-white px-7 py-6">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#f1a501]">Acción necesaria</p>
+        <div className="w-full max-w-xl bg-brand-card-bg rounded-[32px] shadow-2xl shadow-amber-900/10 border border-amber-200/50 overflow-hidden">
+          <div className="bg-brand-primary text-white px-7 py-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-brand-accent">Acción necesaria</p>
             <h1 className="text-2xl font-black font-serif-title mt-1">Confirma tu identidad</h1>
             <p className="text-sm text-white/70 mt-1">
               Para proteger tu cuenta, igual que en un banco, validamos que eres el titular comparando tu rostro con tu
@@ -165,7 +165,7 @@ function VerifyIdentityContent() {
                 <span
                   key={label}
                   className={`px-3 py-1 rounded-full ${
-                    stepNumber === i + 1 ? "bg-white text-[#14183e]" : stepNumber > i + 1 ? "bg-emerald-500" : "bg-white/10 text-white/60"
+                    stepNumber === i + 1 ? "bg-brand-card-bg text-brand-primary" : stepNumber > i + 1 ? "bg-emerald-500" : "bg-white/10 text-white/60"
                   }`}
                 >
                   {i + 1}. {label}
@@ -189,8 +189,8 @@ function VerifyIdentityContent() {
             {step === "document" && (
               <div className="space-y-5">
                 <div>
-                  <p className="font-bold text-[#14183e] flex items-center gap-2">
-                    <IdCard className="w-5 h-5 text-[#df6951]" /> Foto del lado frontal de tu cédula
+                  <p className="font-bold text-brand-primary flex items-center gap-2">
+                    <IdCard className="w-5 h-5 text-brand-secondary" /> Foto del lado frontal de tu cédula
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
                     Se usa solo para comparar tu rostro. Revisamos la foto apenas la cargas.
@@ -200,7 +200,7 @@ function VerifyIdentityContent() {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="group w-full border-2 border-dashed border-slate-300 hover:border-[#df6951] rounded-[24px] p-4 text-center transition-colors"
+                  className="group w-full border-2 border-dashed border-slate-300 hover:border-brand-secondary rounded-[24px] p-4 text-center transition-colors"
                 >
                   {preview ? (
                     <span className="block">
@@ -208,13 +208,13 @@ function VerifyIdentityContent() {
                         {/* eslint-disable-next-line @next/next/no-img-element -- object URL local */}
                         <img src={preview} alt="Foto de tu cédula" className="absolute inset-0 w-full h-full object-contain" />
                       </span>
-                      <span className="block text-xs text-slate-500 mt-3 group-hover:text-[#df6951]">Toca para elegir otra foto</span>
+                      <span className="block text-xs text-slate-500 mt-3 group-hover:text-brand-secondary">Toca para elegir otra foto</span>
                     </span>
                   ) : (
                     <span className="text-slate-500 text-sm flex items-center justify-center gap-4">
                       <IdCardSilhouette className="w-20 opacity-70" />
                       <span className="flex flex-col items-start gap-1 text-left">
-                        <span className="font-semibold text-[#14183e] flex items-center gap-1.5">
+                        <span className="font-semibold text-brand-primary flex items-center gap-1.5">
                           <Upload className="w-4 h-4" /> Subir foto
                         </span>
                         <span className="text-xs">
@@ -227,7 +227,7 @@ function VerifyIdentityContent() {
                 <button
                   type="button"
                   onClick={() => cameraRef.current?.click()}
-                  className="md:hidden w-full py-3 rounded-full border border-[#14183e] text-[#14183e] font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                  className="md:hidden w-full py-3 rounded-full border border-brand-primary text-brand-primary font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                 >
                   <Camera className="w-4 h-4" /> Tomar foto con la cámara
                 </button>
@@ -252,7 +252,7 @@ function VerifyIdentityContent() {
                     type="checkbox"
                     checked={consent}
                     onChange={(e) => setConsent(e.target.checked)}
-                    className="mt-0.5 accent-[#df6951]"
+                    className="mt-0.5 accent-brand-secondary"
                   />
                   <span>
                     Autorizo el tratamiento de mis datos biométricos (imagen facial y de mi cédula) únicamente para
@@ -263,7 +263,7 @@ function VerifyIdentityContent() {
                   type="button"
                   onClick={submitDocument}
                   disabled={busy}
-                  className="w-full py-3 rounded-full bg-[#df6951] hover:bg-[#c85640] text-white font-bold text-sm shadow-lg shadow-orange-500/20 disabled:opacity-60"
+                  className="w-full py-3 rounded-full bg-brand-secondary hover:bg-brand-secondary-dark text-white font-bold text-sm shadow-lg shadow-brand-secondary/20 disabled:opacity-60"
                 >
                   {busy ? "Revisando tu cédula..." : "Continuar"}
                 </button>
@@ -272,8 +272,8 @@ function VerifyIdentityContent() {
 
             {step === "face" && (
               <div className="space-y-4">
-                <p className="font-bold text-[#14183e] flex items-center gap-2">
-                  <ScanFace className="w-5 h-5 text-[#df6951]" /> Verificación facial en vivo
+                <p className="font-bold text-brand-primary flex items-center gap-2">
+                  <ScanFace className="w-5 h-5 text-brand-secondary" /> Verificación facial en vivo
                 </p>
                 <p className="text-xs text-slate-500">
                   Comprobaremos que eres una persona real y el titular de la cédula. Intentos disponibles:{" "}
@@ -293,7 +293,7 @@ function VerifyIdentityContent() {
                 <button
                   type="button"
                   onClick={() => setStep("document")}
-                  className="text-xs font-semibold text-slate-500 hover:text-[#df6951]"
+                  className="text-xs font-semibold text-slate-500 hover:text-brand-secondary"
                 >
                   Cambiar la foto de la cédula
                 </button>
@@ -303,12 +303,12 @@ function VerifyIdentityContent() {
             {step === "done" && (
               <div className="text-center py-6 space-y-4">
                 <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
-                <h2 className="text-xl font-black text-[#14183e]">Identidad confirmada</h2>
+                <h2 className="text-xl font-black text-brand-primary">Identidad confirmada</h2>
                 <p className="text-sm text-slate-500">Tu cuenta ya está habilitada para operar.</p>
                 <button
                   type="button"
                   onClick={() => router.push(redirect)}
-                  className="px-8 py-3 rounded-full bg-[#14183e] text-white font-bold text-sm inline-flex items-center gap-2"
+                  className="px-8 py-3 rounded-full bg-brand-primary text-white font-bold text-sm inline-flex items-center gap-2"
                 >
                   <ShieldCheck className="w-4 h-4" /> Continuar
                 </button>
@@ -317,8 +317,8 @@ function VerifyIdentityContent() {
 
             {step === "locked" && (
               <div className="text-center py-6 space-y-3">
-                <Lock className="w-14 h-14 text-[#df6951] mx-auto" />
-                <h2 className="text-xl font-black text-[#14183e]">Verificación en revisión</h2>
+                <Lock className="w-14 h-14 text-brand-secondary mx-auto" />
+                <h2 className="text-xl font-black text-brand-primary">Verificación en revisión</h2>
                 <p className="text-sm text-slate-500 max-w-sm mx-auto">
                   Se agotaron los intentos de verificación facial. Un asesor revisará tu cuenta y te habilitará nuevos
                   intentos. Si necesitas ayuda, comunícate con la institución.

@@ -55,11 +55,11 @@ export default function AmortizationTable({
   const totalPayments = schedule.reduce((sum: number, row: any) => sum + parseFloat(row.totalPayment), 0).toFixed(2);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#14183e]/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col rounded-[28px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-brand-primary/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-brand-card-bg w-full max-w-5xl max-h-[90vh] flex flex-col rounded-[28px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
         
         {/* Modal Header */}
-        <div className="bg-[#14183e] px-6 md:px-8 py-5 flex justify-between items-center shrink-0">
+        <div className="bg-brand-primary px-6 md:px-8 py-5 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <span className="font-serif-title text-xl font-bold text-white">Tabla de Amortización</span>
           </div>
@@ -67,7 +67,7 @@ export default function AmortizationTable({
             {onDownloadPdf && (
               <button 
                 onClick={onDownloadPdf}
-                className="bg-[#df6951] hover:bg-[#c85640] text-white px-4 py-2 rounded-full transition-all text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5"
+                className="bg-brand-secondary hover:bg-brand-secondary-dark text-white px-4 py-2 rounded-full transition-all text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5"
               >
                 Descargar PDF
               </button>
@@ -89,21 +89,21 @@ export default function AmortizationTable({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200/80">
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Monto solicitado:</span>
-              <div className="text-lg font-extrabold text-[#14183e]">
+              <div className="text-lg font-extrabold text-brand-primary">
                 ${summary.principal} USD
               </div>
             </div>
             
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Plazo:</span>
-              <div className="text-lg font-extrabold text-[#14183e]">
+              <div className="text-lg font-extrabold text-brand-primary">
                 {summary.termMonths} meses
               </div>
             </div>
 
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Tasa nominal anual:</span>
-              <div className="text-lg font-extrabold text-[#df6951]">
+              <div className="text-lg font-extrabold text-brand-secondary">
                 {Number(summary.nominalAnnualRatePct).toFixed(2)}%
               </div>
               <span className="text-xs text-[#5e6282]">Efectiva: {Number(summary.effectiveAnnualRatePct).toFixed(2)}%</span>
@@ -111,13 +111,13 @@ export default function AmortizationTable({
 
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-1">Sistema:</span>
-              <div className="text-lg font-extrabold text-[#14183e] uppercase">
+              <div className="text-lg font-extrabold text-brand-primary uppercase">
                 {summary.method === 'FRENCH' ? 'FRANCÉS (FIJA)' : 'ALEMÁN (VAR)'}
               </div>
             </div>
           </div>
 
-          <h3 className="text-center text-[#14183e] text-lg font-bold font-serif-title tracking-wide mb-6">
+          <h3 className="text-center text-brand-primary text-lg font-bold font-serif-title tracking-wide mb-6">
             DESGLOSE PERIÓDICO DE CUOTAS
           </h3>
 
@@ -132,7 +132,7 @@ export default function AmortizationTable({
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-center">
-                <thead className="text-[#14183e] font-bold bg-slate-100/80 border-b border-slate-200">
+                <thead className="text-brand-primary font-bold bg-slate-100/80 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-4 font-semibold">No.</th>
                     <th className="px-4 py-4 font-semibold">Fecha</th>
@@ -159,7 +159,7 @@ export default function AmortizationTable({
                   
                   {/* Periods 1..N */}
                   {enhancedSchedule.map((row: any, idx: number) => (
-                    <tr key={row.period} className={idx % 2 === 0 ? "bg-white" : "bg-cyan-50/30"}>
+                    <tr key={row.period} className={idx % 2 === 0 ? "bg-brand-card-bg" : "bg-cyan-50/30"}>
                       <td className="px-4 py-3 text-brand-secondary">{row.period}</td>
                       <td className="px-4 py-3">{row.date}</td>
                       <td className="px-4 py-3 text-right pr-6">$ {row.principal}</td>
@@ -172,7 +172,7 @@ export default function AmortizationTable({
                   ))}
 
                   {/* Totals Row */}
-                  <tr className="bg-white font-bold text-slate-800 border-t-2 border-slate-200">
+                  <tr className="bg-brand-card-bg font-bold text-slate-800 border-t-2 border-slate-200">
                     <td colSpan={2} className="px-4 py-4 text-center">TOTALES</td>
                     <td className="px-4 py-4 text-right pr-6">$ {totalPrincipal}</td>
                     <td className="px-4 py-4 text-right pr-6">$ {totalInterest}</td>

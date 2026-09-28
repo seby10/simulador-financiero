@@ -82,12 +82,12 @@ export default function AdminShell({ logoUrl, institutionName, user, children }:
         <button
           aria-label="Cerrar menú"
           onClick={() => setDrawerOpen(false)}
-          className="fixed inset-0 z-30 bg-[#14183e]/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-brand-primary/50 backdrop-blur-sm lg:hidden"
         />
       )}
 
       <aside
-        className={`bg-[#14183e] text-white flex flex-col shadow-2xl shrink-0 h-screen border-r border-slate-800/80
+        className={`bg-brand-primary text-white flex flex-col shadow-2xl shrink-0 h-screen border-r border-slate-800/80
           fixed inset-y-0 left-0 z-40 w-64 transition-[transform,width] duration-200
           ${drawerOpen ? "translate-x-0" : "-translate-x-full"}
           lg:sticky lg:top-0 lg:translate-x-0 ${collapsed ? "lg:w-20" : "lg:w-64"}`}
@@ -99,7 +99,7 @@ export default function AdminShell({ logoUrl, institutionName, user, children }:
               alt="Logo"
               className="h-9 w-auto object-contain bg-white/10 rounded-lg p-1"
               fallback={
-                <div className="w-10 h-10 rounded-xl bg-[#df6951] flex items-center justify-center text-white font-serif-title text-xl font-bold shadow-md shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-brand-secondary flex items-center justify-center text-white font-serif-title text-xl font-bold shadow-md shrink-0">
                   F
                 </div>
               }
@@ -107,9 +107,9 @@ export default function AdminShell({ logoUrl, institutionName, user, children }:
             {labels && (
               <div className="flex flex-col">
                 <span className="font-serif-title font-extrabold text-lg leading-none text-white">
-                  Fiado<span className="text-[#df6951]">.</span>
+                  Fiado<span className="text-brand-secondary">.</span>
                 </span>
-                <span className="font-bold text-[10px] text-[#f1a501] tracking-widest uppercase mt-1">
+                <span className="font-bold text-[10px] text-brand-accent tracking-widest uppercase mt-1">
                   PANEL ADMIN
                 </span>
               </div>
@@ -136,7 +136,7 @@ export default function AdminShell({ logoUrl, institutionName, user, children }:
                 ${labels ? "px-4" : "justify-center"}
                 ${isActive(href) ? "bg-white/15 text-white" : "text-slate-300 hover:text-white hover:bg-white/10"}`}
             >
-              <Icon className={`w-5 h-5 shrink-0 ${isActive(href) ? "text-[#f1a501]" : "text-slate-400"}`} />
+              <Icon className={`w-5 h-5 shrink-0 ${isActive(href) ? "text-brand-accent" : "text-slate-400"}`} />
               {labels && <span className="truncate">{label}</span>}
             </Link>
           ))}
@@ -162,7 +162,7 @@ export default function AdminShell({ logoUrl, institutionName, user, children }:
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 relative bg-[#fefcf9]">
+      <main className="flex-1 flex flex-col min-w-0 relative bg-brand-page-bg">
         <img
           src="/assets/hero/decore-shape.png"
           alt=""
@@ -174,22 +174,22 @@ export default function AdminShell({ logoUrl, institutionName, user, children }:
             <button
               aria-label="Abrir menú"
               onClick={() => setDrawerOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-lg text-[#14183e] hover:bg-slate-100"
+              className="lg:hidden p-2 -ml-2 rounded-lg text-brand-primary hover:bg-slate-100"
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-lg sm:text-xl font-extrabold text-[#14183e] font-serif-title truncate">Panel de Control</h2>
-            <span className="hidden md:inline-block bg-amber-50 text-[#f1a501] border border-amber-200/80 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+            <h2 className="text-lg sm:text-xl font-extrabold text-brand-primary font-serif-title truncate">Panel de Control</h2>
+            <span className="hidden md:inline-block bg-brand-accent-soft text-brand-accent border border-amber-200/80 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
               {institutionName || "Fiado Admin"}
             </span>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#df6951] to-[#f1a501] flex items-center justify-center text-white font-bold shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-secondary to-brand-accent flex items-center justify-center text-white font-bold shadow-sm">
               {initial}
             </div>
             <div className="hidden sm:flex flex-col text-right">
-              <span className="font-bold text-xs text-[#14183e]">{user.fullName || "Administrador"}</span>
+              <span className="font-bold text-xs text-brand-primary">{user.fullName || "Administrador"}</span>
               <span className="text-[11px] text-slate-400">{user.email}</span>
             </div>
           </div>

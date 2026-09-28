@@ -30,7 +30,7 @@ export default function Modal({ isOpen, onClose, onConfirm, title, message, type
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className={`bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200`}>
+      <div className={`bg-brand-card-bg rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200`}>
         <div className={`p-6 border-b ${bgColors[type]}`}>
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-lg flex items-center gap-2">

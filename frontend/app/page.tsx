@@ -175,22 +175,22 @@ export default async function Home() {
 
               <div className="lg:col-span-7 space-y-7 text-center lg:text-left relative">
                 <p
-                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951] animate-fade-up"
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-secondary animate-fade-up"
                   style={{ animationDelay: "0ms" }}
                 >
-                  <span className="w-6 h-px bg-[#df6951]" />
+                  <span className="w-6 h-px bg-brand-secondary" />
                   {institutionName}
                 </p>
 
                 <h1
-                  className="text-4xl sm:text-6xl lg:text-[68px] xl:text-[76px] font-bold text-[#181e2b] leading-[1.08] font-serif-title tracking-tight max-w-3xl whitespace-pre-line animate-fade-up"
+                  className="text-4xl sm:text-6xl lg:text-[68px] xl:text-[76px] font-bold text-brand-primary leading-[1.08] font-serif-title tracking-tight max-w-3xl whitespace-pre-line animate-fade-up"
                   style={{ animationDelay: "80ms" }}
                 >
                   {titleHead}
                   <span className="relative inline-block whitespace-nowrap">
                     {titleLast}
                     <svg
-                      className="absolute -bottom-2 left-0 w-full h-4 text-[#df6951] pointer-events-none"
+                      className="absolute -bottom-2 left-0 w-full h-4 text-brand-secondary pointer-events-none"
                       viewBox="0 0 285 36"
                       fill="none"
                       preserveAspectRatio="none"
@@ -214,7 +214,7 @@ export default async function Home() {
                 >
                   <Link
                     href="/simulator"
-                    className="group w-full sm:w-auto bg-[#f1a501] hover:bg-amber-500 text-white font-semibold py-4 px-8 rounded-[12px] shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/35 hover:-translate-y-0.5 transition-all text-center text-sm sm:text-base inline-flex items-center justify-center gap-2"
+                    className="group w-full sm:w-auto bg-brand-accent hover:bg-brand-accent-dark text-white font-semibold py-4 px-8 rounded-[12px] shadow-lg shadow-brand-accent/25 hover:shadow-xl hover:shadow-brand-accent/35 hover:-translate-y-0.5 transition-all text-center text-sm sm:text-base inline-flex items-center justify-center gap-2"
                   >
                     Simular crédito
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -222,10 +222,10 @@ export default async function Home() {
 
                   <a
                     href="#como-funciona"
-                    className="flex items-center gap-4 py-2 px-2 text-[#686d77] hover:text-[#181e2b] font-medium text-sm sm:text-base transition-colors group"
+                    className="flex items-center gap-4 py-2 px-2 text-[#686d77] hover:text-brand-primary font-medium text-sm sm:text-base transition-colors group"
                   >
-                    <span className="relative w-12 h-12 rounded-full bg-[#df6951] text-white flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-105 transition-transform shrink-0">
-                      <span className="absolute inset-0 rounded-full bg-[#df6951]/40 animate-pulse-ring" />
+                    <span className="relative w-12 h-12 rounded-full bg-brand-secondary text-white flex items-center justify-center shadow-lg shadow-brand-secondary/30 group-hover:scale-105 transition-transform shrink-0">
+                      <span className="absolute inset-0 rounded-full bg-brand-secondary/40 animate-pulse-ring" />
                       <ArrowDown className="relative w-5 h-5" />
                     </span>
                     Cómo funciona
@@ -255,10 +255,10 @@ export default async function Home() {
         </section>
 
         {/* ============================ 2. SERVICIOS ============================ */}
-        <section className="py-20 bg-white relative">
+        <section className="py-20 bg-brand-card-bg relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Reveal className="text-center max-w-3xl mx-auto mb-14">
-              <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951]">
+              <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-secondary">
                 Nuestros servicios
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-serif-title mt-2">
@@ -274,7 +274,7 @@ export default async function Home() {
                   text: "Calcula tus cuotas exactas con los sistemas Francés y Alemán, con cargos incluidos. Descarga tu tabla de amortización en PDF.",
                   href: "/simulator",
                   cta: "Simular crédito",
-                  button: "bg-[#df6951] hover:bg-orange-600 shadow-orange-500/20",
+                  button: "bg-brand-secondary hover:bg-brand-secondary-dark shadow-brand-secondary/20",
                 },
                 {
                   icon: PiggyBank,
@@ -284,12 +284,12 @@ export default async function Home() {
                     : "Haz crecer tus ahorros con pólizas DPF a plazo fijo y conoce tu rendimiento antes de invertir.",
                   href: "/investments",
                   cta: "Ver pólizas",
-                  button: "bg-[#f1a501] hover:bg-amber-500 shadow-amber-500/20",
+                  button: "bg-brand-accent hover:bg-brand-accent-dark shadow-brand-accent/20",
                 },
               ].map(({ icon: Icon, title, text, href, cta, button }, index) => (
                 <Reveal key={title} delay={index * 120}>
-                  <div className="group relative h-full bg-white p-7 rounded-[28px] transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/10 border border-slate-100 hover:-translate-y-2 text-center flex flex-col items-center">
-                    <div className="w-16 h-16 rounded-[20px] bg-amber-50 text-[#f1a501] flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-transform">
+                  <div className="group relative h-full bg-brand-card-bg p-7 rounded-[28px] transition-all duration-300 hover:shadow-2xl hover:shadow-brand-secondary/10 border border-slate-100 hover:-translate-y-2 text-center flex flex-col items-center">
+                    <div className="w-16 h-16 rounded-[20px] bg-brand-accent-soft text-brand-accent flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-transform">
                       <Icon className="w-8 h-8" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 mb-2 font-serif-title">{title}</h3>
@@ -300,7 +300,7 @@ export default async function Home() {
                     >
                       {cta} <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-1 bg-[#df6951] rounded-full group-hover:w-16 transition-all duration-300" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-1 bg-brand-secondary rounded-full group-hover:w-16 transition-all duration-300" />
                   </div>
                 </Reveal>
               ))}
@@ -310,20 +310,20 @@ export default async function Home() {
 
         {/* ============================ 3. PRODUCTOS ============================ */}
         {promos.length > 0 && (
-          <section className="py-20 bg-[#fefcf9] relative overflow-hidden">
+          <section className="py-20 bg-brand-page-bg relative overflow-hidden">
             <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 relative">
               <Reveal className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
                 <div className="max-w-2xl">
-                  <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951] mb-2">
+                  <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-secondary mb-2">
                     Productos destacados
                   </p>
-                  <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#14183e] font-serif-title leading-tight">
+                  <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-brand-primary font-serif-title leading-tight">
                     Encuentra el plan financiero perfecto para ti
                   </h2>
                 </div>
                 <Link
                   href="/simulator"
-                  className="group inline-flex items-center gap-2 text-sm font-semibold text-[#14183e] hover:text-[#df6951] transition-colors shrink-0"
+                  className="group inline-flex items-center gap-2 text-sm font-semibold text-brand-primary hover:text-brand-secondary transition-colors shrink-0"
                 >
                   Comparar todos <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Link>
@@ -343,13 +343,13 @@ export default async function Home() {
         )}
 
         {/* ========================== 4. CÓMO FUNCIONA ========================== */}
-        <section id="como-funciona" className="py-20 bg-white relative overflow-hidden scroll-mt-24">
+        <section id="como-funciona" className="py-20 bg-brand-card-bg relative overflow-hidden scroll-mt-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 items-center">
 
               <div className="lg:col-span-6 space-y-8">
                 <Reveal>
-                  <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951]">
+                  <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-secondary">
                     Fácil y seguro
                   </p>
                   <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-serif-title mt-2 leading-tight">
@@ -358,17 +358,17 @@ export default async function Home() {
                 </Reveal>
 
                 <ol className="relative space-y-7">
-                  <span className="absolute left-7 top-10 bottom-10 w-px bg-gradient-to-b from-[#f1a501] via-[#df6951] to-emerald-500 opacity-40" aria-hidden="true" />
+                  <span className="absolute left-7 top-10 bottom-10 w-px bg-gradient-to-b from-brand-accent via-brand-secondary to-emerald-500 opacity-40" aria-hidden="true" />
                   {[
                     {
                       icon: Calculator,
-                      color: "bg-[#f1a501] shadow-amber-500/25",
+                      color: "bg-brand-accent shadow-brand-accent/25",
                       title: "Simula y elige tu póliza",
                       text: "Compara montos, plazos y tasas, y mira cuánto recibirás al vencimiento antes de decidir.",
                     },
                     {
                       icon: ScanFace,
-                      color: "bg-[#df6951] shadow-orange-500/25",
+                      color: "bg-brand-secondary shadow-brand-secondary/25",
                       title: "Confirma tu identidad",
                       text: "Sube tu cédula y haz una verificación facial en vivo con prueba de vida, desde tu computadora o tu celular.",
                     },
@@ -399,7 +399,7 @@ export default async function Home() {
                 <Reveal delay={420}>
                   <Link
                     href="/investments/request"
-                    className="group inline-flex items-center gap-2 text-[#df6951] font-semibold text-sm hover:gap-3 transition-all"
+                    className="group inline-flex items-center gap-2 text-brand-secondary font-semibold text-sm hover:gap-3 transition-all"
                   >
                     Empezar mi solicitud <ArrowRight className="w-4 h-4" />
                   </Link>
@@ -409,7 +409,7 @@ export default async function Home() {
               {/* Tarjeta ilustrativa del seguimiento de una solicitud */}
               <Reveal delay={150} className="lg:col-span-6 relative flex justify-center px-4 sm:px-0">
                 <div className="absolute inset-10 bg-gradient-to-tr from-emerald-100 via-amber-50 to-orange-100 rounded-full blur-3xl" />
-                <div className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-100">
+                <div className="relative w-full max-w-md bg-brand-card-bg rounded-3xl p-6 shadow-2xl border border-slate-100">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Solicitud de inversión</p>
@@ -449,17 +449,17 @@ export default async function Home() {
                     <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
                       <div className="rounded-xl bg-slate-50 p-3">
                         <p className="text-slate-400 font-medium">Tasa efectiva</p>
-                        <p className="text-base font-extrabold text-[#14183e]">{Number(bestPlan.tea)}% TEA</p>
+                        <p className="text-base font-extrabold text-brand-primary">{Number(bestPlan.tea)}% TEA</p>
                       </div>
                       <div className="rounded-xl bg-slate-50 p-3">
                         <p className="text-slate-400 font-medium">Desde</p>
-                        <p className="text-base font-extrabold text-[#14183e]">{money(Number(bestPlan.minAmount))}</p>
+                        <p className="text-base font-extrabold text-brand-primary">{money(Number(bestPlan.minAmount))}</p>
                       </div>
                     </div>
                   )}
 
-                  <div className="absolute -bottom-6 -right-4 sm:-right-8 bg-white p-3.5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 animate-float">
-                    <div className="w-10 h-10 rounded-full bg-orange-50 text-[#df6951] flex items-center justify-center">
+                  <div className="absolute -bottom-6 -right-4 sm:-right-8 bg-brand-card-bg p-3.5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 animate-float">
+                    <div className="w-10 h-10 rounded-full bg-brand-secondary-soft text-brand-secondary flex items-center justify-center">
                       <Smartphone className="w-5 h-5" />
                     </div>
                     <div>
@@ -474,10 +474,10 @@ export default async function Home() {
         </section>
 
         {/* ===================== 5. SEGURIDAD Y TRANSPARENCIA ===================== */}
-        <section className="py-20 bg-[#fefcf9]">
+        <section className="py-20 bg-brand-page-bg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Reveal className="text-center max-w-3xl mx-auto mb-14">
-              <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951]">
+              <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-secondary">
                 Seguridad y transparencia
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-serif-title mt-2 leading-tight">
@@ -504,8 +504,8 @@ export default async function Home() {
                 },
               ].map(({ icon: Icon, title, text }, index) => (
                 <Reveal key={title} delay={index * 120}>
-                  <div className="group h-full bg-white p-7 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <div className="w-12 h-12 rounded-2xl bg-[#14183e] text-amber-300 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <div className="group h-full bg-brand-card-bg p-7 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-primary text-amber-300 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
                       <Icon className="w-6 h-6" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 font-serif-title">{title}</h3>
@@ -529,8 +529,8 @@ export default async function Home() {
         <section className="py-14 relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Reveal>
-              <div className="relative bg-gradient-to-br from-[#14183e] via-[#1d2250] to-[#2a1f3d] rounded-[40px] p-8 sm:p-14 overflow-hidden text-center text-white shadow-2xl">
-                <div className="absolute -top-24 -right-24 w-80 h-80 bg-[#df6951]/25 rounded-full blur-3xl animate-glow" />
+              <div className="relative bg-gradient-to-br from-brand-primary via-brand-primary to-brand-primary rounded-[40px] p-8 sm:p-14 overflow-hidden text-center text-white shadow-2xl">
+                <div className="absolute -top-24 -right-24 w-80 h-80 bg-brand-secondary/25 rounded-full blur-3xl animate-glow" />
                 <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl animate-glow" style={{ animationDelay: "-4s" }} />
 
                 <div className="relative z-10 max-w-3xl mx-auto space-y-6">
@@ -549,7 +549,7 @@ export default async function Home() {
                   <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
                     <Link
                       href="/simulator"
-                      className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#f1a501] hover:bg-amber-500 text-white font-bold text-sm shadow-lg shadow-amber-500/30 hover:-translate-y-0.5 transition-all text-center"
+                      className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-brand-accent hover:bg-brand-accent-dark text-white font-bold text-sm shadow-lg shadow-brand-accent/30 hover:-translate-y-0.5 transition-all text-center"
                     >
                       Simular crédito
                     </Link>
