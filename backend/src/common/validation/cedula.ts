@@ -19,6 +19,6 @@ export const IsCedula = () =>
     name: 'isCedula',
     validator: {
       validate: (value) => typeof value === 'string' && isValidCedula(value),
-      defaultMessage: () => '$property debe ser una cédula ecuatoriana válida',
+      defaultMessage: () => '$property no es una cédula ecuatoriana válida',
     },
   });

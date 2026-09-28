@@ -51,29 +51,36 @@ export async function simulateCredit(data: {
   return res.json();
 }
 
-export async function downloadAmortizationPdf(data: {
-  creditTypeId: number;
-  amount: string;
-  termMonths: number;
-  method: "FRENCH" | "GERMAN";
-  optionalFeeIds?: number[];
-}) {
-  const res = await fetch(`${API_BASE_URL}/credit/simulate/pdf`, {
+/** Pide un PDF a la API y lo descarga con el nombre que usa el propio backend. */
+async function downloadPdf(path: string, body: unknown, fileName: string) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => null);
-    throw new Error(errorData?.message || "Failed to generate PDF");
-  }
+  if (!res.ok) throw new Error(await readApiError(res, "No se pudo generar el PDF"));
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "tabla-amortizacion.pdf";
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+export const downloadAmortizationPdf = (data: {
+  creditTypeId: number;
+  amount: string;
+  termMonths: number;
+  method: "FRENCH" | "GERMAN";
+  optionalFeeIds?: number[];
+}) => downloadPdf("/credit/simulate/pdf", data, "tabla-amortizacion.pdf");
+
+export const downloadInvestmentPdf = (data: {
+  planId: number;
+  amount: string;
+  termDays: number;
+  payoutMethod: "AT_MATURITY" | "MONTHLY";
+}) => downloadPdf("/investment/simulate/pdf", data, "certificado-inversion.pdf");

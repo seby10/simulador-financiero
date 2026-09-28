@@ -27,7 +27,7 @@ export class ApplyDto {
   @IsEmail() email: string;
   /** @example "0991234567" */
   @Matches(/^\+?\d{7,15}$/, {
-    message: 'phone debe tener entre 7 y 15 dígitos',
+    message: '$property debe tener entre 7 y 15 dígitos',
   })
   phone: string;
   /** @example "Ahorros de relación de dependencia" */
