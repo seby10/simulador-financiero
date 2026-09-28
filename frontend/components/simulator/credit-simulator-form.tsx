@@ -7,13 +7,9 @@ import { fetchCreditTypes, fetchIndirectFees, simulateCredit, downloadAmortizati
 import AmortizationTable from "./amortization-table";
 import FaqAccordion from "@/components/faq-accordion";
 
-/** Cómo se cobra cada cargo: el tipo cambia por completo lo que paga el cliente. */
+/** Monto fijo en dólares; los dos tipos porcentuales, solo el porcentaje. */
 const feeLabel = (fee: { feeType: string; value: string }) =>
-  fee.feeType === "FIXED_PER_INSTALLMENT"
-    ? `$${fee.value} por cuota`
-    : fee.feeType === "PERCENTAGE_REMAINING_BALANCE"
-      ? `${fee.value}% del saldo, baja cada mes`
-      : `${fee.value}% del monto, repartido en las cuotas`;
+  fee.feeType === "FIXED_PER_INSTALLMENT" ? `$${fee.value}` : `${fee.value}%`;
 
 export default function CreditSimulatorForm() {
   const [creditTypes, setCreditTypes] = useState<any[]>([]);
