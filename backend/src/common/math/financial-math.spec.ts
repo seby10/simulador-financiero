@@ -186,7 +186,7 @@ describe('buildAmortizationSchedule — cargos indirectos', () => {
     },
   ];
 
-  it('desglosa cargos por período y cargos iniciales', () => {
+  it('desglosa los cargos en cada cuota', () => {
     const result = buildAmortizationSchedule({
       principal: 12000,
       annualRatePct: 12,
@@ -196,26 +196,45 @@ describe('buildAmortizationSchedule — cargos indirectos', () => {
     });
     expectBalanced(result);
     const [first, second] = result.schedule;
+    // Solca 0.5 % de 12 000 = 60.00, repartido: 5.00 fijo en cada cuota.
     expect(first.fees).toEqual([
       { name: 'Seguro de Desgravamen', amount: '7.20' },
       { name: 'Gastos Administrativos', amount: '1.50' },
+      { name: 'Solca', amount: '5.00' },
     ]);
-    expect(first.feesTotal).toBe('8.70');
-    expect(first.totalPayment).toBe('1128.70');
-    expect(second.fees[0].amount).toBe('6.60');
+    expect(first.feesTotal).toBe('13.70');
+    expect(first.totalPayment).toBe('1133.70');
+    // El desgravamen baja con el saldo; los otros dos no cambian.
+    expect(second.fees.map((f) => f.amount)).toEqual(['6.60', '1.50', '5.00']);
 
     const { summary } = result;
-    // Desgravamen: 0.0006 × 1000 × (12+11+…+1) = 46.80; administrativos: 18.00
-    expect(summary.totalPeriodicFees).toBe('64.80');
-    expect(summary.upfrontFees).toEqual([{ name: 'Solca', amount: '60.00' }]);
-    expect(summary.totalUpfrontFees).toBe('60.00');
-    expect(summary.netDisbursement).toBe('11940.00');
+    // Desgravamen 0.0006 × 1000 × (12+11+…+1) = 46.80; administrativos 18.00; Solca 60.00
+    expect(summary.totalFees).toBe('124.80');
     expect(summary.totalCreditCost).toBe('904.80');
     expect(summary.totalPaid).toBe('12904.80');
-    const periodicPaid = sum(result.schedule.map((r) => r.totalPayment));
-    expect(money(periodicPaid.plus(summary.totalUpfrontFees))).toBe(
-      summary.totalPaid,
-    );
+    const paid = sum(result.schedule.map((r) => r.totalPayment));
+    expect(money(paid)).toBe(summary.totalPaid);
+  });
+
+  it('reparte el % del monto y la última cuota absorbe los centavos', () => {
+    // 5 % de 10 000 = 500.00 entre 7 cuotas: 71.43 × 6 + 71.42.
+    const { schedule } = buildAmortizationSchedule({
+      principal: 10000,
+      annualRatePct: 16,
+      termMonths: 7,
+      method: 'FRENCH',
+      fees: [
+        {
+          name: 'Seguro de auto',
+          feeType: 'PERCENTAGE_INITIAL_AMOUNT',
+          value: '5',
+        },
+      ],
+    });
+    const shares = schedule.map((r) => r.fees[0].amount);
+    expect(shares.slice(0, 6)).toEqual(Array(6).fill('71.43'));
+    expect(shares[6]).toBe('71.42');
+    expect(money(sum(shares))).toBe('500.00');
   });
 
   it('valida entradas', () => {
@@ -316,10 +335,7 @@ describe('simulateInvestment', () => {
   });
 
   it.each([
-    [
-      30,
-      [[30, '79.17']],
-    ],
+    [30, [[30, '79.17']]],
     [
       31,
       [

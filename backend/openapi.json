@@ -3992,23 +3992,6 @@
           "name"
         ]
       },
-      "FeeAmountDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "Seguro de Desgravamen"
-          },
-          "amount": {
-            "type": "string",
-            "example": "6.00"
-          }
-        },
-        "required": [
-          "name",
-          "amount"
-        ]
-      },
       "AmortizationSummaryDto": {
         "type": "object",
         "properties": {
@@ -4045,22 +4028,9 @@
           "totalInterest": {
             "type": "string"
           },
-          "totalPeriodicFees": {
-            "type": "string"
-          },
-          "upfrontFees": {
-            "description": "Cargos de cobro único descontados del desembolso.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FeeAmountDto"
-            }
-          },
-          "totalUpfrontFees": {
-            "type": "string"
-          },
-          "netDisbursement": {
+          "totalFees": {
             "type": "string",
-            "description": "Monto líquido recibido."
+            "description": "Todos los cargos indirectos, cobrados dentro de las cuotas."
           },
           "totalCreditCost": {
             "type": "string",
@@ -4081,12 +4051,26 @@
           "lastPayment",
           "totalPrincipal",
           "totalInterest",
-          "totalPeriodicFees",
-          "upfrontFees",
-          "totalUpfrontFees",
-          "netDisbursement",
+          "totalFees",
           "totalCreditCost",
           "totalPaid"
+        ]
+      },
+      "FeeAmountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Seguro de Desgravamen"
+          },
+          "amount": {
+            "type": "string",
+            "example": "6.00"
+          }
+        },
+        "required": [
+          "name",
+          "amount"
         ]
       },
       "AmortizationRowDto": {

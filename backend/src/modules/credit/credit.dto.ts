@@ -134,12 +134,8 @@ export class AmortizationSummaryDto implements AmortizationSummary {
   lastPayment: string;
   totalPrincipal: string;
   totalInterest: string;
-  totalPeriodicFees: string;
-  /** Cargos de cobro único descontados del desembolso. */
-  upfrontFees: FeeAmountDto[];
-  totalUpfrontFees: string;
-  /** Monto líquido recibido. */
-  netDisbursement: string;
+  /** Todos los cargos indirectos, cobrados dentro de las cuotas. */
+  totalFees: string;
   /** Intereses + todos los cargos. */
   totalCreditCost: string;
   /** Capital + intereses + todos los cargos. */

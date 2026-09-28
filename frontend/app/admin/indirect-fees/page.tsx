@@ -17,8 +17,8 @@ type IndirectFee = {
 
 const FEE_TYPE_LABELS: Record<FeeTypeEnum, string> = {
   FIXED_PER_INSTALLMENT: "Monto Fijo por Cuota",
-  PERCENTAGE_REMAINING_BALANCE: "Porcentaje sobre Saldo Restante",
-  PERCENTAGE_INITIAL_AMOUNT: "Porcentaje sobre Monto Inicial",
+  PERCENTAGE_REMAINING_BALANCE: "% sobre el saldo (baja cada cuota)",
+  PERCENTAGE_INITIAL_AMOUNT: "% del monto, repartido en las cuotas",
 };
 
 export default function IndirectFeesAdminPage() {
