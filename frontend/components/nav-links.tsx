@@ -48,9 +48,8 @@ export default function NavLinks() {
           <Link
             key={href}
             href={href}
-            className={`relative py-2 font-medium transition-colors hover:text-[#df6951] after:absolute after:left-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-[#df6951] after:transition-all after:duration-300 ${
-              isActive(href) ? "text-[#df6951] after:w-full" : "after:w-0 hover:after:w-full"
-            }`}
+            className={`relative py-2 font-medium transition-colors hover:text-[#df6951] after:absolute after:left-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-[#df6951] after:transition-all after:duration-300 ${isActive(href) ? "text-[#df6951] after:w-full" : "after:w-0 hover:after:w-full"
+              }`}
           >
             {label}
           </Link>
@@ -122,9 +121,8 @@ export default function NavLinks() {
 
       <div
         id="mobile-menu"
-        className={`md:hidden absolute left-3 right-3 top-full mt-1 origin-top rounded-2xl bg-white shadow-2xl border border-slate-100 p-3 transition-all duration-200 ${
-          menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-        }`}
+        className={`md:hidden absolute left-3 right-3 top-full mt-1 origin-top rounded-2xl bg-white shadow-2xl border border-slate-100 p-3 transition-all duration-200 ${menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+          }`}
       >
         <ul className="flex flex-col">
           {links.map(({ href, label }) => (
@@ -133,9 +131,8 @@ export default function NavLinks() {
                 href={href}
                 onClick={() => setMenuOpen(false)}
                 tabIndex={menuOpen ? 0 : -1}
-                className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${
-                  isActive(href) ? "bg-orange-50 text-[#df6951]" : "text-[#181e2b] hover:bg-slate-50"
-                }`}
+                className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${isActive(href) ? "bg-orange-50 text-[#df6951]" : "text-[#181e2b] hover:bg-slate-50"
+                  }`}
               >
                 {label}
               </Link>
