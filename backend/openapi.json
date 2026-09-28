@@ -3835,7 +3835,8 @@
         "enum": [
           "FIXED_PER_INSTALLMENT",
           "PERCENTAGE_REMAINING_BALANCE",
-          "PERCENTAGE_INITIAL_AMOUNT"
+          "PERCENTAGE_INITIAL_AMOUNT",
+          "PERCENTAGE_INITIAL_INSTALLMENT"
         ]
       },
       "IndirectFeeResponse": {
@@ -3992,6 +3993,23 @@
           "name"
         ]
       },
+      "FeeAmountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Seguro de Desgravamen"
+          },
+          "amount": {
+            "type": "string",
+            "example": "6.00"
+          }
+        },
+        "required": [
+          "name",
+          "amount"
+        ]
+      },
       "AmortizationSummaryDto": {
         "type": "object",
         "properties": {
@@ -4028,9 +4046,22 @@
           "totalInterest": {
             "type": "string"
           },
-          "totalFees": {
+          "totalPeriodicFees": {
+            "type": "string"
+          },
+          "upfrontFees": {
+            "description": "Cargos de cobro único descontados del desembolso.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeAmountDto"
+            }
+          },
+          "totalUpfrontFees": {
+            "type": "string"
+          },
+          "netDisbursement": {
             "type": "string",
-            "description": "Todos los cargos indirectos, cobrados dentro de las cuotas."
+            "description": "Monto líquido recibido."
           },
           "totalCreditCost": {
             "type": "string",
@@ -4051,26 +4082,12 @@
           "lastPayment",
           "totalPrincipal",
           "totalInterest",
-          "totalFees",
+          "totalPeriodicFees",
+          "upfrontFees",
+          "totalUpfrontFees",
+          "netDisbursement",
           "totalCreditCost",
           "totalPaid"
-        ]
-      },
-      "FeeAmountDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "Seguro de Desgravamen"
-          },
-          "amount": {
-            "type": "string",
-            "example": "6.00"
-          }
-        },
-        "required": [
-          "name",
-          "amount"
         ]
       },
       "AmortizationRowDto": {

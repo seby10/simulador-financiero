@@ -12,7 +12,8 @@ export type AmortizationMethod = 'FRENCH' | 'GERMAN';
 export type FeeType =
   | 'FIXED_PER_INSTALLMENT'
   | 'PERCENTAGE_REMAINING_BALANCE'
-  | 'PERCENTAGE_INITIAL_AMOUNT';
+  | 'PERCENTAGE_INITIAL_AMOUNT'
+  | 'PERCENTAGE_INITIAL_INSTALLMENT';
 export type PayoutMethod = 'AT_MATURITY' | 'MONTHLY';
 
 export interface FeeInput {
@@ -60,11 +61,14 @@ export interface AmortizationSummary {
   lastPayment: string;
   totalPrincipal: string;
   totalInterest: string;
-  /** Todos los cargos indirectos: cada uno se cobra dentro de las cuotas. */
-  totalFees: string;
+  totalPeriodicFees: string;
+  upfrontFees: FeeAmount[];
+  totalUpfrontFees: string;
+  /** Monto líquido recibido tras descontar cargos sobre el monto inicial. */
+  netDisbursement: string;
   /** Intereses + todos los cargos indirectos. */
   totalCreditCost: string;
-  /** Suma de todos los pagos: capital + intereses + cargos. */
+  /** Suma de pagos periódicos + cargos iniciales. */
   totalPaid: string;
 }
 
@@ -122,14 +126,23 @@ export function buildAmortizationSchedule(
 
   const i = pct(annualRate).div(12);
   const fees = input.fees ?? [];
-  // % del monto inicial: un total fijo repartido en partes iguales entre las
-  // cuotas; la última absorbe los centavos para que sume exactamente el total.
-  const initialTotals = fees.map((f) =>
-    f.feeType === 'PERCENTAGE_INITIAL_AMOUNT'
+  const periodicFees = fees.filter(
+    (f) => f.feeType !== 'PERCENTAGE_INITIAL_AMOUNT',
+  );
+  const upfrontFees = fees
+    .filter((f) => f.feeType === 'PERCENTAGE_INITIAL_AMOUNT')
+    .map((f) => ({
+      name: f.name,
+      amount: round2(principal.times(pct(f.value))),
+    }));
+  // % del monto repartido: total fijo en partes iguales entre las cuotas; la
+  // última absorbe los centavos para que sume exactamente el total.
+  const spreadTotals = periodicFees.map((f) =>
+    f.feeType === 'PERCENTAGE_INITIAL_INSTALLMENT'
       ? round2(principal.times(pct(f.value)))
       : D(0),
   );
-  const initialShares = initialTotals.map((total) => round2(total.div(n)));
+  const spreadShares = spreadTotals.map((total) => round2(total.div(n)));
 
   // Francés: cuota fija redondeada. Alemán: amortización fija redondeada.
   const fixedPayment = round2(frenchPayment(principal, i, n));
@@ -156,17 +169,16 @@ export function buildAmortizationSchedule(
               : fixedPrincipal,
           );
 
-    const rowFees = fees.map((f, k) => {
+    const rowFees = periodicFees.map((f, k) => {
       let amount: Decimal;
       if (f.feeType === 'FIXED_PER_INSTALLMENT') amount = round2(f.value);
-      // Desgravamen y similares: sobre el saldo del período, así que decrecen.
       else if (f.feeType === 'PERCENTAGE_REMAINING_BALANCE')
         amount = round2(balance.times(pct(f.value)));
       else
         amount =
           period === n
-            ? initialTotals[k].minus(initialShares[k].times(n - 1))
-            : initialShares[k];
+            ? spreadTotals[k].minus(spreadShares[k].times(n - 1))
+            : spreadShares[k];
       return { name: f.name, amount };
     });
     const feesTotal = sum(rowFees.map((f) => f.amount));
@@ -192,7 +204,9 @@ export function buildAmortizationSchedule(
   }
 
   const totalInterest = sum(totals.interest);
-  const totalFees = sum(totals.fees);
+  const totalPeriodicFees = sum(totals.fees);
+  const totalUpfrontFees = sum(upfrontFees.map((f) => f.amount));
+  const totalFees = totalPeriodicFees.plus(totalUpfrontFees);
 
   return {
     summary: {
@@ -205,7 +219,13 @@ export function buildAmortizationSchedule(
       lastPayment: schedule[n - 1].totalPayment,
       totalPrincipal: money(sum(totals.principal)),
       totalInterest: money(totalInterest),
-      totalFees: money(totalFees),
+      totalPeriodicFees: money(totalPeriodicFees),
+      upfrontFees: upfrontFees.map((f) => ({
+        name: f.name,
+        amount: money(f.amount),
+      })),
+      totalUpfrontFees: money(totalUpfrontFees),
+      netDisbursement: money(principal.minus(totalUpfrontFees)),
       totalCreditCost: money(totalInterest.plus(totalFees)),
       totalPaid: money(principal.plus(totalInterest).plus(totalFees)),
     },

@@ -5,7 +5,7 @@ import { Plus, Edit2, Trash2, X, Save } from "lucide-react";
 import { API_URL } from "@/lib/api";
 import Modal from "@/components/ui/modal";
 
-type FeeTypeEnum = 'FIXED_PER_INSTALLMENT' | 'PERCENTAGE_REMAINING_BALANCE' | 'PERCENTAGE_INITIAL_AMOUNT';
+type FeeTypeEnum = 'FIXED_PER_INSTALLMENT' | 'PERCENTAGE_REMAINING_BALANCE' | 'PERCENTAGE_INITIAL_AMOUNT' | 'PERCENTAGE_INITIAL_INSTALLMENT';
 
 type IndirectFee = {
   id: number;
@@ -18,7 +18,8 @@ type IndirectFee = {
 const FEE_TYPE_LABELS: Record<FeeTypeEnum, string> = {
   FIXED_PER_INSTALLMENT: "Monto Fijo por Cuota",
   PERCENTAGE_REMAINING_BALANCE: "% sobre el saldo (baja cada cuota)",
-  PERCENTAGE_INITIAL_AMOUNT: "% del monto, repartido en las cuotas",
+  PERCENTAGE_INITIAL_AMOUNT: "% del monto, descontado al desembolsar",
+  PERCENTAGE_INITIAL_INSTALLMENT: "% del monto, repartido en las cuotas",
 };
 
 export default function IndirectFeesAdminPage() {

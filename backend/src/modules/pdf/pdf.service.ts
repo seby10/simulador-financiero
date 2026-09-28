@@ -117,7 +117,17 @@ export class PdfService {
           ['Primera cuota', usd(summary.firstPayment)],
           ['Última cuota', usd(summary.lastPayment)],
           ['Total intereses', usd(summary.totalInterest)],
-          ['Total cargos indirectos', usd(summary.totalFees)],
+          [
+            'Total cargos indirectos',
+            usd(
+              sumColumn([summary.totalPeriodicFees, summary.totalUpfrontFees]),
+            ),
+          ],
+          ...summary.upfrontFees.map((f): [string, string] => [
+            `${f.name} (descontado)`,
+            usd(f.amount),
+          ]),
+          ['Monto líquido a recibir', usd(summary.netDisbursement)],
           ['Costo total del crédito', usd(summary.totalCreditCost)],
           ['Total a pagar', usd(summary.totalPaid)],
         ]),

@@ -224,9 +224,14 @@ model CreditType {
 }
 
 enum FeeType {
+  /// USD fijos en cada cuota.
   FIXED_PER_INSTALLMENT
+  /// % del saldo de cada período (desgravamen): decrece.
   PERCENTAGE_REMAINING_BALANCE
+  /// % del monto, cobro único descontado del desembolso (Solca).
   PERCENTAGE_INITIAL_AMOUNT
+  /// % del monto repartido en partes iguales entre las cuotas.
+  PERCENTAGE_INITIAL_INSTALLMENT
 }
 
 model IndirectFee {

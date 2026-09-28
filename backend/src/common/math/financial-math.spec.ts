@@ -186,7 +186,7 @@ describe('buildAmortizationSchedule — cargos indirectos', () => {
     },
   ];
 
-  it('desglosa los cargos en cada cuota', () => {
+  it('desglosa cargos por período y cargos iniciales', () => {
     const result = buildAmortizationSchedule({
       principal: 12000,
       annualRatePct: 12,
@@ -196,29 +196,78 @@ describe('buildAmortizationSchedule — cargos indirectos', () => {
     });
     expectBalanced(result);
     const [first, second] = result.schedule;
-    // Solca 0.5 % de 12 000 = 60.00, repartido: 5.00 fijo en cada cuota.
     expect(first.fees).toEqual([
       { name: 'Seguro de Desgravamen', amount: '7.20' },
       { name: 'Gastos Administrativos', amount: '1.50' },
-      { name: 'Solca', amount: '5.00' },
     ]);
-    expect(first.feesTotal).toBe('13.70');
-    expect(first.totalPayment).toBe('1133.70');
-    // El desgravamen baja con el saldo; los otros dos no cambian.
-    expect(second.fees.map((f) => f.amount)).toEqual(['6.60', '1.50', '5.00']);
+    expect(first.feesTotal).toBe('8.70');
+    expect(first.totalPayment).toBe('1128.70');
+    expect(second.fees[0].amount).toBe('6.60');
 
     const { summary } = result;
-    // Desgravamen 0.0006 × 1000 × (12+11+…+1) = 46.80; administrativos 18.00; Solca 60.00
-    expect(summary.totalFees).toBe('124.80');
+    // Desgravamen: 0.0006 × 1000 × (12+11+…+1) = 46.80; administrativos: 18.00
+    expect(summary.totalPeriodicFees).toBe('64.80');
+    expect(summary.upfrontFees).toEqual([{ name: 'Solca', amount: '60.00' }]);
+    expect(summary.totalUpfrontFees).toBe('60.00');
+    expect(summary.netDisbursement).toBe('11940.00');
     expect(summary.totalCreditCost).toBe('904.80');
     expect(summary.totalPaid).toBe('12904.80');
-    const paid = sum(result.schedule.map((r) => r.totalPayment));
-    expect(money(paid)).toBe(summary.totalPaid);
+    const periodicPaid = sum(result.schedule.map((r) => r.totalPayment));
+    expect(money(periodicPaid.plus(summary.totalUpfrontFees))).toBe(
+      summary.totalPaid,
+    );
+  });
+
+  it('aplica los cuatro tipos de cargo, cada uno a su manera', () => {
+    // 12 000 a 12 meses, alemán (amortización fija 1 000):
+    const result = buildAmortizationSchedule({
+      principal: 12000,
+      annualRatePct: 12,
+      termMonths: 12,
+      method: 'GERMAN',
+      fees: [
+        ...fees, // desgravamen 0.06 % saldo, administrativos 1.50 fijos, Solca 0.5 % único
+        {
+          name: 'Seguro de auto',
+          feeType: 'PERCENTAGE_INITIAL_INSTALLMENT' as const,
+          value: '1',
+        },
+      ],
+    });
+    expectBalanced(result);
+    const amounts = (period: number) =>
+      Object.fromEntries(
+        result.schedule[period - 1].fees.map((f) => [f.name, f.amount]),
+      );
+    // Fijo: igual siempre. Sobre saldo: baja. Repartido (120 / 12): igual siempre.
+    expect(amounts(1)).toEqual({
+      'Seguro de Desgravamen': '7.20',
+      'Gastos Administrativos': '1.50',
+      'Seguro de auto': '10.00',
+    });
+    expect(amounts(2)).toEqual({
+      'Seguro de Desgravamen': '6.60',
+      'Gastos Administrativos': '1.50',
+      'Seguro de auto': '10.00',
+    });
+    // Único: no entra en ninguna cuota; se descuenta del desembolso.
+    expect(
+      result.schedule.every((r) => !r.fees.some((f) => f.name === 'Solca')),
+    ).toBe(true);
+    const { summary } = result;
+    expect(summary.upfrontFees).toEqual([{ name: 'Solca', amount: '60.00' }]);
+    expect(summary.netDisbursement).toBe('11940.00');
+    // 46.80 desgravamen + 18.00 administrativos + 120.00 repartido
+    expect(summary.totalPeriodicFees).toBe('184.80');
+    const periodicPaid = sum(result.schedule.map((r) => r.totalPayment));
+    expect(money(periodicPaid.plus(summary.totalUpfrontFees))).toBe(
+      summary.totalPaid,
+    );
   });
 
   it('reparte el % del monto y la última cuota absorbe los centavos', () => {
     // 5 % de 10 000 = 500.00 entre 7 cuotas: 71.43 × 6 + 71.42.
-    const { schedule } = buildAmortizationSchedule({
+    const { schedule, summary } = buildAmortizationSchedule({
       principal: 10000,
       annualRatePct: 16,
       termMonths: 7,
@@ -226,7 +275,7 @@ describe('buildAmortizationSchedule — cargos indirectos', () => {
       fees: [
         {
           name: 'Seguro de auto',
-          feeType: 'PERCENTAGE_INITIAL_AMOUNT',
+          feeType: 'PERCENTAGE_INITIAL_INSTALLMENT',
           value: '5',
         },
       ],
@@ -235,6 +284,8 @@ describe('buildAmortizationSchedule — cargos indirectos', () => {
     expect(shares.slice(0, 6)).toEqual(Array(6).fill('71.43'));
     expect(shares[6]).toBe('71.42');
     expect(money(sum(shares))).toBe('500.00');
+    // Repartido no toca el desembolso.
+    expect(summary.netDisbursement).toBe('10000.00');
   });
 
   it('valida entradas', () => {
