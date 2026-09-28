@@ -12,7 +12,8 @@ export type AmortizationMethod = 'FRENCH' | 'GERMAN';
 export type FeeType =
   | 'FIXED_PER_INSTALLMENT'
   | 'PERCENTAGE_REMAINING_BALANCE'
-  | 'PERCENTAGE_INITIAL_AMOUNT';
+  | 'PERCENTAGE_INITIAL_AMOUNT'
+  | 'PERCENTAGE_INITIAL_INSTALLMENT';
 export type PayoutMethod = 'AT_MATURITY' | 'MONTHLY';
 
 export interface FeeInput {
@@ -134,6 +135,14 @@ export function buildAmortizationSchedule(
       name: f.name,
       amount: round2(principal.times(pct(f.value))),
     }));
+  // % del monto repartido: total fijo en partes iguales entre las cuotas; la
+  // última absorbe los centavos para que sume exactamente el total.
+  const spreadTotals = periodicFees.map((f) =>
+    f.feeType === 'PERCENTAGE_INITIAL_INSTALLMENT'
+      ? round2(principal.times(pct(f.value)))
+      : D(0),
+  );
+  const spreadShares = spreadTotals.map((total) => round2(total.div(n)));
 
   // Francés: cuota fija redondeada. Alemán: amortización fija redondeada.
   const fixedPayment = round2(frenchPayment(principal, i, n));
@@ -160,14 +169,18 @@ export function buildAmortizationSchedule(
               : fixedPrincipal,
           );
 
-    const rowFees = periodicFees.map((f) => ({
-      name: f.name,
-      amount: round2(
-        f.feeType === 'FIXED_PER_INSTALLMENT'
-          ? f.value
-          : balance.times(pct(f.value)),
-      ),
-    }));
+    const rowFees = periodicFees.map((f, k) => {
+      let amount: Decimal;
+      if (f.feeType === 'FIXED_PER_INSTALLMENT') amount = round2(f.value);
+      else if (f.feeType === 'PERCENTAGE_REMAINING_BALANCE')
+        amount = round2(balance.times(pct(f.value)));
+      else
+        amount =
+          period === n
+            ? spreadTotals[k].minus(spreadShares[k].times(n - 1))
+            : spreadShares[k];
+      return { name: f.name, amount };
+    });
     const feesTotal = sum(rowFees.map((f) => f.amount));
     const installment = principalPart.plus(interest);
     const closing = balance.minus(principalPart);

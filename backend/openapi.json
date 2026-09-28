@@ -3835,7 +3835,8 @@
         "enum": [
           "FIXED_PER_INSTALLMENT",
           "PERCENTAGE_REMAINING_BALANCE",
-          "PERCENTAGE_INITIAL_AMOUNT"
+          "PERCENTAGE_INITIAL_AMOUNT",
+          "PERCENTAGE_INITIAL_INSTALLMENT"
         ]
       },
       "IndirectFeeResponse": {

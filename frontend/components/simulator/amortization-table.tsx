@@ -51,7 +51,9 @@ export default function AmortizationTable({
   const totalInstallments = schedule.reduce((sum: number, row: any) => sum + parseFloat(row.installment), 0).toFixed(2);
   const totalFees = schedule.reduce((sum: number, row: any) => sum + parseFloat(row.feesTotal), 0).toFixed(2);
   // Con seguro sobre el saldo (desgravamen) el total baja cada mes aunque la cuota francesa sea fija.
-  const feesVary = new Set(schedule.map((row: any) => row.feesTotal)).size > 1;
+  // Solo un cargo sobre el saldo cambia entre la 1.ª y la 2.ª cuota: los fijos y el
+  // % del monto repartido son iguales (este último solo ajusta centavos al final).
+  const feesVary = schedule.length > 1 && schedule[0].feesTotal !== schedule[1].feesTotal;
   const totalPayments = schedule.reduce((sum: number, row: any) => sum + parseFloat(row.totalPayment), 0).toFixed(2);
 
   return (
