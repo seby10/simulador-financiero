@@ -14,6 +14,22 @@
   --color-brand-card-bg: var(--brand-card-bg);
   --color-brand-footer-bg: var(--brand-footer-bg);
   --color-brand-footer-text: var(--brand-footer-text);
+
+  /* Texto que sí se lee sobre cada fondo de marca (lo calcula lib/branding.ts
+     según la luminancia: con el blanco fijo, un color claro era ilegible). */
+  --color-brand-primary-fg: var(--brand-primary-fg);
+  --color-brand-secondary-fg: var(--brand-secondary-fg);
+  --color-brand-accent-fg: var(--brand-accent-fg);
+  --color-brand-card-fg: var(--brand-card-fg);
+
+  /* Tonos derivados: estados hover y fondos suaves de los íconos. Se calculan
+     aquí para que un solo color configurado sirva para toda la escala. */
+  --color-brand-primary-dark: color-mix(in oklab, var(--brand-primary) 85%, black);
+  --color-brand-secondary-dark: color-mix(in oklab, var(--brand-secondary) 85%, black);
+  --color-brand-accent-dark: color-mix(in oklab, var(--brand-accent) 85%, black);
+  --color-brand-primary-soft: color-mix(in oklab, var(--brand-primary) 12%, white);
+  --color-brand-secondary-soft: color-mix(in oklab, var(--brand-secondary) 12%, white);
+  --color-brand-accent-soft: color-mix(in oklab, var(--brand-accent) 14%, white);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);

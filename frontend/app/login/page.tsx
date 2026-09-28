@@ -119,14 +119,14 @@ function LoginContent() {
       <Navbar />
 
       <main className="flex-1 flex items-start justify-center p-4 pt-1 sm:pt-4 pb-10 relative z-10">
-        <div className="w-full max-w-lg bg-white rounded-[32px] shadow-2xl shadow-amber-900/10 overflow-hidden border border-amber-200/50 my-0 animate-in fade-in zoom-in-95 duration-300">
+        <div className="w-full max-w-lg bg-brand-card-bg rounded-[32px] shadow-2xl shadow-amber-900/10 overflow-hidden border border-amber-200/50 my-0 animate-in fade-in zoom-in-95 duration-300">
             
             {/* Card Header Banner */}
             <div className="bg-gradient-to-b from-[#f7e6c5] to-[#f4dfb7] p-8 sm:p-9 text-center flex flex-col items-center justify-center relative overflow-hidden border-b border-[#e2c999]">
               <div className="w-16 h-16 bg-white/80 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 shadow-md shadow-amber-900/5 backdrop-blur-md">
-                <Lock className="w-8 h-8 text-[#df6951]" />
+                <Lock className="w-8 h-8 text-brand-secondary" />
               </div>
-              <h1 className="text-2xl sm:text-[28px] font-bold font-serif-title tracking-tight text-[#181e2b] mb-1.5">
+              <h1 className="text-2xl sm:text-[28px] font-bold font-serif-title tracking-tight text-brand-primary mb-1.5">
                 Banca Virtual
               </h1>
               <p className="text-[#5e6282] text-xs sm:text-sm max-w-xs font-normal leading-relaxed">
@@ -140,8 +140,8 @@ function LoginContent() {
                   onClick={() => { setMode("login"); setError(""); }}
                   className={`flex-1 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
                     mode === "login" 
-                      ? "bg-[#df6951] text-white shadow-md shadow-orange-500/20" 
-                      : "text-[#5e6282] hover:text-[#181e2b]"
+                      ? "bg-brand-secondary text-white shadow-md shadow-brand-secondary/20" 
+                      : "text-[#5e6282] hover:text-brand-primary"
                   }`}
                 >
                   Iniciar Sesión
@@ -151,8 +151,8 @@ function LoginContent() {
                   onClick={() => { setMode("register"); setError(""); }}
                   className={`flex-1 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
                     mode === "register" 
-                      ? "bg-[#f1a501] text-white shadow-md shadow-amber-500/20" 
-                      : "text-[#5e6282] hover:text-[#181e2b]"
+                      ? "bg-brand-accent text-white shadow-md shadow-brand-accent/20" 
+                      : "text-[#5e6282] hover:text-brand-primary"
                   }`}
                 >
                   Crear Cuenta
@@ -176,13 +176,13 @@ function LoginContent() {
                       Correo Electrónico
                     </label>
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-[#df6951] transition-colors" />
+                      <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-secondary transition-colors" />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] focus:bg-white outline-none text-slate-800 text-sm font-semibold transition-all shadow-sm"
+                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary focus:bg-brand-card-bg outline-none text-slate-800 text-sm font-semibold transition-all shadow-sm"
                         placeholder="ejemplo@correo.com"
                       />
                     </div>
@@ -193,18 +193,18 @@ function LoginContent() {
                       <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282]">
                         Contraseña
                       </label>
-                      <Link href="/forgot-password" className="text-xs font-bold text-[#df6951] hover:underline">
+                      <Link href="/forgot-password" className="text-xs font-bold text-brand-secondary hover:underline">
                         ¿Olvidaste tu clave?
                       </Link>
                     </div>
                     <div className="relative group">
-                      <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-[#df6951] transition-colors" />
+                      <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-secondary transition-colors" />
                       <input
                         type="password"
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] focus:bg-white outline-none text-slate-800 text-sm font-semibold transition-all shadow-sm"
+                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary focus:bg-brand-card-bg outline-none text-slate-800 text-sm font-semibold transition-all shadow-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -213,7 +213,7 @@ function LoginContent() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-sm sm:text-base shadow-xl shadow-orange-500/25 hover:shadow-2xl hover:shadow-orange-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2.5 group disabled:opacity-70 mt-3"
+                    className="w-full bg-brand-secondary hover:bg-brand-secondary-dark text-white py-4 rounded-full font-bold text-sm sm:text-base shadow-xl shadow-brand-secondary/25 hover:shadow-2xl hover:shadow-brand-secondary/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2.5 group disabled:opacity-70 mt-3"
                   >
                     {loading ? "Iniciando sesión..." : "Ingresar a mi cuenta"}
                     {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
@@ -225,7 +225,7 @@ function LoginContent() {
                       <button 
                         type="button" 
                         onClick={() => setMode("register")} 
-                        className="text-[#f1a501] font-bold hover:underline"
+                        className="text-brand-accent font-bold hover:underline"
                       >
                       Regístrate gratis
                     </button>
@@ -243,7 +243,7 @@ function LoginContent() {
                       required
                       value={idNumber}
                       onChange={(e) => setIdNumber(e.target.value.replace(/\D/g, ""))}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                       placeholder="1710034065"
                     />
                   </div>
@@ -254,7 +254,7 @@ function LoginContent() {
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                       placeholder="0991234567"
                     />
                   </div>
@@ -268,7 +268,7 @@ function LoginContent() {
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                       placeholder="María José"
                     />
                   </div>
@@ -279,7 +279,7 @@ function LoginContent() {
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                       placeholder="Andrade"
                     />
                   </div>
@@ -292,7 +292,7 @@ function LoginContent() {
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                     placeholder="maria.andrade@example.com"
                   />
                 </div>
@@ -304,7 +304,7 @@ function LoginContent() {
                     required
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                     placeholder="Av. Amazonas N24-100 y Colón"
                   />
                 </div>
@@ -318,7 +318,7 @@ function LoginContent() {
                       minLength={8}
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                       placeholder="••••••••"
                     />
                   </div>
@@ -330,7 +330,7 @@ function LoginContent() {
                       minLength={8}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none transition-all"
                       placeholder="••••••••"
                     />
                   </div>
@@ -343,7 +343,7 @@ function LoginContent() {
                       required
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="mt-0.5 rounded text-[#f1a501] focus:ring-[#f1a501] w-4 h-4"
+                      className="mt-0.5 rounded text-brand-accent focus:ring-brand-accent w-4 h-4"
                     />
                     <span className="text-xs text-slate-600 leading-snug">
                       Acepto los <span className="font-bold text-slate-800">Términos y Condiciones</span> de tratamiento de datos personales.
@@ -354,7 +354,7 @@ function LoginContent() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#f1a501] hover:bg-amber-600 text-white py-4 rounded-full font-bold text-base shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-3"
+                  className="w-full bg-brand-accent hover:bg-brand-accent-dark text-white py-4 rounded-full font-bold text-base shadow-lg shadow-brand-accent/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-3"
                 >
                   {loading ? "Creando cuenta..." : "Crear mi Cuenta de Cliente"}
                   {!loading && <UserCheck className="w-5 h-5" />}
@@ -366,7 +366,7 @@ function LoginContent() {
                     <button 
                       type="button" 
                       onClick={() => setMode("login")} 
-                      className="text-[#df6951] font-bold hover:underline"
+                      className="text-brand-secondary font-bold hover:underline"
                     >
                       Iniciar Sesión
                     </button>

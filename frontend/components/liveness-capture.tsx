@@ -396,11 +396,11 @@ export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {TIPS.map(({ icon: Icon, title, text }) => (
             <div key={title} className="flex gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-              <div className="w-10 h-10 rounded-xl bg-[#14183e]/5 text-[#df6951] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-brand-primary/5 text-brand-secondary flex items-center justify-center shrink-0">
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#14183e]">{title}</p>
+                <p className="text-sm font-bold text-brand-primary">{title}</p>
                 <p className="text-xs text-slate-500">{text}</p>
               </div>
             </div>
@@ -409,7 +409,7 @@ export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: 
         <button
           type="button"
           onClick={begin}
-          className="w-full py-3.5 rounded-full bg-[#df6951] hover:bg-[#c85640] active:scale-[0.98] transition-transform text-white font-bold text-sm shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-full bg-brand-secondary hover:bg-brand-secondary-dark active:scale-[0.98] transition-transform text-white font-bold text-sm shadow-lg shadow-brand-secondary/20 flex items-center justify-center gap-2"
         >
           <ScanFace className="w-5 h-5" /> Comenzar verificación facial
         </button>
@@ -444,9 +444,9 @@ export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: 
             <CheckCircle2 className="w-6 h-6" /> ¡Bien!
           </p>
         ) : live && isGesture && ChallengeIcon ? (
-          <div key={step} className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-[#14183e] text-white animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div key={step} className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-brand-primary text-white animate-in fade-in slide-in-from-bottom-2 duration-300">
             <ChallengeIcon
-              className={`w-7 h-7 text-[#f1a501] ${
+              className={`w-7 h-7 text-brand-accent ${
                 step === "TURN_LEFT" ? "animate-[nudge-left_1s_ease-in-out_infinite]" : step === "TURN_RIGHT" ? "animate-[nudge-right_1s_ease-in-out_infinite]" : "animate-pulse"
               }`}
             />
@@ -456,11 +456,11 @@ export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: 
             </div>
           </div>
         ) : (
-          <p key={title} className="font-black text-lg text-[#14183e] animate-in fade-in duration-300">{title}</p>
+          <p key={title} className="font-black text-lg text-brand-primary animate-in fade-in duration-300">{title}</p>
         )}
       </div>
 
-      <div ref={stageRef} className="relative aspect-[3/4] sm:aspect-[4/3] w-full bg-[#14183e] rounded-[28px] overflow-hidden">
+      <div ref={stageRef} className="relative aspect-[3/4] sm:aspect-[4/3] w-full bg-brand-primary rounded-[28px] overflow-hidden">
         <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover -scale-x-100" />
 
         {/* Máscara con el óvalo y anillo de progreso, en píxeles reales del recuadro */}
@@ -508,7 +508,7 @@ export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: 
             <span
               key={guidance}
               className={`px-4 py-2 rounded-full text-sm font-semibold shadow-lg text-center animate-in fade-in duration-200 ${
-                aligned ? "bg-emerald-500 text-white" : "bg-white/95 text-[#14183e]"
+                aligned ? "bg-emerald-500 text-white" : "bg-white/95 text-brand-primary"
               }`}
             >
               {guidance}
@@ -518,13 +518,13 @@ export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: 
 
         {phase === "starting" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-3">
-            <div className="w-10 h-10 border-4 border-[#f1a501] border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-brand-accent border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-semibold">Preparando la cámara...</p>
           </div>
         )}
 
         {phase === "sending" && (
-          <div className="absolute inset-0 bg-[#14183e]/90 flex flex-col items-center justify-center text-white gap-5 p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-brand-primary/90 flex flex-col items-center justify-center text-white gap-5 p-6 animate-in fade-in duration-300">
             <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
             <ul className="space-y-2.5 text-sm">
               {ANALYSIS_STAGES.map((label, i) => (
@@ -544,13 +544,13 @@ export default function LivenessCapture({ purpose, onComplete, onPhaseChange }: 
         )}
 
         {phase === "error" && (
-          <div className="absolute inset-0 bg-[#14183e]/90 flex flex-col items-center justify-center text-white gap-3 p-8 text-center animate-in fade-in duration-200">
-            <VideoOff className="w-10 h-10 text-[#df6951]" />
+          <div className="absolute inset-0 bg-brand-primary/90 flex flex-col items-center justify-center text-white gap-3 p-8 text-center animate-in fade-in duration-200">
+            <VideoOff className="w-10 h-10 text-brand-secondary" />
             <p className="text-sm max-w-xs">{error}</p>
             <button
               type="button"
               onClick={begin}
-              className="mt-2 px-6 py-2.5 rounded-full bg-white text-[#14183e] font-bold text-sm inline-flex items-center gap-2 active:scale-[0.97] transition-transform"
+              className="mt-2 px-6 py-2.5 rounded-full bg-brand-card-bg text-brand-primary font-bold text-sm inline-flex items-center gap-2 active:scale-[0.97] transition-transform"
             >
               <RefreshCw className="w-4 h-4" /> Intentar de nuevo
             </button>

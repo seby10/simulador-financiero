@@ -93,14 +93,14 @@ export default function ForgotPasswordPage() {
       <Navbar />
 
       <main className="flex-1 flex items-start justify-center p-4 pt-1 sm:pt-4 pb-10 relative z-10">
-        <div className="w-full max-w-lg bg-white rounded-[32px] shadow-2xl shadow-amber-900/10 overflow-hidden border border-amber-200/50 my-0 animate-in fade-in zoom-in-95 duration-300">
+        <div className="w-full max-w-lg bg-brand-card-bg rounded-[32px] shadow-2xl shadow-amber-900/10 overflow-hidden border border-amber-200/50 my-0 animate-in fade-in zoom-in-95 duration-300">
             
             {/* Card Header Banner */}
             <div className="bg-gradient-to-b from-[#f7e6c5] to-[#f4dfb7] p-8 sm:p-9 text-center flex flex-col items-center justify-center relative overflow-hidden border-b border-[#e2c999]">
               <div className="w-16 h-16 bg-white/80 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 shadow-md shadow-amber-900/5 backdrop-blur-md">
-                <KeyRound className="w-8 h-8 text-[#df6951]" />
+                <KeyRound className="w-8 h-8 text-brand-secondary" />
               </div>
-              <h1 className="text-2xl sm:text-[28px] font-bold font-serif-title tracking-tight text-[#181e2b] mb-1.5">
+              <h1 className="text-2xl sm:text-[28px] font-bold font-serif-title tracking-tight text-brand-primary mb-1.5">
                 Recuperación Biométrica
               </h1>
               <p className="text-[#5e6282] text-xs sm:text-sm max-w-xs font-normal leading-relaxed">
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
                     key={s.num}
                     className={`flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-full transition-all ${
                       step === s.num
-                        ? "bg-[#df6951] text-white shadow-md shadow-orange-500/20"
+                        ? "bg-brand-secondary text-white shadow-md shadow-brand-secondary/20"
                         : step > s.num
                         ? "bg-emerald-600 text-white"
                         : "text-[#5e6282]"
@@ -147,13 +147,13 @@ export default function ForgotPasswordPage() {
                       Correo Electrónico de la Cuenta *
                     </label>
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-[#df6951] transition-colors" />
+                      <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-secondary transition-colors" />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] focus:bg-white outline-none text-slate-800 text-sm font-semibold transition-all shadow-sm"
+                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary focus:bg-brand-card-bg outline-none text-slate-800 text-sm font-semibold transition-all shadow-sm"
                         placeholder="ejemplo@correo.com"
                       />
                     </div>
@@ -165,14 +165,14 @@ export default function ForgotPasswordPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-sm sm:text-base shadow-xl shadow-orange-500/25 hover:shadow-2xl hover:shadow-orange-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-3"
+                    className="w-full bg-brand-secondary hover:bg-brand-secondary-dark text-white py-4 rounded-full font-bold text-sm sm:text-base shadow-xl shadow-brand-secondary/25 hover:shadow-2xl hover:shadow-brand-secondary/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-3"
                   >
                     Continuar a Verificación Facial
                     {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                   </button>
 
                   <div className="text-center pt-3">
-                    <Link href="/login" className="text-xs font-bold text-[#5e6282] hover:text-[#df6951] inline-flex items-center gap-1.5 transition-colors">
+                    <Link href="/login" className="text-xs font-bold text-[#5e6282] hover:text-brand-secondary inline-flex items-center gap-1.5 transition-colors">
                       <ArrowLeft className="w-4 h-4" /> Regresar al inicio de sesión
                     </Link>
                   </div>
@@ -183,7 +183,7 @@ export default function ForgotPasswordPage() {
             {step === 2 && (
               <div className="space-y-5">
                 <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200/60 text-xs text-slate-700">
-                  <p className="font-bold text-[#14183e] text-sm mb-1">Cuenta: {email}</p>
+                  <p className="font-bold text-brand-primary text-sm mb-1">Cuenta: {email}</p>
                   <p className="text-[#5e6282] leading-relaxed">
                     Antes de cambiar tu contraseña confirmaremos que eres el titular: sigue las instrucciones en
                     pantalla. Tu rostro se comparará con el que verificó tu identidad al registrarte.
@@ -227,7 +227,7 @@ export default function ForgotPasswordPage() {
                       minLength={8}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-800 text-sm font-semibold transition-all"
+                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary outline-none text-slate-800 text-sm font-semibold transition-all"
                       placeholder="••••••••"
                     />
                   </div>
@@ -243,7 +243,7 @@ export default function ForgotPasswordPage() {
                       minLength={8}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#df6951]/20 focus:border-[#df6951] outline-none text-slate-800 text-sm font-semibold transition-all"
+                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-secondary/20 focus:border-brand-secondary outline-none text-slate-800 text-sm font-semibold transition-all"
                       placeholder="••••••••"
                     />
                   </div>
@@ -252,7 +252,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#df6951] hover:bg-[#c85640] text-white py-4 rounded-full font-bold text-base shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-2"
+                  className="w-full bg-brand-secondary hover:bg-brand-secondary-dark text-white py-4 rounded-full font-bold text-base shadow-lg shadow-brand-secondary/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 mt-2"
                 >
                   {loading ? "Actualizando clave..." : "Guardar Nueva Contraseña"}
                   {!loading && <CheckCircle2 className="w-5 h-5" />}
@@ -268,7 +268,7 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold font-serif-title text-[#14183e]">¡Contraseña Actualizada!</h3>
+                  <h3 className="text-2xl font-bold font-serif-title text-brand-primary">¡Contraseña Actualizada!</h3>
                   <p className="text-[#5e6282] text-sm max-w-xs mx-auto leading-relaxed">
                     Tu identidad facial fue verificada y tu nueva contraseña ha sido guardada con éxito.
                   </p>
@@ -276,7 +276,7 @@ export default function ForgotPasswordPage() {
 
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.01] transition-all text-sm"
+                  className="inline-flex items-center gap-2 bg-brand-secondary hover:bg-brand-secondary-dark text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-brand-secondary/25 hover:shadow-xl hover:scale-[1.01] transition-all text-sm"
                 >
                   Iniciar Sesión Ahora <ArrowRight className="w-4 h-4" />
                 </Link>

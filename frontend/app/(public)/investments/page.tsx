@@ -157,10 +157,10 @@ export default function InvestmentsSimulatorPage() {
       <main className="flex-1 pb-20 relative z-10">
         {/* Header Banner */}
         <div className="pt-10 pb-6 text-center max-w-3xl mx-auto px-4">
-          <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#f1a501] mb-2">
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-accent mb-2">
             INVERSIONES A PLAZO FIJO (DPF)
           </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#14183e] font-serif-title leading-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-brand-primary font-serif-title leading-tight mb-4">
             Simulador de Pólizas
           </h1>
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
@@ -179,8 +179,8 @@ export default function InvestmentsSimulatorPage() {
                 resetResult();
               }}
               className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${activePlanId === plan.id
-                  ? "bg-[#f1a501] text-white shadow-lg shadow-amber-500/25 scale-105"
-                  : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
+                  ? "bg-brand-accent text-white shadow-lg shadow-brand-accent/25 scale-105"
+                  : "bg-white/90 hover:bg-brand-card-bg text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
                 }`}
             >
               {plan.name}
@@ -193,7 +193,7 @@ export default function InvestmentsSimulatorPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
             {/* Left Feature Image Card */}
-            <div className="lg:col-span-5 relative group rounded-[32px] overflow-hidden shadow-xl border border-slate-100 bg-white">
+            <div className="lg:col-span-5 relative group rounded-[32px] overflow-hidden shadow-xl border border-slate-100 bg-brand-card-bg">
               <div className="relative h-[340px] lg:h-[500px] w-full overflow-hidden">
                 <Image
                   src={currentImage}
@@ -201,13 +201,13 @@ export default function InvestmentsSimulatorPage() {
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#14183e]/85 via-[#14183e]/20 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-primary/85 via-brand-primary/20 to-transparent"></div>
               </div>
 
               {/* Overlay info */}
               {activePlan && (
                 <div className="absolute bottom-6 left-6 right-6 text-white p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
-                  <span className="text-xs font-bold uppercase tracking-widest text-[#f1a501] block mb-1">
+                  <span className="text-xs font-bold uppercase tracking-widest text-brand-accent block mb-1">
                     TASA DE RENDIMIENTO (TEA)
                   </span>
                   <h3 className="text-3xl font-extrabold font-serif-title text-white">
@@ -221,11 +221,11 @@ export default function InvestmentsSimulatorPage() {
             </div>
 
             {/* Right Form Card */}
-            <div className="lg:col-span-7 bg-white rounded-[32px] p-6 sm:p-10 shadow-xl border border-slate-100">
+            <div className="lg:col-span-7 bg-brand-card-bg rounded-[32px] p-6 sm:p-10 shadow-xl border border-slate-100">
               {activePlan ? (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-[#14183e] font-serif-title mb-2">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-brand-primary font-serif-title mb-2">
                       {activePlan.name}
                     </h2>
                     <p className="text-slate-500 text-xs sm:text-sm">
@@ -246,7 +246,7 @@ export default function InvestmentsSimulatorPage() {
                           setAmount(e.target.value);
                           resetResult();
                         }}
-                        className="w-full pl-9 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none text-slate-900 font-semibold text-base transition-all"
+                        className="w-full pl-9 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none text-slate-900 font-semibold text-base transition-all"
                         placeholder={`Mínimo: $${activePlan.minAmount}`}
                       />
                     </div>
@@ -267,7 +267,7 @@ export default function InvestmentsSimulatorPage() {
                         setTermDays(e.target.value);
                         resetResult();
                       }}
-                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#f1a501]/30 focus:border-[#f1a501] outline-none text-slate-900 font-semibold text-base transition-all"
+                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent outline-none text-slate-900 font-semibold text-base transition-all"
                       placeholder={`Entre ${activePlan.termMinDays} y ${activePlan.termMaxDays}`}
                     />
                     <div className="flex justify-between text-[11px] text-slate-400 mt-1 font-medium">
@@ -288,7 +288,7 @@ export default function InvestmentsSimulatorPage() {
                           resetResult();
                         }}
                         className={`py-3 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all ${payoutMethod === 'AT_MATURITY'
-                            ? 'border-[#f1a501] bg-amber-50/50 text-[#14183e] shadow-sm'
+                            ? 'border-brand-accent bg-brand-accent-soft text-brand-primary shadow-sm'
                             : 'border-slate-200 text-slate-500 hover:border-slate-300'
                           }`}
                       >
@@ -307,7 +307,7 @@ export default function InvestmentsSimulatorPage() {
                             : `${activePlan.name} paga los intereses solo al vencimiento`
                         }
                         className={`py-3 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${payoutMethod === 'MONTHLY'
-                            ? 'border-[#f1a501] bg-amber-50/50 text-[#14183e] shadow-sm'
+                            ? 'border-brand-accent bg-brand-accent-soft text-brand-primary shadow-sm'
                             : 'border-slate-200 text-slate-500 hover:border-slate-300'
                           }`}
                       >
@@ -334,7 +334,7 @@ export default function InvestmentsSimulatorPage() {
                     type="button"
                     onClick={handleSimulate}
                     disabled={loading}
-                    className="w-full bg-[#f1a501] hover:bg-amber-600 text-white py-4 rounded-full font-bold text-base shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="w-full bg-brand-accent hover:bg-brand-accent-dark text-white py-4 rounded-full font-bold text-base shadow-lg shadow-brand-accent/25 hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                   >
                     {loading ? "Calculando..." : "Calcular Rendimiento"}
                     {!loading && <Calculator className="w-5 h-5" />}
@@ -343,31 +343,31 @@ export default function InvestmentsSimulatorPage() {
                   {/* Simulation Result Details */}
                   {result && (
                     <div className="mt-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
-                      <div className="bg-[#fefcf9] border border-amber-200/80 rounded-2xl p-6 shadow-sm">
+                      <div className="bg-brand-page-bg border border-amber-200/80 rounded-2xl p-6 shadow-sm">
                         <div className="flex items-start gap-3 mb-6">
                           <div className="bg-amber-100 p-2 rounded-full shrink-0">
-                            <CheckCircle2 className="w-6 h-6 text-[#f1a501]" />
+                            <CheckCircle2 className="w-6 h-6 text-brand-accent" />
                           </div>
                           <div>
-                            <h4 className="text-[#14183e] font-bold text-lg font-serif-title">Resultado de Simulación</h4>
+                            <h4 className="text-brand-primary font-bold text-lg font-serif-title">Resultado de Simulación</h4>
                             <p className="text-slate-500 text-xs">Valores referenciales. Incluye retención fiscal del {Number(result.withholdingRatePct)}%.</p>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-100">
+                          <div className="bg-brand-card-bg p-3.5 rounded-xl border border-slate-100">
                             <p className="text-[#5e6282] text-[11px] font-bold uppercase tracking-wider mb-1">Monto a Invertir</p>
-                            <p className="text-xl font-extrabold text-[#14183e]">${Number(result.amount).toFixed(2)}</p>
+                            <p className="text-xl font-extrabold text-brand-primary">${Number(result.amount).toFixed(2)}</p>
                           </div>
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-100">
+                          <div className="bg-brand-card-bg p-3.5 rounded-xl border border-slate-100">
                             <p className="text-[#5e6282] text-[11px] font-bold uppercase tracking-wider mb-1">Tasa TEA</p>
-                            <p className="text-xl font-extrabold text-[#f1a501]">{Number(result.teaPct).toFixed(2)}%</p>
+                            <p className="text-xl font-extrabold text-brand-accent">{Number(result.teaPct).toFixed(2)}%</p>
                           </div>
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-100">
+                          <div className="bg-brand-card-bg p-3.5 rounded-xl border border-slate-100">
                             <p className="text-[#5e6282] text-[11px] font-bold uppercase tracking-wider mb-1">Plazo</p>
-                            <p className="text-xl font-extrabold text-[#14183e]">{result.termDays} días</p>
+                            <p className="text-xl font-extrabold text-brand-primary">{result.termDays} días</p>
                           </div>
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-100">
+                          <div className="bg-brand-card-bg p-3.5 rounded-xl border border-slate-100">
                             <p className="text-[#5e6282] text-[11px] font-bold uppercase tracking-wider mb-1">Interés Neto</p>
                             <p className="text-xl font-extrabold text-emerald-600">+${Number(result.netInterest).toFixed(2)}</p>
                           </div>
@@ -376,7 +376,7 @@ export default function InvestmentsSimulatorPage() {
                         <div className="mt-4 pt-4 border-t border-amber-200/60 flex items-center justify-between">
                           <div>
                             <p className="text-[#5e6282] text-xs font-bold uppercase tracking-wider">Total a Recibir</p>
-                            <p className="text-3xl font-black text-[#14183e]">${Number(result.totalToReceive).toFixed(2)}</p>
+                            <p className="text-3xl font-black text-brand-primary">${Number(result.totalToReceive).toFixed(2)}</p>
                           </div>
                           {result.monthlyPayment && (
                             <div className="text-right">
@@ -390,9 +390,9 @@ export default function InvestmentsSimulatorPage() {
                       <button
                         type="button"
                         onClick={() => setShowSchedule(true)}
-                        className="w-full mt-4 bg-white border-2 border-slate-200 hover:border-[#f1a501] hover:bg-amber-50/40 text-[#14183e] py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2"
+                        className="w-full mt-4 bg-brand-card-bg border-2 border-slate-200 hover:border-brand-accent hover:bg-brand-accent-soft text-brand-primary py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2"
                       >
-                        <FileText className="w-5 h-5 text-[#f1a501]" />
+                        <FileText className="w-5 h-5 text-brand-accent" />
                         Ver Cronograma y Descargar PDF
                       </button>
 
@@ -419,9 +419,9 @@ export default function InvestmentsSimulatorPage() {
                             router.push(`/login?redirect=${encodeURIComponent(requestPath)}`);
                           }
                         }}
-                        className="w-full mt-4 bg-[#14183e] hover:bg-slate-800 text-white py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                        className="w-full mt-4 bg-brand-primary hover:bg-slate-800 text-white py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                       >
-                        Abrir esta Póliza <ChevronRight className="w-5 h-5 text-[#f1a501]" />
+                        Abrir esta Póliza <ChevronRight className="w-5 h-5 text-brand-accent" />
                       </button>
                     </div>
                   )}

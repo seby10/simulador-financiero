@@ -158,10 +158,10 @@ function VerifyMobileContent() {
           <>
             <div className="pt-2">
               {info.firstName && <p className="text-sm text-slate-500">Hola, {info.firstName}</p>}
-              <h1 className="text-2xl font-black font-serif-title text-[#14183e]">{copy.title}</h1>
+              <h1 className="text-2xl font-black font-serif-title text-brand-primary">{copy.title}</h1>
               <p className="text-sm text-slate-500 mt-1">{copy.subtitle}</p>
             </div>
-            <div className="bg-white rounded-[28px] shadow-xl shadow-slate-900/5 border border-slate-100 p-4">
+            <div className="bg-brand-card-bg rounded-[28px] shadow-xl shadow-slate-900/5 border border-slate-100 p-4">
               <LivenessCapture purpose={info.purpose} onComplete={submit} onPhaseChange={reportPhase} />
             </div>
             <p className="text-[11px] text-center text-slate-400 flex items-center justify-center gap-1">
@@ -206,11 +206,11 @@ function Notice({
   tone?: "info" | "success" | "warning";
   children: React.ReactNode;
 }) {
-  const color = tone === "success" ? "text-emerald-500" : tone === "warning" ? "text-[#df6951]" : "text-[#14183e]";
+  const color = tone === "success" ? "text-emerald-500" : tone === "warning" ? "text-brand-secondary" : "text-brand-primary";
   return (
-    <div className="bg-white rounded-[28px] shadow-xl shadow-slate-900/5 border border-slate-100 p-8 text-center space-y-3 mt-6">
+    <div className="bg-brand-card-bg rounded-[28px] shadow-xl shadow-slate-900/5 border border-slate-100 p-8 text-center space-y-3 mt-6">
       <Icon className={`w-14 h-14 mx-auto ${color}`} />
-      <h1 className="text-xl font-black text-[#14183e]">{title}</h1>
+      <h1 className="text-xl font-black text-brand-primary">{title}</h1>
       <p className="text-sm text-slate-500">{children}</p>
     </div>
   );

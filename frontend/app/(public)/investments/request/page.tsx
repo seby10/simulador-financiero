@@ -39,12 +39,12 @@ function FileUploadBox({
   return (
     <div>
       <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-        {label} {required && <span className="text-[#df6951]">*</span>}
+        {label} {required && <span className="text-brand-secondary">*</span>}
       </label>
       <div
         onClick={() => ref.current?.click()}
         className={`border-2 border-dashed rounded-[24px] p-6 cursor-pointer text-center transition-all ${
-          file ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-[#f1a501] hover:bg-amber-50/30"
+          file ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-brand-accent hover:bg-brand-accent-soft"
         }`}
       >
         {file ? (
@@ -54,8 +54,8 @@ function FileUploadBox({
           </div>
         ) : (
           <div className="text-slate-400 space-y-1">
-            <Upload className="w-7 h-7 mx-auto mb-2 text-[#f1a501]" />
-            <p className="text-xs font-bold text-[#14183e]">Haz clic para seleccionar archivo</p>
+            <Upload className="w-7 h-7 mx-auto mb-2 text-brand-accent" />
+            <p className="text-xs font-bold text-brand-primary">Haz clic para seleccionar archivo</p>
             <p className="text-xs text-slate-400">{hint}</p>
           </div>
         )}
@@ -236,10 +236,10 @@ function InvestmentRequestContent() {
 
       {/* Header Banner */}
       <div className="pt-10 pb-8 text-center max-w-3xl mx-auto px-4 relative z-10">
-        <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#f1a501] mb-2">
+        <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-brand-accent mb-2">
           SOLICITUD DE INVERSIÓN
         </p>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#14183e] font-serif-title leading-tight mb-4">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-brand-primary font-serif-title leading-tight mb-4">
           Formaliza tu Póliza DPF
         </h1>
         <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl mx-auto">
@@ -249,7 +249,7 @@ function InvestmentRequestContent() {
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pb-20 relative z-10">
         {/* Step Wizard Header */}
-        <div className="bg-white rounded-[24px] shadow-lg border border-slate-100 p-4 sm:p-6 mb-8">
+        <div className="bg-brand-card-bg rounded-[24px] shadow-lg border border-slate-100 p-4 sm:p-6 mb-8">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
@@ -262,13 +262,13 @@ function InvestmentRequestContent() {
                       done
                         ? "bg-emerald-500 text-white"
                         : active
-                        ? "bg-[#14183e] text-white ring-4 ring-amber-100"
+                        ? "bg-brand-primary text-white ring-4 ring-amber-100"
                         : "bg-slate-100 text-slate-400"
                     }`}>
                       {done ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                     </div>
                     <span className={`text-xs sm:text-sm font-bold hidden md:block ${
-                      active ? "text-[#14183e]" : done ? "text-emerald-600" : "text-slate-400"
+                      active ? "text-brand-primary" : done ? "text-emerald-600" : "text-slate-400"
                     }`}>
                       {s.label}
                     </span>
@@ -285,13 +285,13 @@ function InvestmentRequestContent() {
         </div>
 
         {/* Step Content Card */}
-        <div className="bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
-          <div className="bg-[#14183e] px-6 py-5 text-white flex items-center justify-between">
+        <div className="bg-brand-card-bg rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
+          <div className="bg-brand-primary px-6 py-5 text-white flex items-center justify-between">
             <div>
               <h2 className="font-extrabold text-xl font-serif-title">{STEPS[step - 1]?.label}</h2>
               <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Paso {step} de {STEPS.length}</p>
             </div>
-            <span className="w-3 h-3 rounded-full bg-[#f1a501] animate-pulse" />
+            <span className="w-3 h-3 rounded-full bg-brand-accent animate-pulse" />
           </div>
 
           <div className="p-6 sm:p-10">
@@ -308,66 +308,66 @@ function InvestmentRequestContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-                      Nombre Completo <span className="text-[#df6951]">*</span>
+                      Nombre Completo <span className="text-brand-secondary">*</span>
                     </label>
                     <input required value={form.applicantFullName} onChange={e => setForm({ ...form, applicantFullName: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none text-sm font-medium text-brand-primary"
                       placeholder="Ej: María José Andrade" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-                      Cédula de Identidad <span className="text-[#df6951]">*</span>
+                      Cédula de Identidad <span className="text-brand-secondary">*</span>
                     </label>
                     <input required value={form.applicantIdNumber} onChange={e => setForm({ ...form, applicantIdNumber: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-mono font-medium text-[#14183e]"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none text-sm font-mono font-medium text-brand-primary"
                       placeholder="10 dígitos" maxLength={10} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-                      Teléfono Móvil <span className="text-[#df6951]">*</span>
+                      Teléfono Móvil <span className="text-brand-secondary">*</span>
                     </label>
                     <input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none text-sm font-medium text-brand-primary"
                       placeholder="0991234567" />
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-                      Correo Electrónico <span className="text-[#df6951]">*</span>
+                      Correo Electrónico <span className="text-brand-secondary">*</span>
                     </label>
                     <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none text-sm font-medium text-brand-primary"
                       placeholder="ejemplo@correo.com" />
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-                      Origen de los Fondos <span className="text-[#df6951]">*</span>
+                      Origen de los Fondos <span className="text-brand-secondary">*</span>
                     </label>
                     <input required value={form.sourceOfFunds} onChange={e => setForm({ ...form, sourceOfFunds: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none text-sm font-medium text-brand-primary"
                       placeholder="Ej: Ahorros personales de relación de dependencia" />
                   </div>
                   {!planId && (
                     <>
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-                          Monto a Invertir (USD) <span className="text-[#df6951]">*</span>
+                          Monto a Invertir (USD) <span className="text-brand-secondary">*</span>
                         </label>
                         <input required type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}
-                          className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]" />
+                          className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none text-sm font-medium text-brand-primary" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-[#5e6282] mb-2">
-                          Plazo (Días) <span className="text-[#df6951]">*</span>
+                          Plazo (Días) <span className="text-brand-secondary">*</span>
                         </label>
                         <input required type="number" value={form.termDays} onChange={e => setForm({ ...form, termDays: Number(e.target.value) })}
-                          className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#f1a501] focus:border-transparent outline-none text-sm font-medium text-[#14183e]" />
+                          className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none text-sm font-medium text-brand-primary" />
                       </div>
                     </>
                   )}
                   {planId && (
                     <div className="md:col-span-2 bg-amber-50/60 rounded-2xl p-5 text-sm border border-amber-200/80">
-                      <p className="font-extrabold text-[#14183e] font-serif-title text-base mb-2">Datos de tu Simulación</p>
-                      <div className="flex flex-wrap gap-6 text-[#14183e]">
+                      <p className="font-extrabold text-brand-primary font-serif-title text-base mb-2">Datos de tu Simulación</p>
+                      <div className="flex flex-wrap gap-6 text-brand-primary">
                         <span>Monto: <strong className="font-mono text-base">${Number(amount).toLocaleString()}</strong></span>
                         <span>Plazo: <strong>{termDays} días</strong></span>
                         <span>Modalidad: <strong>{payoutMethod === "MONTHLY" ? "Pago Mensual" : "Al Vencimiento"}</strong></span>
@@ -377,7 +377,7 @@ function InvestmentRequestContent() {
                 </div>
                 <div className="flex justify-end pt-4">
                   <button type="submit" disabled={saving}
-                    className="bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-70">
+                    className="bg-brand-secondary hover:bg-brand-secondary-dark text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-brand-secondary/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-70">
                     {saving ? "Enviando..." : "Continuar Paso 2"} <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -397,11 +397,11 @@ function InvestmentRequestContent() {
                 </div>
                 <div className="flex justify-between pt-4">
                   <button type="button" onClick={() => { setStepError(""); setStep(1); }}
-                    className="px-6 py-3 rounded-full font-bold text-[#14183e] bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
+                    className="px-6 py-3 rounded-full font-bold text-brand-primary bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
                     Atrás
                   </button>
                   <button type="submit" disabled={saving}
-                    className="bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-70">
+                    className="bg-brand-secondary hover:bg-brand-secondary-dark text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-brand-secondary/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-70">
                     {saving ? "Subiendo..." : "Continuar Paso 3"} <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -411,8 +411,8 @@ function InvestmentRequestContent() {
             {/* STEP 3 */}
             {step === 3 && (
               <div className="space-y-6">
-                <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-5 text-sm text-[#14183e] flex items-start gap-4">
-                  <ShieldCheck className="w-6 h-6 shrink-0 text-[#f1a501] mt-0.5" />
+                <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-5 text-sm text-brand-primary flex items-start gap-4">
+                  <ShieldCheck className="w-6 h-6 shrink-0 text-brand-accent mt-0.5" />
                   <div>
                     <p className="font-extrabold font-serif-title text-base mb-1">Verificación de Identidad Biométrica</p>
                     <p className="text-xs text-slate-600 leading-relaxed">Sigue las instrucciones en pantalla: comprobaremos que eres una persona real y compararemos tu rostro con la cédula que cargaste.</p>
@@ -462,11 +462,11 @@ function InvestmentRequestContent() {
 
                 <div className="flex justify-between pt-4 border-t border-slate-100">
                   <button onClick={() => { setStepError(""); setStep(2); }}
-                    className="px-6 py-3 rounded-full font-bold text-[#14183e] bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
+                    className="px-6 py-3 rounded-full font-bold text-brand-primary bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
                     Atrás
                   </button>
                   <button onClick={handleStep3Finish} disabled={!biometricPassed && !manualReview}
-                    className="bg-[#df6951] hover:bg-[#c85640] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    className="bg-brand-secondary hover:bg-brand-secondary-dark text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-brand-secondary/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                     Finalizar Solicitud <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -480,7 +480,7 @@ function InvestmentRequestContent() {
                   <CheckCircle2 className="w-14 h-14 text-emerald-500" />
                 </div>
                 <div>
-                  <h3 className="text-3xl font-extrabold text-[#14183e] font-serif-title mb-2">¡Solicitud Registrada con Éxito!</h3>
+                  <h3 className="text-3xl font-extrabold text-brand-primary font-serif-title mb-2">¡Solicitud Registrada con Éxito!</h3>
                   <p className="text-slate-600 max-w-md mx-auto text-sm sm:text-base leading-relaxed">
                     {manualReview
                       ? "Tu solicitud fue recibida. Como no fue posible verificar tu rostro automáticamente, un oficial de crédito revisará tu identidad manualmente."
@@ -488,20 +488,20 @@ function InvestmentRequestContent() {
                   </p>
                 </div>
                 <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-6 text-left max-w-md mx-auto text-sm space-y-3">
-                  <p className="font-extrabold text-[#14183e] font-serif-title text-base border-b border-amber-200/60 pb-2">Resumen de Solicitud:</p>
-                  <div className="space-y-2 text-[#14183e] font-medium">
+                  <p className="font-extrabold text-brand-primary font-serif-title text-base border-b border-amber-200/60 pb-2">Resumen de Solicitud:</p>
+                  <div className="space-y-2 text-brand-primary font-medium">
                     <div className="flex justify-between">
                       <span className="text-slate-500">N° de Registro:</span>
                       <span className="font-mono font-bold text-xs">{applicationId?.slice(0, 18)}...</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Estado Inicial:</span>
-                      <span className="font-bold text-[#f1a501] bg-amber-100 px-3 py-0.5 rounded-full text-xs">En Revisión</span>
+                      <span className="font-bold text-brand-accent bg-amber-100 px-3 py-0.5 rounded-full text-xs">En Revisión</span>
                     </div>
                   </div>
                 </div>
                 <Link href="/my-applications"
-                  className="inline-flex items-center gap-2 bg-[#df6951] hover:bg-[#c85640] text-white px-9 py-4 rounded-full font-bold shadow-lg shadow-orange-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm">
+                  className="inline-flex items-center gap-2 bg-brand-secondary hover:bg-brand-secondary-dark text-white px-9 py-4 rounded-full font-bold shadow-lg shadow-brand-secondary/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm">
                   Ver Mis Solicitudes
                 </Link>
               </div>

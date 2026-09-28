@@ -18,7 +18,7 @@ export default function FaqAccordion({ items, title = "Preguntas frecuentes" }: 
   return (
     <section id="preguntas-frecuentes" className="w-full py-16 bg-transparent relative z-10 scroll-mt-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-[#14183e] font-serif-title text-center mb-12">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-brand-primary font-serif-title text-center mb-12">
           {title}
         </h2>
 
@@ -35,12 +35,12 @@ export default function FaqAccordion({ items, title = "Preguntas frecuentes" }: 
                   onClick={() => toggleItem(index)}
                   className="w-full py-4 flex items-center justify-between text-left group focus:outline-none"
                 >
-                  <span className="text-base sm:text-lg font-bold text-[#14183e] group-hover:text-[#df6951] transition-colors pr-4">
+                  <span className="text-base sm:text-lg font-bold text-brand-primary group-hover:text-brand-secondary transition-colors pr-4">
                     {item.question}
                   </span>
                   <ChevronDown
-                    className={`w-5 h-5 text-[#14183e] transition-transform duration-300 shrink-0 ${
-                      isOpen ? "rotate-180 text-[#df6951]" : ""
+                    className={`w-5 h-5 text-brand-primary transition-transform duration-300 shrink-0 ${
+                      isOpen ? "rotate-180 text-brand-secondary" : ""
                     }`}
                   />
                 </button>

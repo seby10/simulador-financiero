@@ -30,7 +30,7 @@ export default function Navbar() {
   return (
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        scrolled ? "bg-white/80 backdrop-blur-lg shadow-[0_1px_0_rgba(15,23,42,0.06),0_8px_24px_-12px_rgba(15,23,42,0.15)]" : "bg-transparent"
+        scrolled ? "bg-brand-navbar-bg/85 backdrop-blur-lg shadow-[0_1px_0_rgba(15,23,42,0.06),0_8px_24px_-12px_rgba(15,23,42,0.15)]" : "bg-transparent"
       }`}
     >
       <div
@@ -45,8 +45,8 @@ export default function Navbar() {
             alt="Logo"
             className="h-9 w-auto object-contain"
             fallback={
-              <span className="text-3xl font-extrabold text-[#181e2b] tracking-tight font-serif-title flex items-center">
-                Fiado<span className="inline-block w-2.5 h-2.5 rounded-full bg-[#df6951] ml-0.5 transition-transform group-hover:scale-125" />
+              <span className="text-3xl font-extrabold text-brand-primary tracking-tight font-serif-title flex items-center">
+                Fiado<span className="inline-block w-2.5 h-2.5 rounded-full bg-brand-secondary ml-0.5 transition-transform group-hover:scale-125" />
               </span>
             }
           />

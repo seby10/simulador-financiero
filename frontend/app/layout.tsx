@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Volkhov } from "next/font/google";
 import "./globals.css";
 import ThemeSync from "@/components/theme-sync";
 import { API_URL } from "@/lib/api";
+import { brandStyle } from "@/lib/branding";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -53,31 +54,13 @@ export default async function RootLayout({
 }) {
   const config = await institutionConfig();
 
-  const primaryColor = config?.primaryColor || "#1e293b";
-  const secondaryColor = config?.secondaryColor || "#df6951";
-  const accentColor = config?.accentColor || "#f1a501";
-  const navbarBgColor = config?.navbarBgColor || "#ffffff";
-  const navbarTextColor = config?.navbarTextColor || "#1e293b";
-  const pageBgColor = config?.pageBgColor || "#fefcf9";
-  const cardBgColor = config?.cardBgColor || "#ffffff";
-  const footerBgColor = config?.footerBgColor || "#181e2b";
-  const footerTextColor = config?.footerTextColor || "#94a3b8";
-
   return (
     <html lang="es" className={`h-full antialiased ${plusJakarta.variable} ${volkhov.variable}`}>
-      <body 
-        className="min-h-full flex flex-col font-sans bg-[var(--brand-page-bg,#fefcf9)] text-slate-800 relative overflow-x-hidden"
-        style={{
-          '--brand-primary': primaryColor,
-          '--brand-secondary': secondaryColor,
-          '--brand-accent': accentColor,
-          '--brand-navbar-bg': navbarBgColor,
-          '--brand-navbar-text': navbarTextColor,
-          '--brand-page-bg': pageBgColor,
-          '--brand-card-bg': cardBgColor,
-          '--brand-footer-bg': footerBgColor,
-          '--brand-footer-text': footerTextColor,
-        } as React.CSSProperties}
+      {/* Los colores de marca viajan como variables CSS: todo el sitio los lee
+          desde aquí, así lo que se guarda en administración se ve al instante. */}
+      <body
+        className="min-h-full flex flex-col font-sans bg-brand-page-bg text-slate-800 relative overflow-x-hidden"
+        style={brandStyle(config)}
       >
         {/* Global Organic Top-Right Background Decore Shape */}
         <img 
