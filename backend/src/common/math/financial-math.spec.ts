@@ -317,6 +317,10 @@ describe('simulateInvestment', () => {
 
   it.each([
     [
+      30,
+      [[30, '79.17']],
+    ],
+    [
       31,
       [
         [30, '79.17'],

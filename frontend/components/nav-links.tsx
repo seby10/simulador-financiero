@@ -15,13 +15,15 @@ const LINKS = [
 export default function NavLinks() {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
+  const [authResolved, setAuthResolved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/auth/me`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setCurrentUser(data))
-      .catch(() => setCurrentUser(null));
+      .catch(() => setCurrentUser(null))
+      .finally(() => setAuthResolved(true));
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -30,7 +32,7 @@ export default function NavLinks() {
     window.location.href = "/";
   };
 
-  const links = currentUser?.role === "CUSTOMER"
+  const links = authResolved && currentUser?.role === "CUSTOMER"
     ? [...LINKS, { href: "/my-applications", label: "Mis Solicitudes" }]
     : LINKS;
   const firstName = currentUser?.firstName || currentUser?.fullName?.split(" ")[0] || "Cliente";
@@ -65,7 +67,12 @@ export default function NavLinks() {
           </Link>
         )}
 
-        {currentUser ? (
+        {!authResolved ? (
+          <span
+            aria-hidden="true"
+            className="ml-2 h-8 w-28 rounded-[6px] bg-slate-100/80 animate-pulse"
+          />
+        ) : currentUser ? (
           <div className="flex items-center gap-4 ml-2">
             <span className="text-xs font-semibold text-slate-800 bg-amber-50 px-4 py-2 rounded-lg flex items-center gap-2 border border-amber-200/80">
               <User className="w-3.5 h-3.5 text-amber-600" />
@@ -148,7 +155,12 @@ export default function NavLinks() {
           )}
         </ul>
         <div className="mt-2 pt-3 border-t border-slate-100">
-          {currentUser ? (
+          {!authResolved ? (
+            <div
+              aria-hidden="true"
+              className="h-11 rounded-xl bg-slate-100/80 animate-pulse"
+            />
+          ) : currentUser ? (
             <div className="flex items-center justify-between px-4 py-1">
               <span className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                 <User className="w-4 h-4 text-amber-600" /> {firstName}

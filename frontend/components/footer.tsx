@@ -55,14 +55,14 @@ export default function Footer() {
   ].filter((item) => item.value);
 
   return (
-    <footer className="w-full bg-transparent pt-16 pb-10 relative z-10">
+    <footer className="w-full bg-transparent border-t border-slate-200/60 pt-10 pb-6 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-12 gap-x-8 gap-y-10 items-start mb-14">
+        <div className="grid grid-cols-2 lg:grid-cols-12 gap-x-8 gap-y-8 items-start mb-10">
 
           {/* Marca y contacto */}
-          <div className="col-span-2 lg:col-span-4 space-y-5">
+          <div className="col-span-2 lg:col-span-4 space-y-4">
             <Link href="/" className="inline-block group">
-              <span className="font-serif-title text-3xl font-extrabold text-[#14183e] tracking-tight">
+              <span className="font-serif-title text-2xl font-extrabold text-[#14183e] tracking-tight">
                 Fiado<span className="inline-block text-[#df6951] transition-transform group-hover:scale-125">.</span>
               </span>
             </Link>
@@ -70,9 +70,9 @@ export default function Footer() {
               Calcula tu crédito e inversiones en minutos y toma el control de tus finanzas.
             </p>
             {contact.length > 0 && (
-              <ul className="space-y-2.5 text-sm text-[#5e6282]">
+              <ul className="space-y-2 text-sm text-[#5e6282]">
                 {contact.map(({ icon: Icon, value, href }) => (
-                  <li key={value} className="flex items-start gap-2.5">
+                  <li key={value} className="flex items-start gap-2">
                     <Icon className="w-4 h-4 mt-0.5 text-[#df6951] shrink-0" />
                     {href ? (
                       <a href={href} className="hover:text-[#df6951] transition-colors">{value}</a>
@@ -86,9 +86,9 @@ export default function Footer() {
           </div>
 
           {COLUMNS.map(({ title, links }, index) => (
-            <div key={title} className={`lg:col-span-2 space-y-4 ${index === 0 ? "lg:col-start-7" : ""}`}>
-              <h4 className="text-[#080809] font-bold text-lg">{title}</h4>
-              <ul className="space-y-2.5 text-[#5e6282] text-sm font-medium">
+            <div key={title} className={`lg:col-span-2 space-y-3 ${index === 0 ? "lg:col-start-7" : ""}`}>
+              <h4 className="text-[#080809] font-bold text-sm uppercase tracking-wide">{title}</h4>
+              <ul className="space-y-2 text-[#5e6282] text-sm font-medium">
                 {links.map(([href, label]) => (
                   <li key={href}>
                     <Link
@@ -104,7 +104,7 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[#5e6282] text-xs sm:text-sm pt-8 border-t border-slate-200/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[#5e6282] text-xs pt-6 border-t border-slate-200/60">
           <span>
             © {new Date().getFullYear()} {institution?.institutionName ?? "Fiado"}. Todos los derechos reservados.
           </span>
