@@ -112,7 +112,7 @@ export default function CreditSimulatorForm() {
   const currentImage = getCreditImage();
 
   return (
-    <div className="w-full flex flex-col relative z-10">
+    <div className="w-full flex flex-col relative">
       {/* 1. Header Banner */}
       <div className="pt-10 pb-6 text-center max-w-3xl mx-auto px-4">
         <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#df6951] mb-2">
