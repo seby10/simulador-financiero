@@ -137,8 +137,8 @@ export default function CreditSimulatorForm() {
               setSimulationResult(null);
             }}
             className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${creditTypeId === type.id.toString()
-                ? "bg-[#df6951] text-white shadow-lg shadow-orange-500/25 scale-105"
-                : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
+              ? "bg-[#df6951] text-white shadow-lg shadow-orange-500/25 scale-105"
+              : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-sm"
               }`}
           >
             {type.name}
